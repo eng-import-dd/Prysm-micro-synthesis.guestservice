@@ -7,10 +7,12 @@
     <ProjectGuid>{DFE8E291-7DDF-11E7-94DF-514C0EE90711}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Synthesis.GuestService</RootNamespace>
+    <RootNamespace>Synthesis.GuestService.Modules</RootNamespace>
     <AssemblyName>Synthesis.GuestService.Modules</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -63,6 +65,10 @@
     </Reference>
     <Reference Include="Microsoft.Azure.Common, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Azure.Common.2.1.4\lib\net45\Microsoft.Azure.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Azure.Documents.Client, Version=1.17.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Azure.DocumentDB.1.17.0\lib\net45\Microsoft.Azure.Documents.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -147,9 +153,6 @@
     <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Configuration, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Configuration.1.0.0\lib\net452\Synthesis.Configuration.dll</HintPath>
-    </Reference>
     <Reference Include="Synthesis.Http, Version=1.0.8.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.0.8\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
@@ -175,6 +178,7 @@
       <HintPath>..\packages\Synthesis.Threading.1.0.0\lib\net452\Synthesis.Threading.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
@@ -207,18 +211,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Dao\DocumentDBRepository.cs" />
+    <Compile Include="Dao\DocumentDbRepository.cs" />
     <Compile Include="Dao\Interfaces\IBaseRepository.cs" />
     <Compile Include="Dao\Interfaces\IRepositoryFactory.cs" />
+    <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\RepositoryFactory.cs" />
     <Compile Include="Dto\GuestInviteDto.cs" />
     <Compile Include="Dto\GuestSessionDto.cs" />
     <Compile Include="Dto\GuestUserDto.cs" />
     <Compile Include="Dto\ParticipantDto.cs" />
     <Compile Include="Dto\ProjectDto.cs" />
-    <Compile Include="Dto\ProjectGuestsDTO.cs" />
+    <Compile Include="Dto\ProjectGuestsDto.cs" />
     <Compile Include="Dto\UserSettingsDto.cs" />
     <Compile Include="Entity\Guest.cs" />
+    <Compile Include="Entity\GuestInvite.cs" />
+    <Compile Include="Entity\GuestSession.cs" />
+    <Compile Include="Entity\GuestSessionState.cs" />
     <Compile Include="Enums\CreateGuestInviteReturnCode.cs" />
     <Compile Include="Enums\GuestState.cs" />
     <Compile Include="Enums\LicenseType.cs" />
@@ -239,6 +247,7 @@
     <Compile Include="Requests\IdpUserRequest.cs" />
     <Compile Include="Requests\UpdateGuestSessionStateRequest.cs" />
     <Compile Include="Requests\VerifyGuestRequest.cs" />
+    <Compile Include="Responses\BaseResponse.cs" />
     <Compile Include="Responses\InviteGuestResponse.cs" />
     <Compile Include="Responses\AssignGuestUserResponse.cs" />
     <Compile Include="Responses\AuthenticateGuestResponse.cs" />
@@ -263,13 +272,19 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Dao\Models\" />
     <Folder Include="Validators\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Email Templates\GuestInvite.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\Microsoft.Azure.DocumentDB.1.17.0\build\Microsoft.Azure.DocumentDB.targets" Condition="Exists('..\packages\Microsoft.Azure.DocumentDB.1.17.0\build\Microsoft.Azure.DocumentDB.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Azure.DocumentDB.1.17.0\build\Microsoft.Azure.DocumentDB.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Azure.DocumentDB.1.17.0\build\Microsoft.Azure.DocumentDB.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

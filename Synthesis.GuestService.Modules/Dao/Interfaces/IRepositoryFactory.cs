@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Synthesis.GuestService.Dao.Interfaces
+﻿
+namespace Synthesis.GuestService.Modules.Dao.Interfaces
 {
-    interface IRepositoryFactory
+    public interface IRepositoryFactory
     {
+        IBaseRepository<T> CreateRepository<T>() where T : class;
     }
 }

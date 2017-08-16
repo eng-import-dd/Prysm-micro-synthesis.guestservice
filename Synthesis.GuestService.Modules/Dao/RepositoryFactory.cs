@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Synthesis.GuestService.Modules.Dao.Interfaces;
 
-namespace Synthesis.GuestService.Dao
+namespace Synthesis.GuestService.Modules.Dao
 {
-    class RepositoryFactory
+    public class RepositoryFactory : IRepositoryFactory
     {
+        public IBaseRepository<T> CreateRepository<T>() where T : class
+        {
+            return new DocumentDbRepository<T>();
+        }
     }
 }

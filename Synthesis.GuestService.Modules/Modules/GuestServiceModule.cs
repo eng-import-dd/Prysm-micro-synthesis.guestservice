@@ -9,7 +9,7 @@ using Synthesis.Nancy.MicroService.Security;
 namespace Synthesis.GuestService.Modules
 {
     public class GuestServiceModule : NancyModule
-    {
+    {   //JTODO: Insert Guest implementation here
         public GuestServiceModule(IMetadataRegistry metadataRegistry) :
             base("/api/v1/guestservice")
         {

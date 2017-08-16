@@ -1,12 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Azure.Documents;
+using Synthesis.GuestService.Modules.Exceptions;
+using Synthesis.GuestService.Modules.Dao.Interfaces;
+using Synthesis.GuestService.Modules.Workflow.Interfaces;
+using Synthesis.GuestService.Modules.Entity;
+//using Synthesis.GuestService.Modules.Requests;
+//using Synthesis.GuestService.Modules.Responses;
 
-namespace Synthesis.GuestService.Workflow.Controllers
+namespace Synthesis.GuestService.Modules.Workflow.Controllers
 {
-    class GuestWorkflow
+    public class GuestWorkflow : IGuestWorkflow
     {
+        private readonly IBaseRepository<Guest> _guestRepository;
+
+        public GuestWorkflow(IRepositoryFactory repositoryFactory)
+        {
+            _guestRepository = repositoryFactory.CreateRepository<Guest>();
+        }
+
+        // -- Create
+
+        // -- Read
+
+        // -- Update
+
+        // --Delete
     }
 }
