@@ -1,0 +1,13 @@
+[Bb]in/
+[Oo]bj/
+[Pp]kg
+
+csx/
+*.suo
+*.user
+*.sln.docstates
+*_UpgradeReport_Files*
+*UploadLog*
+*.nugetreferenceswitcher
+
+/packages
