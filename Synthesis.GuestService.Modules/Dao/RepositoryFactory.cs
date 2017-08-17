@@ -1,6 +1,5 @@
-﻿using Synthesis.GuestService.Modules.Dao.Interfaces;
-
-namespace Synthesis.GuestService.Modules.Dao
+﻿
+namespace Synthesis.GuestService.Dao
 {
     public class RepositoryFactory : IRepositoryFactory
     {

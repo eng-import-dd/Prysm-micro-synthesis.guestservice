@@ -5,6 +5,9 @@ using Synthesis.KeyManager;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Authorization;
 using Synthesis.Nancy.MicroService.Dao;
+using Synthesis.GuestService.Workflow.Controllers;
+using Synthesis.GuestService.Workflow.Interfaces;
+using Synthesis.GuestService.Dao;
 
 namespace Synthesis.GuestService
 {
@@ -16,6 +19,8 @@ namespace Synthesis.GuestService
             existingContainer.Register<ILoggingService, SimpleLoggingService>().AsSingleton();
             existingContainer.Register<IKeyManager, SimpleKeyManager>().AsSingleton();
             existingContainer.Register<ISynthesisMonolithicCloudDao, SynthesisMonolithicCloudDao>().AsSingleton();
+            existingContainer.Register<IGuestInviteController, GuestInviteController>();
+            existingContainer.Register<IRepositoryFactory, RepositoryFactory>();
 
             // Update this registration if you need to change the authorization implementation.
             existingContainer.Register<IStatelessAuthorization, SynthesisStatelessAuthorization>().AsSingleton();

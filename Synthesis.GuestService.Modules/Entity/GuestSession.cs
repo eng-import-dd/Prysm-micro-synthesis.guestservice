@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace Synthesis.GuestService.Modules.Entity
+namespace Synthesis.GuestService.Entity
 {
     public class GuestSession
     {
@@ -12,7 +12,7 @@ namespace Synthesis.GuestService.Modules.Entity
 
         public Guid ProjectId { get; set; }
 
-        public string ProjectAccesscode { get; set; }
+        public string ProjectAccessCode { get; set; }
 
         public int GuestSessionStateId { get; set; }
 

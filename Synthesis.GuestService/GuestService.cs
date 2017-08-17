@@ -32,8 +32,8 @@ namespace Synthesis.GuestService
         {
             return new ServiceInstanceListener[]
             {
-                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, ServiceEventSource.Current, "ServiceEndpoint", "guests"), "HTTP"),
-                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, ServiceEventSource.Current, "SecureEndpoint", "guests"), "HTTPS")
+                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, ServiceEventSource.Current, "ServiceEndpoint", "guestservice"), "HTTP"),
+                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, ServiceEventSource.Current, "SecureEndpoint", "guestservice"), "HTTPS")
             };
         }
 

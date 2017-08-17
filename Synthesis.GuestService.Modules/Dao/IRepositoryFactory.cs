@@ -1,5 +1,5 @@
 ﻿
-namespace Synthesis.GuestService.Modules.Dao.Interfaces
+namespace Synthesis.GuestService.Dao
 {
     public interface IRepositoryFactory
     {

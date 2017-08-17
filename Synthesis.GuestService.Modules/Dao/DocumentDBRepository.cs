@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
-using Synthesis.GuestService.Modules.Dao.Interfaces;
 
-namespace Synthesis.GuestService.Modules.Dao
+namespace Synthesis.GuestService.Dao
 {
     public class DocumentDbRepository<T> : IBaseRepository<T> where T : class
     {
@@ -61,12 +60,12 @@ namespace Synthesis.GuestService.Modules.Dao
             return results;
         }
 
-        public async Task<Document> CreateItemAsync(T item)
+        public async Task<T> CreateItemAsync(T item)
         {
             return await _client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(_databaseId, _collectionId), item);
         }
 
-        public async Task<Document> UpdateItemAsync(string id, T item)
+        public async Task<T> UpdateItemAsync(string id, T item)
         {
             return await _client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(_databaseId, _collectionId, id), item);
         }

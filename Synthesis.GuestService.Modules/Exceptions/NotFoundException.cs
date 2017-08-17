@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Synthesis.GuestService.Modules.Exceptions
+namespace Synthesis.GuestService.Exceptions
 {
     public class NotFoundException : Exception
     {

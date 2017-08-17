@@ -7,7 +7,7 @@
     <ProjectGuid>{DFE8E291-7DDF-11E7-94DF-514C0EE90711}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Synthesis.GuestService.Modules</RootNamespace>
+    <RootNamespace>Synthesis.GuestService</RootNamespace>
     <AssemblyName>Synthesis.GuestService.Modules</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -212,9 +212,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Dao\DocumentDbRepository.cs" />
-    <Compile Include="Dao\Interfaces\IBaseRepository.cs" />
-    <Compile Include="Dao\Interfaces\IRepositoryFactory.cs" />
-    <Compile Include="Dao\Models\User.cs" />
+    <Compile Include="Dao\IBaseRepository.cs" />
+    <Compile Include="Dao\IRepositoryFactory.cs" />
     <Compile Include="Dao\RepositoryFactory.cs" />
     <Compile Include="Dto\GuestInviteDto.cs" />
     <Compile Include="Dto\GuestSessionDto.cs" />
@@ -223,10 +222,8 @@
     <Compile Include="Dto\ProjectDto.cs" />
     <Compile Include="Dto\ProjectGuestsDto.cs" />
     <Compile Include="Dto\UserSettingsDto.cs" />
-    <Compile Include="Entity\Guest.cs" />
     <Compile Include="Entity\GuestInvite.cs" />
     <Compile Include="Entity\GuestSession.cs" />
-    <Compile Include="Entity\GuestSessionState.cs" />
     <Compile Include="Enums\CreateGuestInviteReturnCode.cs" />
     <Compile Include="Enums\GuestState.cs" />
     <Compile Include="Enums\LicenseType.cs" />
@@ -264,16 +261,18 @@
     <Compile Include="Utilities\GetProjectsParams.cs" />
     <Compile Include="Utilities\KeyResolver.cs" />
     <Compile Include="Utilities\SynthesisAPI.cs" />
-    <Compile Include="Workflow\Controllers\GuestWorkflow.cs" />
-    <Compile Include="Workflow\Interfaces\IGuestWorkflow.cs" />
+    <Compile Include="Validators\IValidatorLocator.cs" />
+    <Compile Include="Validators\ValidatorLocator.cs" />
+    <Compile Include="Workflow\Controllers\GuestSessionController.cs" />
+    <Compile Include="Workflow\Controllers\GuestInviteController.cs" />
+    <Compile Include="Workflow\Interfaces\IGuestSessionController.cs" />
+    <Compile Include="Workflow\Interfaces\IGuestInviteController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Validators\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="Email Templates\GuestInvite.html" />
   </ItemGroup>

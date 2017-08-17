@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace Synthesis.GuestService.Modules.Entity
+namespace Synthesis.GuestService.Entity
 {
     public class GuestInvite
     {
