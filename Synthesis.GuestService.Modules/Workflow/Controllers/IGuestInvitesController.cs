@@ -11,7 +11,5 @@ namespace Synthesis.GuestService.Workflow.Controllers
         Task<GuestInvite> GetGuestInviteAsync(Guid guestInviteId);
 
         Task<GuestInvite> UpdateGuestInviteAsync(Guid guestInviteId, GuestInvite model);
-
-        Task DeleteGuestInviteAsync(Guid guestInviteId);
     }
 }

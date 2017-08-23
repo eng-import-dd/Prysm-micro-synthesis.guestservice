@@ -40,6 +40,14 @@ namespace Synthesis.GuestService.Workflow.Controllers
             IEventService eventService,
             ILogger logger)
         {
+            try
+            {
+                _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
+            }
+            catch (Exception)
+            {
+                // supressing the repository exceptions for initial testing
+            }
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
             _guestInviteValidator = validatorLocator.GetValidator(typeof(GuestInviteValidator));
             _guestInviteIdValidator = validatorLocator.GetValidator(typeof(GuestInviteIdValidator));
@@ -112,32 +120,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
             catch (DocumentNotFoundException)
             {
                 return null;
-            }
-        }
-
-        public async Task DeleteGuestInviteAsync(Guid id)
-        {
-            var validationResult = await _guestInviteIdValidator.ValidateAsync(id);
-            if (!validationResult.IsValid)
-            {
-                _logger.Warning("Failed to validate the resource id while attempting to delete a GuestInvite resource.");
-                ValidationFailedException.Raise<GuestInvite>(validationResult.Errors);
-            }
-
-            try
-            {
-                await _guestInviteRepository.DeleteItemAsync(id);
-
-                _eventService.Publish(new ServiceBusEvent<Guid>
-                {
-                    Name = EventNames.GuestInviteDeleted,
-                    Payload = id
-                });
-            }
-            catch (DocumentNotFoundException)
-            {
-                // We don't really care if it's not found.
-                // The resource not being there is what we wanted.
             }
         }
     }

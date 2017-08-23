@@ -58,7 +58,7 @@ namespace Synthesis.GuestService.Modules.Test
                 var resource = new GuestInvite
                 {
                     Id = Guid.Parse("2c1156fa-5902-4978-9c3d-ebcb77ae0d55"),
-                    CreatedDate = DateTime.UtcNow,
+                    CreatedDateTime = DateTime.UtcNow,
                     LastAccessDate = DateTime.UtcNow
                 };
                 var repositoryMock = new Mock<IRepository<GuestInvite>>();

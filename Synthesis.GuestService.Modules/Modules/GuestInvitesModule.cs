@@ -35,17 +35,14 @@ namespace Synthesis.GuestService.Modules
             SetupRouteMetadata();
 
             // CRUD routes
-            Post("/v1/guestInvites", CreateGuestInviteAsync, null, "CreateGuestInvite");
-            Post("/api/v1/guestInvites", CreateGuestInviteAsync, null, "CreateGuestInviteLegacy");
+            Post(BaseRoutes.GuestInvite, CreateGuestInviteAsync, null, "CreateGuestInvite");
+            Post(BaseRoutes.GuestInviteLegacy, CreateGuestInviteAsync, null, "CreateGuestInviteLegacy");
 
-            Get("/v1/guestInvites/{id:guid}", GetGuestInviteAsync, null, "GetGuestInvite");
-            Get("/api/v1/guestInvites/{id:guid}", GetGuestInviteAsync, null, "GetGuestInviteLegacy");
+            Get(BaseRoutes.GuestInvite + "/{ id:guid}", GetGuestInviteAsync, null, "GetGuestInvite");
+            Get(BaseRoutes.GuestInviteLegacy + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInviteLegacy");
 
-            Put("/v1/guestInvites/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInvite");
-            Put("/api/v1/guestInvites/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInviteLegacy");
-
-            Delete("/v1/guestInvites/{id:guid}", DeleteGuestInviteAsync, null, "DeleteGuestInvite");
-            Delete("/api/v1/guestInvites/{id:guid}", DeleteGuestInviteAsync, null, "DeleteGuestInviteLegacy");
+            Put(BaseRoutes.GuestInvite + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInvite");
+            Put(BaseRoutes.GuestInviteLegacy + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInviteLegacy");
 
             OnError += (ctx, ex) =>
             {
@@ -160,31 +157,6 @@ namespace Synthesis.GuestService.Modules
             {
                 _logger.Error("Unhandled exception encountered while attempting to update a GuestInvite resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestInvite);
-            }
-        }
-
-        private async Task<object> DeleteGuestInviteAsync(dynamic input)
-        {
-            Guid guestInviteId = input.id;
-
-            try
-            {
-                await _guestInviteController.DeleteGuestInviteAsync(guestInviteId);
-
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.NoContent,
-                    ReasonPhrase = "Resource has been deleted"
-                };
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Unhandled exception encountered while attempting to delete a GuestInvite resource", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteGuestInvite);
             }
         }
     }
