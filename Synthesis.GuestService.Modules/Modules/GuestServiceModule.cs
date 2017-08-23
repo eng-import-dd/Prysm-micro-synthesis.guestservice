@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -43,23 +44,15 @@ namespace Synthesis.GuestService.Modules
             _serializer = serializer;
             _loggingService = loggingService;
 
-            //_authorizationService = AuthorizationService;
-            //this.RequiresAuthentication();
-
             // -- Health
             SetupRoute_HealthCheck(metadataRegistry);
             // -- Create Routes
-            SetupRoute_CreateGuestInvite(metadataRegistry);
             SetupRoute_CreateGuestSession(metadataRegistry);
             // -- Read Routes
-            SetupRoute_GetGuestInviteById(metadataRegistry);
-            SetupRoute_GetGuestInvitesByProjectId(metadataRegistry);
-            SetupRoute_GetGuestInvitesbyEmail(metadataRegistry);
             SetupRoute_GetGuestSessionById(metadataRegistry);
             SetupRoute_GetGuestSessionsByProjectId(metadataRegistry);
             SetupRoute_GetGuestSessionsByUserId(metadataRegistry);
             // -- Update Routes
-            SetupRoute_UpdateGuestInvite(metadataRegistry);
             SetupRoute_UpdateGuestSession(metadataRegistry);
 
 
@@ -99,96 +92,6 @@ namespace Synthesis.GuestService.Modules
         private void SetupRoute_HealthCheck(IMetadataRegistry metadataRegistry)
         {
 
-        }
-        #endregion
-
-        #region GuestInvite Route Setup
-        // -- Create GuestInvite Route
-        private void SetupRoute_CreateGuestInvite(IMetadataRegistry metadataRegistry)
-        {
-            var routeMetadata = new SynthesisRouteMetadata()
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Request = _serializer.SerializeToString(new GuestInvite()),
-                Response = _serializer.SerializeToString(new GuestInvite()),
-                Description = "Creates a new GuestInvite."
-            };
-
-            metadataRegistry.SetRouteMetadata(v1GuestInviteRouteName, routeMetadata);
-            Post(v1GuestInviteRouteName + "{guestInvite:GuestInvite}", CreateGuestInvite, null, "CreateGuestInvite");
-
-            metadataRegistry.SetRouteMetadata(apiv1GuestInviteRouteName, routeMetadata);
-            Post(apiv1GuestInviteRouteName + "{guestInvite:GuestInvite}", CreateGuestInvite, null, "CreateGuestInvite");
-        }
-
-        // -- Get GuestInvite By Id Route
-        private void SetupRoute_GetGuestInviteById(IMetadataRegistry metadataRegistry)
-        {
-            var routeMetadata = new SynthesisRouteMetadata()
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Request = _serializer.SerializeToString(new GuestInvite()),
-                Response = _serializer.SerializeToString(new GuestInvite()),
-                Description = "Gets a GuestInvite by passing in a GuestInviteId."
-            };
-
-            metadataRegistry.SetRouteMetadata(v1GuestInviteRouteName, routeMetadata);
-            Get(v1GuestInviteRouteName + "{guestInviteId:guid}", GetGuestInviteById, null, "GetGuestInviteById");
-
-            metadataRegistry.SetRouteMetadata(apiv1GuestInviteRouteName, routeMetadata);
-            Get(apiv1GuestInviteRouteName + "{guestInviteId:guid}", GetGuestInviteById, null, "GetGuestInviteById");
-        }
-        // -- Get GuestInvites By Email Route
-        private void SetupRoute_GetGuestInvitesbyEmail(IMetadataRegistry metadataRegistry)
-        {
-            var routeMetadata = new SynthesisRouteMetadata()
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Request = _serializer.SerializeToString(new GuestInvite()),
-                Response = _serializer.SerializeToString(new GuestInvite()),
-                Description = "Gets a list of GuestInvites by passing in a GuestEmail."
-            };
-
-            metadataRegistry.SetRouteMetadata(v1GuestInviteRouteName, routeMetadata);
-            Get(v1GuestInviteRouteName + "{guestEmail:string}", GetGuestInvitesbyEmail, null, "GetGuestInvitesbyEmail");
-
-            metadataRegistry.SetRouteMetadata(apiv1GuestInviteRouteName, routeMetadata);
-            Get(apiv1GuestInviteRouteName + "{guestEmail:string}", GetGuestInvitesbyEmail, null, "GetGuestInvitesbyEmail");
-        }
-        // -- Get GuestInvites By ProjectId Route
-        private void SetupRoute_GetGuestInvitesByProjectId(IMetadataRegistry metadataRegistry)
-        {
-            var routeMetadata = new SynthesisRouteMetadata()
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Request = _serializer.SerializeToString(new GuestInvite()),
-                Response = _serializer.SerializeToString(new GuestInvite()),
-                Description = "Gets a list of GuestInvites by passing in a ProjectId."
-            };
-
-            metadataRegistry.SetRouteMetadata(v1GuestInviteRouteName, routeMetadata);
-            Get(v1GuestInviteRouteName + "{projectId:guid}", GetGuestInvitesByProjectId, null, "GetGuestInvitesByProjectId");
-
-            metadataRegistry.SetRouteMetadata(apiv1GuestInviteRouteName, routeMetadata);
-            Get(apiv1GuestInviteRouteName + "{projectId:guid}", GetGuestInvitesByProjectId, null, "GetGuestInvitesByProjectId");
-        }
-
-        // -- Update GuestInvite Route
-        private void SetupRoute_UpdateGuestInvite(IMetadataRegistry metadataRegistry)
-        {
-            var routeMetadata = new SynthesisRouteMetadata()
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Request = _serializer.SerializeToString(new GuestInvite()),
-                Response = _serializer.SerializeToString(new GuestInvite()),
-                Description = "Updates a GuestInvites by passing in a GuestInvite object with the updated fields."
-            };
-
-            metadataRegistry.SetRouteMetadata(v1GuestInviteRouteName, routeMetadata);
-            Put(v1GuestInviteRouteName + "{guestInvite:GuestInvite}", UpdateGuestInvite, null, "UpdateGuestInvite");
-
-            metadataRegistry.SetRouteMetadata(apiv1GuestInviteRouteName, routeMetadata);
-            Put(apiv1GuestInviteRouteName + "{guestInvite:GuestInvite}", UpdateGuestInvite, null, "UpdateGuestInvite");
         }
         #endregion
 
@@ -279,69 +182,6 @@ namespace Synthesis.GuestService.Modules
 
             metadataRegistry.SetRouteMetadata(apiv1GuestSessionRouteName, routeMetadata);
             Put(apiv1GuestSessionRouteName + "{guestSession:guid}", UpdateGuestSession, null, "UpdateGuestSession");
-        }
-        #endregion
-
-        #region GuestInvite Route Methods
-        // -- Create
-        private async Task<object> CreateGuestInvite(dynamic input)
-        {
-            try
-            {
-
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-        }
-
-        // -- Read
-        private async Task<object> GetGuestInviteById(dynamic input)
-        {
-            try
-            {
-
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-        }
-        private async Task<object> GetGuestInvitesbyEmail(dynamic input)
-        {
-            try
-            {
-
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-        }
-        private async Task<object> GetGuestInvitesByProjectId(dynamic inputy)
-        {
-            try
-            {
-
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-        }
-
-        // -- Update
-        private async Task<object> UpdateGuestInvite(dynamic input)
-        {
-            try
-            {
-
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
         }
         #endregion
 
