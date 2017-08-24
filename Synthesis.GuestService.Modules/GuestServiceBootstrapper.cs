@@ -177,6 +177,7 @@ namespace Synthesis.GuestService
 
             // Controllers
             builder.RegisterType<GuestInvitesController>().As<IGuestInvitesController>();
+            builder.RegisterType<GuestSessionsController>().As<IGuestSessionsController>();
 
             return builder.Build();
         }

@@ -48,7 +48,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
             {
                 // supressing the repository exceptions for initial testing
             }
-            _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
             _guestInviteValidator = validatorLocator.GetValidator(typeof(GuestInviteValidator));
             _guestInviteIdValidator = validatorLocator.GetValidator(typeof(GuestInviteIdValidator));
             _eventService = eventService;

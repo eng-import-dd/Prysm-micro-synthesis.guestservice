@@ -40,7 +40,14 @@ namespace Synthesis.GuestService.Workflow.Controllers
             IEventService eventService,
             ILogger logger)
         {
-            _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            try
+            {
+                _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            }
+            catch (Exception)
+            {
+                // supressing the repository exceptions for initial testing
+            }
             _guestSessionValidator = validatorLocator.GetValidator(typeof(GuestSessionValidator));
             _guestSessionIdValidator = validatorLocator.GetValidator(typeof(GuestSessionIdValidator));
             _eventService = eventService;

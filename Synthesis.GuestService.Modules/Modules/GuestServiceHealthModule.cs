@@ -1,4 +1,5 @@
 using Nancy;
+using Synthesis.GuestService.Constants;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Security;
 using System.Threading.Tasks;
@@ -18,8 +19,8 @@ namespace Synthesis.GuestService.Modules
             });
 
             // create a health check endpoint
-            Get("/v1/health", GetHealthAsync, null, "HealthCheck");
-            Get("/api/v1/health", GetHealthAsync, null, "HealthCheckLegacy");
+            Get(BaseRoutes.GuestHealthCheck, GetHealthAsync, null, "HealthCheck");
+            Get(BaseRoutes.GuestHealthCheckLegacy, GetHealthAsync, null, "HealthCheckLegacy");
         }
 
         public async Task<object> GetHealthAsync(dynamic parameters)

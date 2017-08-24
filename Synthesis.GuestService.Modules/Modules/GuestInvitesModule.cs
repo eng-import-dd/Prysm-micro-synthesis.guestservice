@@ -73,13 +73,6 @@ namespace Synthesis.GuestService.Modules
                 Response = "Update GuestInvite",
                 Description = "Update a specific GuestInvite resource."
             });
-
-            _metadataRegistry.SetRouteMetadata("DeleteGuestInvite", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.NoContent, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Delete GuestInvite",
-                Description = "Delete a specific GuestInvite resource."
-            });
         }
 
         private async Task<object> CreateGuestInviteAsync(dynamic input)
