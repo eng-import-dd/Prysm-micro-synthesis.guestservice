@@ -57,7 +57,7 @@ namespace Synthesis.GuestService.Modules
             {
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Create a new GuestInvite",
-                Description = ""
+                Description = "Create a specific GuestInvite resource."
             });
 
             _metadataRegistry.SetRouteMetadata("GetGuestInvite", new SynthesisRouteMetadata
