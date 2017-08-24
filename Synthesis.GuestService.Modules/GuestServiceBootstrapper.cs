@@ -1,5 +1,6 @@
 using Autofac;
 using Autofac.Core;
+using FluentValidation;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
 using Synthesis.Configuration;
@@ -174,6 +175,10 @@ namespace Synthesis.GuestService
 
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
+            builder.RegisterType<GuestInviteIdValidator>().As<IValidator>();
+            builder.RegisterType<GuestInviteValidator>().As<IValidator>();
+            builder.RegisterType<GuestSessionIdValidator>().As<IValidator>();
+            builder.RegisterType<GuestSessionValidator>().As<IValidator>();
 
             // Controllers
             builder.RegisterType<GuestInvitesController>().As<IGuestInvitesController>();

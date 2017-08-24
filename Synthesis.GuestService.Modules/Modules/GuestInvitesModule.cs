@@ -38,7 +38,7 @@ namespace Synthesis.GuestService.Modules
             Post(BaseRoutes.GuestInvite, CreateGuestInviteAsync, null, "CreateGuestInvite");
             Post(BaseRoutes.GuestInviteLegacy, CreateGuestInviteAsync, null, "CreateGuestInviteLegacy");
 
-            Get(BaseRoutes.GuestInvite + "/{ id:guid}", GetGuestInviteAsync, null, "GetGuestInvite");
+            Get(BaseRoutes.GuestInvite + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInvite");
             Get(BaseRoutes.GuestInviteLegacy + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInviteLegacy");
 
             Put(BaseRoutes.GuestInvite + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInvite");

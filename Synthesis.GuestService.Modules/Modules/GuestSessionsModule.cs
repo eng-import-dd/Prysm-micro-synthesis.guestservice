@@ -38,7 +38,7 @@ namespace Synthesis.GuestService.Modules
             Post(BaseRoutes.GuestSession, CreateGuestSessionAsync, null, "CreateGuestSession");
             Post(BaseRoutes.GuestSessionLegacy, CreateGuestSessionAsync, null, "CreateGuestSessionLegacy");
 
-            Get(BaseRoutes.GuestSession + "/{ id:guid}", GetGuestSessionAsync, null, "GetGuestSession");
+            Get(BaseRoutes.GuestSession + "/{id:guid}", GetGuestSessionAsync, null, "GetGuestSession");
             Get(BaseRoutes.GuestSessionLegacy + "/{id:guid}", GetGuestSessionAsync, null, "GetGuestSessionLegacy");
 
             Put(BaseRoutes.GuestSession + "/{id:guid}", UpdateGuestSessionAsync, null, "UpdateGuestSession");

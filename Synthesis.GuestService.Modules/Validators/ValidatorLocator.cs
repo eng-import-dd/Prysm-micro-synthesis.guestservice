@@ -1,32 +1,22 @@
 using System;
-using Autofac;
+using System.Collections.Generic;
+using System.Linq;
 using FluentValidation;
 
 namespace Synthesis.GuestService.Validators
 {
     public class ValidatorLocator : IValidatorLocator
     {
-        private readonly ILifetimeScope _container;
+        private readonly IEnumerable<IValidator> _validators;
 
-        public ValidatorLocator(ILifetimeScope container)
+        public ValidatorLocator(IEnumerable<IValidator> validators)
         {
-            _container = container;
+            _validators = validators;
         }
 
         public IValidator GetValidator(Type validatorType)
         {
-            object validator;
-
-            if (_container.TryResolve(validatorType, out validator))
-            {
-                var validatorChk = validator as IValidator;
-                if (validatorChk != null)
-                {
-                    return validatorChk;
-                }
-            }
-
-            return null;
+            return _validators.FirstOrDefault(x => x.GetType() == validatorType);
         }
     }
 }
