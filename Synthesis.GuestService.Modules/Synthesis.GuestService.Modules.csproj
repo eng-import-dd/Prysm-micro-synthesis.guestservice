@@ -52,14 +52,14 @@
       <HintPath>..\packages\Confluent.Kafka.0.11.0\lib\net45\Confluent.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation, Version=7.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0, processorArchitecture=MSIL">
-      <HintPath>..\packages\FluentValidation.7.1.1\lib\net45\FluentValidation.dll</HintPath>
+      <HintPath>..\packages\FluentValidation.7.2.0-beta2\lib\net45\FluentValidation.dll</HintPath>
     </Reference>
     <Reference Include="Hyak.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Hyak.Common.1.1.3\lib\net45\Hyak.Common.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="jose-jwt, Version=1.9.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\jose-jwt.1.9.3\lib\4.0\jose-jwt.dll</HintPath>
+    <Reference Include="jose-jwt, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\jose-jwt.2.4.0\lib\net40\jose-jwt.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
@@ -90,28 +90,34 @@
       <HintPath>..\packages\Microsoft.Azure.DocumentDB.1.17.0\lib\net45\Microsoft.Azure.Documents.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Azure.KeyVault.2.0.6\lib\net45\Microsoft.Azure.KeyVault.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Azure.KeyVault.2.3.2\lib\net452\Microsoft.Azure.KeyVault.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Azure.KeyVault.WebKey, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Azure.KeyVault.WebKey.2.0.6\lib\net452\Microsoft.Azure.KeyVault.WebKey.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Azure.KeyVault.WebKey.2.0.7\lib\net452\Microsoft.Azure.KeyVault.WebKey.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.DotNet.InternalAbstractions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.DotNet.InternalAbstractions.1.0.0\lib\net451\Microsoft.DotNet.InternalAbstractions.dll</HintPath>
+    <Reference Include="Microsoft.DotNet.InternalAbstractions, Version=1.0.500.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.DotNet.InternalAbstractions.1.0.500-preview2-1-003177\lib\net451\Microsoft.DotNet.InternalAbstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.DotNet.PlatformAbstractions, Version=1.1.2.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.DotNet.PlatformAbstractions.1.1.2\lib\net451\Microsoft.DotNet.PlatformAbstractions.dll</HintPath>
+    <Reference Include="Microsoft.DotNet.PlatformAbstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.DotNet.PlatformAbstractions.2.0.0\lib\net45\Microsoft.DotNet.PlatformAbstractions.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Extensions.DependencyModel, Version=1.1.2.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Extensions.DependencyModel.1.1.2\lib\net451\Microsoft.Extensions.DependencyModel.dll</HintPath>
+    <Reference Include="Microsoft.Extensions.DependencyModel, Version=2.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyModel.2.0.0\lib\net451\Microsoft.Extensions.DependencyModel.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Hadoop.Avro, Version=1.5.6.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Hadoop.Avro.1.5.6\lib\net45\Microsoft.Hadoop.Avro.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory, Version=3.13.9.1126, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.IdentityModel.Clients.ActiveDirectory.3.13.9\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.dll</HintPath>
+    <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory, Version=3.16.0.14, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Clients.ActiveDirectory.3.16.0\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory.Platform, Version=3.13.9.1126, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.IdentityModel.Clients.ActiveDirectory.3.13.9\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll</HintPath>
+    <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory.Platform, Version=3.16.0.14, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Clients.ActiveDirectory.3.16.0\lib\net45\Microsoft.IdentityModel.Clients.ActiveDirectory.Platform.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Logging, Version=1.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Logging.1.1.4\lib\net451\Microsoft.IdentityModel.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Tokens, Version=5.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Tokens.5.1.4\lib\net451\Microsoft.IdentityModel.Tokens.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Owin.3.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
@@ -138,10 +144,10 @@
       <HintPath>..\packages\Microsoft.Owin.StaticFiles.3.1.0\lib\net45\Microsoft.Owin.StaticFiles.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Rest.ClientRuntime, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Rest.ClientRuntime.2.3.8\lib\net452\Microsoft.Rest.ClientRuntime.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Rest.ClientRuntime.2.3.9\lib\net452\Microsoft.Rest.ClientRuntime.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Rest.ClientRuntime.Azure, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Rest.ClientRuntime.Azure.3.3.8\lib\net452\Microsoft.Rest.ClientRuntime.Azure.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Rest.ClientRuntime.Azure.3.3.9\lib\net452\Microsoft.Rest.ClientRuntime.Azure.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
@@ -165,11 +171,11 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="StackExchange.Redis.StrongName, Version=1.2.4.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
-      <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.4\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
+    <Reference Include="StackExchange.Redis.StrongName, Version=1.2.6.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
+      <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.6\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ApplicationInsights, Version=2.0.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ApplicationInsights.2.0.4\lib\net452\Synthesis.ApplicationInsights.dll</HintPath>
@@ -208,7 +214,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta003\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta004\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.0-release\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -238,12 +244,12 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.4.0\lib\net45\System.Diagnostics.DiagnosticSource.dll</HintPath>
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.4.1\lib\net45\System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>
     <Reference Include="System.IdentityModel" />
-    <Reference Include="System.IdentityModel.Tokens.Jwt, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.4.0.0\lib\net45\System.IdentityModel.Tokens.Jwt.dll</HintPath>
+    <Reference Include="System.IdentityModel.Tokens.Jwt, Version=5.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.5.1.4\lib\net451\System.IdentityModel.Tokens.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
@@ -281,9 +287,9 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
-    <Compile Include="Modules\GuestSessionsModule.cs" />
+    <Compile Include="Modules\GuestSessionModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
-    <Compile Include="Modules\GuestInvitesModule.cs" />
+    <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -295,13 +301,15 @@
     <Compile Include="Validators\GuidValidator.cs" />
     <Compile Include="Validators\IValidatorLocator.cs" />
     <Compile Include="Validators\ValidatorLocator.cs" />
-    <Compile Include="Workflow\Controllers\GuestSessionsController.cs" />
-    <Compile Include="Workflow\Controllers\GuestInvitesController.cs" />
-    <Compile Include="Workflow\Controllers\IGuestSessionsController.cs" />
-    <Compile Include="Workflow\Controllers\IGuestInvitesController.cs" />
+    <Compile Include="Workflow\Controllers\GuestSessionController.cs" />
+    <Compile Include="Workflow\Controllers\GuestInviteController.cs" />
+    <Compile Include="Workflow\Interfaces\IGuestSessionController.cs" />
+    <Compile Include="Workflow\Interfaces\IGuestInviteController.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

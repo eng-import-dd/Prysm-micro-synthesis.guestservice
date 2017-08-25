@@ -23,6 +23,7 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.Controllers;
+using Synthesis.GuestService.Workflow.Interfaces;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 
@@ -181,8 +182,8 @@ namespace Synthesis.GuestService
             builder.RegisterType<GuestSessionValidator>().As<IValidator>();
 
             // Controllers
-            builder.RegisterType<GuestInvitesController>().As<IGuestInvitesController>();
-            builder.RegisterType<GuestSessionsController>().As<IGuestSessionsController>();
+            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
+            builder.RegisterType<GuestSessionController>().As<IGuestSessionController>();
 
             return builder.Build();
         }
