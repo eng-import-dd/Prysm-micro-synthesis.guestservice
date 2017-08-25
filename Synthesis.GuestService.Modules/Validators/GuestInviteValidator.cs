@@ -8,9 +8,6 @@ namespace Synthesis.GuestService.Validators
     {
         public GuestInviteValidator()
         {
-            RuleFor(request => request.Id)
-                .NotEqual(Guid.Empty).WithMessage("The Id field must not be empty");
-
             RuleFor(request => request.InvitedBy)
                 .NotEqual(Guid.Empty).WithMessage("The InvitedBy field must not be empty");
 
