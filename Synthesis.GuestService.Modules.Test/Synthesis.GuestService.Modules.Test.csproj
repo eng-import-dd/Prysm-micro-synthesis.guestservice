@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\librdkafka.redist.0.11.0\build\net\librdkafka.redist.props" Condition="Exists('..\packages\librdkafka.redist.0.11.0\build\net\librdkafka.redist.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -231,7 +231,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GuestInvitesModuleTest.cs" />
+    <Compile Include="Modules\GuestInviteModuleTests.cs" />
+    <Compile Include="Modules\GuestSessionModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Workflow\GuestInviteControllerTests.cs" />
+    <Compile Include="Workflow\GuestSessionControllerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.GuestService.Modules\Synthesis.GuestService.Modules.csproj">
