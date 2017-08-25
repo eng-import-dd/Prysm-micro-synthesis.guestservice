@@ -7,6 +7,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Validators;
+using Synthesis.GuestService.Workflow.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
     /// Represents a controller for GuestInvite resources.
     /// </summary>
     /// <seealso cref="Synthesis.GuestService.Workflow.Controllers.IGuestInvitesController" />
-    public class GuestInvitesController : IGuestInvitesController
+    public class GuestInviteController : IGuestInviteController
     {
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly IValidator _guestInviteValidator;
@@ -28,13 +29,13 @@ namespace Synthesis.GuestService.Workflow.Controllers
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GuestInvitesController"/> class.
+        /// Initializes a new instance of the <see cref="GuestInviteController"/> class.
         /// </summary>
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="logger">The logger.</param>
-        public GuestInvitesController(
+        public GuestInviteController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
@@ -60,7 +61,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a GuestInvite resource.");
-                ValidationFailedException.Raise<GuestInvite>(validationResult.Errors);
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
@@ -79,7 +80,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a GuestInvite resource.");
-                ValidationFailedException.Raise<GuestInvite>(validationResult.Errors);
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             var result = await _guestInviteRepository.GetItemAsync(id);
@@ -87,7 +88,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             if (result == null)
             {
                 _logger.Warning($"A GuestInvite resource could not be found for id {id}");
-                NotFoundException.Raise();
+                throw new NotFoundException("GuestInvite could not be found");
             }
 
             return result;
@@ -112,7 +113,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             if (errors.Any())
             {
                 _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a GuestInvite resource.");
-                ValidationFailedException.Raise<GuestInvite>(errors);
+                throw new ValidationFailedException(errors);
             }
 
             try

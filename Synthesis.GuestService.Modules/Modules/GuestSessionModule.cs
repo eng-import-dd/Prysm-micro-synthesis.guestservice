@@ -7,21 +7,21 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
-using Synthesis.GuestService.Workflow.Controllers;
+using Synthesis.GuestService.Workflow.Interfaces;
 using System;
 using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Modules
 {
-    public sealed class GuestSessionsModule : NancyModule
+    public sealed class GuestSessionModule : NancyModule
     {
-        private readonly IGuestSessionsController _guestSessionController;
+        private readonly IGuestSessionController _guestSessionController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
 
-        public GuestSessionsModule(
+        public GuestSessionModule(
             IMetadataRegistry metadataRegistry,
-            IGuestSessionsController guestSessionController,
+            IGuestSessionController guestSessionController,
             ILogger logger)
         {
             // Init DI
