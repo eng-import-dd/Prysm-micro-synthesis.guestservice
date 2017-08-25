@@ -63,6 +63,8 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 ValidationFailedException.Raise<GuestSession>(validationResult.Errors);
             }
 
+            model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
+            model.CreatedDateTime = DateTime.UtcNow;
             var result = await _guestSessionRepository.CreateItemAsync(model);
 
             _eventService.Publish(EventNames.GuestSessionCreated, result);

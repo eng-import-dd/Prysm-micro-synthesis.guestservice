@@ -5,10 +5,9 @@ namespace Synthesis.GuestService.Validators
 {
     public class GuestInviteIdValidator : GuidValidator
     {
-        public GuestInviteIdValidator() : base("Id")
+        public GuestInviteIdValidator() : base("id")
         {
-            RuleFor(request => request)
-                .NotEqual(Guid.Empty).WithMessage("The Id field must not be empty");
+
         }
     }
 }
