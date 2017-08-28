@@ -13,8 +13,8 @@ using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
-using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Validation;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -48,9 +48,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         #region GET Route Tests
-
         [Theory]
-        [InlineData (BaseRoutes.GuestInvite)]
+        [InlineData(BaseRoutes.GuestInvite)]
         [InlineData(BaseRoutes.GuestInviteLegacy)]
         public async Task GetGuestInviteByIdReturnsOk(string route)
         {
@@ -97,7 +96,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
-                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+                .Throws(new ValidationException(new List<ValidationFailure>()));
 
             var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
                                               with =>
@@ -108,7 +107,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                   with.JsonBody(_guestInvite);
                                               });
 
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
         [Theory]
@@ -131,11 +130,9 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
-
         #endregion
 
         #region CREATE Route Tests
-
         [Theory]
         [InlineData(BaseRoutes.GuestInvite)]
         [InlineData(BaseRoutes.GuestInviteLegacy)]
@@ -214,11 +211,9 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-
         #endregion
 
         #region UPDATE Route Tests
-
         [Theory]
         [InlineData(BaseRoutes.GuestInvite)]
         [InlineData(BaseRoutes.GuestInviteLegacy)]
@@ -280,7 +275,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-
         #endregion
 
         private Browser BrowserWithRequestStartup(Action<TinyIoCContainer, IPipelines, NancyContext> requestStartup)

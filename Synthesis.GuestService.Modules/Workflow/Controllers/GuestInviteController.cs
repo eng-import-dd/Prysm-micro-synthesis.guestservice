@@ -118,7 +118,11 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             try
             {
-                return await _guestInviteRepository.UpdateItemAsync(guestInviteId, guestInviteModel);
+                var result = await _guestInviteRepository.UpdateItemAsync(guestInviteId, guestInviteModel);
+
+                _eventService.Publish(EventNames.GuestInviteUpdated, result);
+
+                return result;
             }
             catch (DocumentNotFoundException)
             {

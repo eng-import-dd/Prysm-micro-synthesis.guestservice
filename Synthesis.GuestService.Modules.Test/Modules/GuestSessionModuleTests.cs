@@ -48,7 +48,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         #region GET Route Tests
-
         [Theory]
         [InlineData(BaseRoutes.GuestSession)]
         [InlineData(BaseRoutes.GuestSessionLegacy)]
@@ -131,11 +130,9 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-
         #endregion
 
         #region CREATE Route Tests
-
         [Theory]
         [InlineData(BaseRoutes.GuestSession)]
         [InlineData(BaseRoutes.GuestSessionLegacy)]
@@ -214,11 +211,9 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-
         #endregion
 
         #region UPDATE Route Tests
-
         [Theory]
         [InlineData(BaseRoutes.GuestSession)]
         [InlineData(BaseRoutes.GuestSessionLegacy)]
@@ -280,7 +275,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-
         #endregion
 
         private Browser BrowserWithRequestStartup(Action<TinyIoCContainer, IPipelines, NancyContext> requestStartup)
