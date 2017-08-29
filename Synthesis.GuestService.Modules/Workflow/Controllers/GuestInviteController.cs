@@ -19,7 +19,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
     /// <summary>
     /// Represents a controller for GuestInvite resources.
     /// </summary>
-    /// <seealso cref="Synthesis.GuestService.Workflow.Controllers.IGuestInvitesController" />
+    /// <seealso cref="Synthesis.GuestService.Workflow.Interfaces.IGuestInviteController" />
     public class GuestInviteController : IGuestInviteController
     {
         private readonly IRepository<GuestInvite> _guestInviteRepository;

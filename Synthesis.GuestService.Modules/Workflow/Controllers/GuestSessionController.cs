@@ -19,7 +19,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
     /// <summary>
     /// Represents a controller for GuestSession resources.
     /// </summary>
-    /// <seealso cref="Synthesis.GuestService.Workflow.Controllers.IGuestSessionsController" />
+    /// <seealso cref="Synthesis.GuestService.Workflow.Interfaces.IGuestSessionController" />
     public class GuestSessionController : IGuestSessionController
     {
         private readonly IRepository<GuestSession> _guestSessionRepository;
