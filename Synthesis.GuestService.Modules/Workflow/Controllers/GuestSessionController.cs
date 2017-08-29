@@ -123,7 +123,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
                 return result;
             }
-            catch (DocumentNotFoundException)
+            catch (NotFoundException)
             {
                 return null;
             }
