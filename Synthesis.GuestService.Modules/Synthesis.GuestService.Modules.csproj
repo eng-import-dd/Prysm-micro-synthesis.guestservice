@@ -284,6 +284,7 @@
   <ItemGroup>
     <Compile Include="Constants\BaseRoutes.cs" />
     <Compile Include="Constants\EventNames.cs" />
+    <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />

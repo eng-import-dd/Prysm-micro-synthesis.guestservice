@@ -151,11 +151,11 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task UpdateGuestSessionThrowsNotFoundOnDocumentNotFound()
+        public async Task UpdateGuestSessionThrowsNotFoundOnNotFoundException()
         {
             _guestSessionRepositoryMock
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), _defaultGuestSession))
-                .Throws(new NotFoundException("GuestSession could not be found."));
+                .Throws(new NotFoundException("Message"));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession.Id, _defaultGuestSession));
         }

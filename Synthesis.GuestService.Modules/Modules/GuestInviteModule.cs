@@ -85,7 +85,7 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to create a GuestInvite resource", ex);
-                return Response.BadRequestBindingException();
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
             try
@@ -139,7 +139,7 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to update a GuestInvite resource.", ex);
-                return Response.BadRequestBindingException();
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
             try

@@ -7,6 +7,8 @@ namespace Synthesis.GuestService.Constants
 
     public class ResponseReasons
     {
+        // -- Generic
+        public const string FailedToBindToRequest = "An error occured while trying to bind the payload to the request";
         // -- GuestInvite
         // Internal Server Errors
         public const string InternalServerErrorCreateGuestInvite = "An error occurred while creating the GuestInvite";

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Synthesis.Nancy.MicroService.Entity;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules
@@ -32,6 +33,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
         private readonly Browser _browser;
         private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "12345" };
+        private readonly ValidationFailure _expectedValidationFailure;
 
         public GuestSessionModuleTests()
         {
@@ -45,6 +47,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                     },
                     AuthenticationTypes.Basic));
             });
+
+            _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
         }
 
         #region GET Route Tests
@@ -117,7 +121,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             _guestSessionControllerMock
                 .Setup(x => x.GetGuestSessionAsync(It.IsAny<Guid>()))
-                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+                .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
                                               with =>
@@ -127,6 +131,16 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                   with.Header("Content-Type", "application/json");
                                                   with.JsonBody(_guestSession);
                                               });
+
+            var failedResponse = response.Body.DeserializeJson<FailedResponse>();
+            Assert.NotNull(failedResponse?.Errors);
+
+            Assert.Collection(failedResponse.Errors,
+                              item =>
+                              {
+                                  Assert.Equal(_expectedValidationFailure.PropertyName, item.PropertyName);
+                                  Assert.Equal(_expectedValidationFailure.ErrorMessage, item.Message);
+                              });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -189,6 +203,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
         }
 
         [Theory]
@@ -198,7 +213,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             _guestSessionControllerMock
                 .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>()))
-                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+                .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await _browser.Post($"{route}",
                                                with =>
@@ -208,6 +223,16 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                    with.Header("Content-Type", "application/json");
                                                    with.JsonBody(_guestSession);
                                                });
+
+            var failedResponse = response.Body.DeserializeJson<FailedResponse>();
+            Assert.NotNull(failedResponse?.Errors);
+
+            Assert.Collection(failedResponse.Errors,
+                              item =>
+                              {
+                                  Assert.Equal(_expectedValidationFailure.PropertyName, item.PropertyName);
+                                  Assert.Equal(_expectedValidationFailure.ErrorMessage, item.Message);
+                              });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -274,6 +299,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                               });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
         }
         #endregion
 

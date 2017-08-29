@@ -125,7 +125,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
             catch (NotFoundException)
             {
-                return null;
+               throw;
             }
         }
     }

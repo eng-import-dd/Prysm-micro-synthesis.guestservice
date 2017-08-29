@@ -13,6 +13,7 @@ using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
 using System;
@@ -20,7 +21,10 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Synthesis.Http.Constants;
 using Xunit;
+
+
 
 namespace Synthesis.GuestService.Modules.Test.Modules
 {
@@ -32,6 +36,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
         private readonly Browser _browser;
         private readonly GuestInvite _guestInvite = new GuestInvite { Id = Guid.NewGuid(), InvitedBy = Guid.NewGuid(), ProjectId = Guid.NewGuid(), CreatedDateTime = DateTime.UtcNow };
+        private readonly ValidationFailure _expectedValidationFailure;
 
         public GuestInviteModuleTests()
         {
@@ -45,6 +50,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                     },
                     AuthenticationTypes.Basic));
             });
+
+            _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
         }
 
         #region GET Route Tests
@@ -96,7 +103,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
-                .Throws(new ValidationException(new List<ValidationFailure>()));
+                .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
                                               with =>
@@ -107,7 +114,17 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                   with.JsonBody(_guestInvite);
                                               });
 
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            var failedResponse = response.Body.DeserializeJson<FailedResponse>();
+            Assert.NotNull(failedResponse?.Errors);
+
+            Assert.Collection(failedResponse.Errors,
+                              item =>
+                              {
+                                  Assert.Equal(_expectedValidationFailure.PropertyName, item.PropertyName);
+                                  Assert.Equal(_expectedValidationFailure.ErrorMessage, item.Message);
+                              });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [Theory]
@@ -189,6 +206,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseMessages.FailedToBind,response.ReasonPhrase);
         }
 
         [Theory]
@@ -198,7 +216,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             _guestInviteControllerMock
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
-                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+                .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await _browser.Post($"{route}",
                                                with =>
@@ -208,6 +226,16 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                                    with.Header("Content-Type", "application/json");
                                                    with.JsonBody(_guestInvite);
                                                });
+
+            var failedResponse = response.Body.DeserializeJson<FailedResponse>();
+            Assert.NotNull(failedResponse?.Errors);
+
+            Assert.Collection(failedResponse.Errors,
+                              item =>
+                              {
+                                  Assert.Equal(_expectedValidationFailure.PropertyName, item.PropertyName);
+                                  Assert.Equal(_expectedValidationFailure.ErrorMessage, item.Message);
+                              });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -274,6 +302,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                                               });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
         }
         #endregion
 
