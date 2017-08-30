@@ -33,7 +33,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
         private readonly Browser _browser;
         private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "12345" };
-        private readonly ValidationFailure _expectedValidationFailure;
+        private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
 
         public GuestSessionModuleTests()
         {
@@ -47,8 +47,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                     },
                     AuthenticationTypes.Basic));
             });
-
-            _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
         }
 
         #region GET Route Tests
@@ -61,13 +59,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                .Setup(x => x.GetGuestSessionAsync(It.IsAny<Guid>()))
                .ReturnsAsync(new GuestSession());
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -81,14 +73,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetGuestSessionAsync(It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestSession);
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -102,14 +87,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetGuestSessionAsync(It.IsAny<Guid>()))
                 .Throws(new NotFoundException("GuestSession not found"));
 
-            var response = await _browser.Get($"{route}/project/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestSession);
-                                              });
+            var response = await _browser.Get($"{route}/project/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -123,14 +101,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetGuestSessionAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestSession);
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestSession));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -152,14 +123,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         [InlineData(BaseRoutes.GuestSessionLegacy)]
         public async Task CreateGuestSessionReturnsOk(string route)
         {
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                                   with.JsonBody(_guestSession);
-                                               });
+            var response = await _browser.Post($"{route}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -173,14 +137,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                                   with.JsonBody(_guestSession);
-                                               });
+            var response = await _browser.Post($"{route}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -194,13 +151,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.CreateGuestSessionAsync(_guestSession))
                 .Throws<Exception>();
 
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                               });
+            var response = await _browser.Post($"{route}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
@@ -215,14 +166,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                                   with.JsonBody(_guestSession);
-                                               });
+            var response = await _browser.Post($"{route}", ctx => BuildRequest(ctx, _guestSession));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -248,14 +192,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
                 .ReturnsAsync(new GuestSession());
 
-            var response = await _browser.Put($"{route}/{_guestSession.Id}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestSession);
-                                              });
+            var response = await _browser.Put($"{route}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -269,14 +206,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Put($"{route}/{_guestSession.Id}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestSession);
-                                              });
+            var response = await _browser.Put($"{route}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -290,13 +220,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Put($"{route}/{_guestSession.Id}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                              });
+            var response = await _browser.Put($"{route}/{_guestSession.Id}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
@@ -354,6 +278,22 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 with.Dependency(eventServiceMock.Object);
                 with.Module<GuestSessionModule>();
             });
+        }
+
+        private void BuildRequest(BrowserContext context)
+        {
+            context.HttpRequest();
+            context.Header("Accept", "application/json");
+            context.Header("Content-Type", "application/json");
+        }
+
+        private void BuildRequest<T>(BrowserContext context, T body)
+        {
+            context.HttpRequest();
+            context.Header("Accept", "application/json");
+            context.Header("Content-Type", "application/json");
+            context.JsonBody(body);
+
         }
     }
 }

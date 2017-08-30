@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Synthesis.Http.Constants;
 using Xunit;
 
 
@@ -36,7 +35,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
         private readonly Browser _browser;
         private readonly GuestInvite _guestInvite = new GuestInvite { Id = Guid.NewGuid(), InvitedBy = Guid.NewGuid(), ProjectId = Guid.NewGuid(), CreatedDateTime = DateTime.UtcNow };
-        private readonly ValidationFailure _expectedValidationFailure;
+        private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
 
         public GuestInviteModuleTests()
         {
@@ -50,8 +49,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                     },
                     AuthenticationTypes.Basic));
             });
-
-            _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
         }
 
         #region GET Route Tests
@@ -64,13 +61,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                .ReturnsAsync(new GuestInvite());
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -84,14 +75,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestInvite);
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -105,14 +89,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestInvite);
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -136,14 +113,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws(new NotFoundException("GuestInvite not found"));
 
-            var response = await _browser.Get($"{route}/{Guid.NewGuid()}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestInvite);
-                                              });
+            var response = await _browser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -155,14 +125,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         [InlineData(BaseRoutes.GuestInviteLegacy)]
         public async Task CreateGuestInviteReturnsOk(string route)
         {
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                                   with.JsonBody(_guestInvite);
-                                               });
+            var response = await _browser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -176,14 +139,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                                   with.JsonBody(_guestInvite);
-                                               });
+            var response = await _browser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -197,13 +153,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.CreateGuestInviteAsync(_guestInvite))
                 .Throws<Exception>();
 
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                               });
+            var response = await _browser.Post($"{route}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseMessages.FailedToBind,response.ReasonPhrase);
@@ -218,14 +168,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await _browser.Post($"{route}",
-                                               with =>
-                                               {
-                                                   with.HttpRequest();
-                                                   with.Header("Accept", "application/json");
-                                                   with.Header("Content-Type", "application/json");
-                                                   with.JsonBody(_guestInvite);
-                                               });
+            var response = await _browser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -251,14 +194,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await _browser.Put($"{route}/{_guestInvite.Id}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestInvite);
-                                              });
+            var response = await _browser.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -272,14 +208,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Put($"{route}/{_guestInvite.Id}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                                  with.JsonBody(_guestInvite);
-                                              });
+            var response = await _browser.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -293,13 +222,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await _browser.Put($"{route}/{_guestInvite.Id}",
-                                              with =>
-                                              {
-                                                  with.HttpRequest();
-                                                  with.Header("Accept", "application/json");
-                                                  with.Header("Content-Type", "application/json");
-                                              });
+            var response = await _browser.Put($"{route}/{_guestInvite.Id}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
@@ -357,6 +280,22 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 with.Dependency(eventServiceMock.Object);
                 with.Module<GuestInviteModule>();
             });
+        }
+
+        private static void BuildRequest(BrowserContext context)
+        {
+            context.HttpRequest();
+            context.Header("Accept", "application/json");
+            context.Header("Content-Type", "application/json");
+        }
+
+        private static void BuildRequest<T>(BrowserContext context, T body)
+        {
+            context.HttpRequest();
+            context.Header("Accept", "application/json");
+            context.Header("Content-Type", "application/json");
+            context.JsonBody(body);
+
         }
     }
 }
