@@ -126,7 +126,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
             catch (NotFoundException)
             {
-                throw;
+                throw new NotFoundException("GuestInvite with id {guestInviteId} could not be found");
             }
         }
     }

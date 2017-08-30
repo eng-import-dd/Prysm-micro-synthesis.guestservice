@@ -94,6 +94,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                _logger.Error("Validation failed while attempting to create a GuestSession resource", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -113,10 +114,12 @@ namespace Synthesis.GuestService.Modules
             }
             catch (NotFoundException)
             {
+                _logger.Warning($"GuestSession with id {id} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
+                _logger.Error($"Validation failed for guestSession with id {id} due to an error", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
