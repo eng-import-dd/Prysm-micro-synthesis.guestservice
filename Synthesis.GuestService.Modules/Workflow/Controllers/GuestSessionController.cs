@@ -115,18 +115,11 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            try
-            {
-                var result = await _guestSessionRepository.UpdateItemAsync(guestSessionId, guestSessionModel);
+            var result = await _guestSessionRepository.UpdateItemAsync(guestSessionId, guestSessionModel);
 
-                _eventService.Publish(EventNames.GuestInviteUpdated, result);
+            _eventService.Publish(EventNames.GuestInviteUpdated, result);
 
-                return result;
-            }
-            catch (NotFoundException)
-            {
-                throw new NotFoundException("GuestSession with id {guestSessionId} could not be found");
-            }
+            return result;
         }
     }
 }

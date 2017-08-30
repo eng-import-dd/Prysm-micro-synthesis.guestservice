@@ -116,18 +116,11 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            try
-            {
-                var result = await _guestInviteRepository.UpdateItemAsync(guestInviteId, guestInviteModel);
+            var result = await _guestInviteRepository.UpdateItemAsync(guestInviteId, guestInviteModel);
 
-                _eventService.Publish(EventNames.GuestInviteUpdated, result);
+            _eventService.Publish(EventNames.GuestInviteUpdated, result);
 
-                return result;
-            }
-            catch (NotFoundException)
-            {
-                throw new NotFoundException("GuestInvite with id {guestInviteId} could not be found");
-            }
+            return result;
         }
     }
 }
