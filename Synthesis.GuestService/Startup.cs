@@ -1,7 +1,5 @@
-using Owin;
-using Synthesis.Nancy.MicroService.Tracing;
 using Microsoft.Owin.Cors;
-using Synthesis.GuestService.Modules;
+using Owin;
 
 namespace Synthesis.GuestService
 {
@@ -12,7 +10,11 @@ namespace Synthesis.GuestService
         public static void ConfigureApp(IAppBuilder app)
         {
             app.UseCors(CorsOptions.AllowAll);
-            app.Use(typeof(CorrelationTokenMiddleware));
+
+            // This will have the affect of registering all OwinMiddleware registered with the
+            // root container (including CorrelationScopeMiddleware).
+            app.UseAutofacMiddleware(GuestServiceBootstrapper.RootContainer);
+
             app.UseNancy(options =>
             {
                 options.Bootstrapper = new GuestServiceBootstrapper();

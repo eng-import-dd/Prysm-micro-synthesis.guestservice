@@ -1,115 +1,96 @@
+using Microsoft.Owin.Hosting;
+using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Owin;
+using Synthesis.Logging;
 using System;
 using System.Fabric;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Owin.Hosting;
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
-using Owin;
 
 namespace Synthesis.GuestService
 {
     internal class OwinCommunicationListener : ICommunicationListener
     {
-        private readonly ServiceEventSource eventSource;
-        private readonly Action<IAppBuilder> startup;
-        private readonly ServiceContext serviceContext;
-        private readonly string endpointName;
-        private readonly string appRoot;
+        private readonly ILogger _logger;
+        private readonly Action<IAppBuilder> _startup;
+        private readonly ServiceContext _serviceContext;
+        private readonly string _endpointName;
+        private readonly string _appRoot;
 
-        private IDisposable webApp;
-        private string publishAddress;
-        private string listeningAddress;
+        private IDisposable _webApp;
+        private string _publishAddress;
+        private string _listeningAddress;
 
-        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ServiceEventSource eventSource, string endpointName)
-            : this(startup, serviceContext, eventSource, endpointName, null)
+        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILogger logger, string endpointName)
+            : this(startup, serviceContext, logger, endpointName, null)
         {
         }
 
-        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ServiceEventSource eventSource, string endpointName, string appRoot)
+        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILogger logger, string endpointName, string appRoot)
         {
-            if (startup == null)
-            {
-                throw new ArgumentNullException(nameof(startup));
-            }
-
-            if (serviceContext == null)
-            {
-                throw new ArgumentNullException(nameof(serviceContext));
-            }
-
-            if (endpointName == null)
-            {
-                throw new ArgumentNullException(nameof(endpointName));
-            }
-
-            if (eventSource == null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
-
-            this.startup = startup;
-            this.serviceContext = serviceContext;
-            this.endpointName = endpointName;
-            this.eventSource = eventSource;
-            this.appRoot = appRoot;
+            _startup = startup ?? throw new ArgumentNullException(nameof(startup));
+            _serviceContext = serviceContext ?? throw new ArgumentNullException(nameof(serviceContext));
+            _endpointName = endpointName ?? throw new ArgumentNullException(nameof(endpointName));
+            _logger = logger ?? throw new ArgumentNullException(nameof(log4net));
+            _appRoot = appRoot;
         }
 
         public bool ListenOnSecondary { get; set; }
 
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
-            var serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint(this.endpointName);
-            int port = serviceEndpoint.Port;
+            var serviceEndpoint = _serviceContext.CodePackageActivationContext.GetEndpoint(_endpointName);
+            var port = serviceEndpoint.Port;
 
-            if (this.serviceContext is StatefulServiceContext)
+            if (_serviceContext is StatefulServiceContext)
             {
-                StatefulServiceContext statefulServiceContext = this.serviceContext as StatefulServiceContext;
+                StatefulServiceContext statefulServiceContext = _serviceContext as StatefulServiceContext;
 
-                this.listeningAddress = string.Format(
+                _listeningAddress = string.Format(
                     CultureInfo.InvariantCulture,
                     "http://+:{0}/{1}{2}/{3}/{4}",
                     port,
-                    string.IsNullOrWhiteSpace(this.appRoot)
+                    string.IsNullOrWhiteSpace(_appRoot)
                         ? string.Empty
-                        : this.appRoot.TrimEnd('/') + '/',
+                        : _appRoot.TrimEnd('/') + '/',
                     statefulServiceContext.PartitionId,
                     statefulServiceContext.ReplicaId,
                     Guid.NewGuid());
             }
-            else if (this.serviceContext is StatelessServiceContext)
+            else if (_serviceContext is StatelessServiceContext)
             {
-                this.listeningAddress = string.Format(
+                _listeningAddress = string.Format(
                     CultureInfo.InvariantCulture,
                     "{0}://+:{1}/{2}",
                     serviceEndpoint.Protocol.ToString().ToLower(),
                     port,
-                    string.IsNullOrWhiteSpace(this.appRoot)
+                    string.IsNullOrWhiteSpace(_appRoot)
                         ? string.Empty
-                        : this.appRoot.TrimEnd('/') + '/');
+                        : _appRoot.TrimEnd('/') + '/');
             }
             else
             {
                 throw new InvalidOperationException();
             }
 
-            this.publishAddress = this.listeningAddress.Replace("+", FabricRuntime.GetNodeContext().IPAddressOrFQDN);
+            _publishAddress = _listeningAddress.Replace("+", FabricRuntime.GetNodeContext().IPAddressOrFQDN);
 
             try
             {
-                this.eventSource.ServiceMessage(this.serviceContext, "Starting web server on " + this.listeningAddress);
+                _logger.Info($"Starting web server on {_listeningAddress}");
 
-                this.webApp = WebApp.Start(this.listeningAddress, appBuilder => this.startup.Invoke(appBuilder));
+                _webApp = WebApp.Start(_listeningAddress, appBuilder => _startup.Invoke(appBuilder));
 
-                this.eventSource.ServiceMessage(this.serviceContext, "Listening on " + this.publishAddress);
+                _logger.Info($"Listening on {_publishAddress}");
 
-                return Task.FromResult(this.publishAddress);
+                return Task.FromResult(_publishAddress);
             }
             catch (Exception ex)
             {
-                this.eventSource.ServiceMessage(this.serviceContext, "Web server failed to open. " + ex.ToString());
+                _logger.Error($"Web server failed to open. ", ex);
 
-                this.StopWebServer();
+                StopWebServer();
 
                 throw;
             }
@@ -117,32 +98,29 @@ namespace Synthesis.GuestService
 
         public Task CloseAsync(CancellationToken cancellationToken)
         {
-            this.eventSource.ServiceMessage(this.serviceContext, "Closing web server");
+            _logger.Info("Closing web server");
 
-            this.StopWebServer();
+            StopWebServer();
 
             return Task.FromResult(true);
         }
 
         public void Abort()
         {
-            this.eventSource.ServiceMessage(this.serviceContext, "Aborting web server");
+            _logger.Info("Aborting web server");
 
-            this.StopWebServer();
+            StopWebServer();
         }
 
         private void StopWebServer()
         {
-            if (this.webApp != null)
+            try
             {
-                try
-                {
-                    this.webApp.Dispose();
-                }
-                catch (ObjectDisposedException)
-                {
-                    // no-op
-                }
+                _webApp?.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // no-op
             }
         }
     }

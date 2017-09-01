@@ -1,32 +1,212 @@
-using Nancy;
+using Autofac;
+using Autofac.Core;
+using FluentValidation;
 using Nancy.Bootstrapper;
-using Nancy.TinyIoc;
+using Nancy.Bootstrappers.Autofac;
+using Synthesis.Configuration;
+using Synthesis.Configuration.Infrastructure;
+using Synthesis.DocumentStorage;
+using Synthesis.DocumentStorage.DocumentDB;
+using Synthesis.EventBus;
+using Synthesis.EventBus.Kafka;
 using Synthesis.KeyManager;
 using Synthesis.Logging;
+using Synthesis.Logging.Log4Net;
 using Synthesis.Nancy.MicroService.Authorization;
-using Synthesis.Nancy.MicroService.Dao;
+using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.GuestService.Owin;
+using Synthesis.Tracking.Web;
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Claims;
+using Synthesis.GuestService.Validators;
+using Synthesis.GuestService.Workflow.Controllers;
+using Synthesis.GuestService.Workflow.Interfaces;
+using Synthesis.Tracking;
+using Synthesis.Tracking.ApplicationInsights;
 
 namespace Synthesis.GuestService
 {
-    public class GuestServiceBootstrapper : DefaultNancyBootstrapper
+    public class GuestServiceBootstrapper : AutofacNancyBootstrapper
     {
-        protected override void ConfigureApplicationContainer(TinyIoCContainer existingContainer)
-        {
-            base.ConfigureApplicationContainer(existingContainer);
-            existingContainer.Register<ILoggingService, SimpleLoggingService>().AsSingleton();
-            existingContainer.Register<IKeyManager, SimpleKeyManager>().AsSingleton();
-            existingContainer.Register<ISynthesisMonolithicCloudDao, SynthesisMonolithicCloudDao>().AsSingleton();
+        public static readonly LogTopic DefaultLogTopic = new LogTopic("Synthesis.GuestService");
+        public static readonly LogTopic EventServiceLogTopic = new LogTopic("Synthesis.GuestService.EventHub");
 
-            // Update this registration if you need to change the authorization implementation.
-            existingContainer.Register<IStatelessAuthorization, SynthesisStatelessAuthorization>().AsSingleton();
+        private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
+
+        public GuestServiceBootstrapper()
+        {
+            ApplicationContainer = RootContainer.BeginLifetimeScope();
         }
 
-        protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
+        /// <summary>
+        /// Gets the root injection container for this service.
+        /// </summary>
+        /// <value>
+        /// The root injection container for this service.
+        /// </value>
+        public static ILifetimeScope RootContainer => LazyRootContainer.Value;
+
+        /// <summary>
+        /// Gets container for this bootstrapper instance.
+        /// </summary>
+        public new ILifetimeScope ApplicationContainer { get; }
+
+        /// <summary>
+        /// Gets a logger using the default log topic for this service.
+        /// </summary>
+        public ILogger GetDefaultLogger()
+        {
+            return ApplicationContainer.Resolve<ILogger>();
+        }
+
+        protected override void ConfigureApplicationContainer(ILifetimeScope container)
+        {
+            base.ConfigureApplicationContainer(container);
+
+            container.Update(builder =>
+            {
+                builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
+
+                // Update this registration if you need to change the authorization implementation.
+                builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
+                    .As<IStatelessAuthorization>()
+                    .SingleInstance();
+            });
+
+            container.Resolve<ILogger>().Info("GuestService Service Running....");
+        }
+
+        protected override void ApplicationStartup(ILifetimeScope container, IPipelines pipelines)
         {
             // Add the micro-service authorization logic to the Nancy pipeline.
-            StatelessAuthorization.Enable(pipelines, container.Resolve<IStatelessAuthorization>());
+            pipelines.BeforeRequest += ctx =>
+            {
+                // TODO: This is temporary until we get JWT implemented.
+                var identity = new ClaimsIdentity(
+                    new[]
+                    {
+                        new Claim(ClaimTypes.Name, "Test User"),
+                        new Claim(ClaimTypes.Email, "test@user.com")
+                    },
+                    AuthenticationTypes.Basic);
+                ctx.CurrentUser = new ClaimsPrincipal(identity);
+                return null;
+            };
 
             base.ApplicationStartup(container, pipelines);
+            //
+            //            Metric.Config
+            //                .WithAllCounters()
+            //                .WithHttpEndpoint("http://localhost:9000/metrics/")
+            //                .WithInternalMetrics()
+            //                .WithNancy(pipelines);
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                ApplicationContainer.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        /// <inheritdoc />
+        protected override ILifetimeScope GetApplicationContainer()
+        {
+            return ApplicationContainer;
+        }
+
+        private static ILifetimeScope BuildRootContainer()
+        {
+            var builder = new ContainerBuilder();
+
+            var settingsReader = new DefaultAppSettingsReader();
+            var loggerFactory = new LoggerFactory();
+            var defaultLogger = loggerFactory.Get(DefaultLogTopic);
+
+            builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
+
+            // Logging
+            builder.RegisterInstance(CreateLogLayout(settingsReader));
+            builder.RegisterInstance(defaultLogger);
+            builder.RegisterInstance(loggerFactory).As<ILoggerFactory>();
+
+            // Tracking
+            builder.RegisterType<ApplicationInsightsTrackingService>().As<ITrackingService>();
+
+            // Register our custom OWIN Middleware
+            builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
+            builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
+
+            // Event Service registration.
+            builder.Register(
+                c =>
+                {
+                    var connectionString = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server");
+                    return EventBus.Kafka.EventBus.Create(connectionString).CreateEventPublisher();
+                })
+                .As<IEventPublisher>();
+            builder.Register(c => new EventServiceContext { ServiceName = "Synthesis.GuestService" });
+            builder.RegisterType<EventService>().As<IEventService>().SingleInstance()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "logger",
+                    (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)));
+
+            // DocumentDB registration.
+            builder.Register(c =>
+            {
+                var settings = c.Resolve<IAppSettingsReader>();
+                return new DocumentDbContext
+                {
+                    AuthKey = settings.GetValue<string>("DocumentDB.AuthKey"),
+                    DatabaseName = settings.GetValue<string>("DocumentDB.DatabaseName"),
+                    Endpoint = settings.GetValue<string>("DocumentDB.Endpoint"),
+                };
+            });
+            builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
+
+            // Key Manager
+            builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
+
+            // Validation
+            builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
+            builder.RegisterType<GuestInviteIdValidator>().As<IValidator>();
+            builder.RegisterType<GuestInviteValidator>().As<IValidator>();
+            builder.RegisterType<GuestSessionIdValidator>().As<IValidator>();
+            builder.RegisterType<GuestSessionValidator>().As<IValidator>();
+
+            // Controllers
+            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
+            builder.RegisterType<GuestSessionController>().As<IGuestSessionController>();
+
+            return builder.Build();
+        }
+
+        private static ILogLayout CreateLogLayout(IAppSettingsReader settingsReader)
+        {
+            var version = typeof(GuestServiceBootstrapper).Assembly.GetName().Version.ToString();
+
+            var logLayout = new LogLayoutBuilder().Use<LogLayoutMetadata>().BuildGlobalLayout();
+            var localIpHostEntry = Dns.GetHostEntry(Dns.GetHostName());
+
+            var messageContent = logLayout.Get<LogLayoutMetadata>();
+            messageContent.LocalIP = localIpHostEntry.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? string.Empty;
+            messageContent.ApplicationName = settingsReader.GetValue<string>("ServiceName");
+            messageContent.Environment = settingsReader.GetValue<string>("Environment");
+            messageContent.Facility = settingsReader.GetValue<string>("Facility");
+            messageContent.Host = Environment.MachineName;
+            messageContent.RemoteIP = string.Empty;
+            messageContent.Version = version;
+
+            logLayout.Update(messageContent);
+
+            return logLayout;
         }
     }
 }

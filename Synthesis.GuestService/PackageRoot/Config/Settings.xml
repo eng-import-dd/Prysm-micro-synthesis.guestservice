@@ -6,4 +6,7 @@
     <Parameter Name="MyParameter" Value="Value1" />
   </Section>
   -->
+  <Section Name="">
+    <Parameter Name="Port" Value="8090"/>
+  </Section>
 </Settings>

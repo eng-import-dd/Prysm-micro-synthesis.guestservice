@@ -1,10 +1,12 @@
+using Autofac;
+using Microsoft.ServiceFabric.Services.Runtime;
+using Synthesis.ApplicationInsights;
+using Synthesis.Configuration;
+using Synthesis.Logging;
+using Synthesis.Owin.Host;
 using System;
-using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
-using Microsoft.ServiceFabric.Services.Runtime;
-using Synthesis.Owin.Host;
-using Synthesis.ApplicationInsights;
 
 namespace Synthesis.GuestService
 {
@@ -15,34 +17,42 @@ namespace Synthesis.GuestService
         /// </summary>
         private static void Main(string[] args)
         {
+            var rootContainer = GuestServiceBootstrapper.RootContainer;
+            var settingsReader = rootContainer.Resolve<IAppSettingsReader>();
+            var logger = rootContainer.Resolve<ILogger>();
+
             if (args == null || args.Length == 0)
             {
-                var version = typeof(Program).Assembly.GetName().Version.ToString();
-                var deploymentName = ConfigurationManager.AppSettings["AI.DeploymentName"];
-
-                var instrumentationKey = ConfigurationManager.AppSettings["AI.InstrumentationKey"];
+                var instrumentationKey = settingsReader.GetValue<string>("AI.InstrumentationKey");
                 if (!string.IsNullOrWhiteSpace(instrumentationKey))
                 {
-                    // Creating this initializes the Telemetry Context
-                    MicroServiceTelemetryInitializer.Initialize(version, deploymentName, instrumentationKey);
+                    // Initialize the micro-service telemetry context (Application Insights)
+                    MicroServiceTelemetryInitializer.Initialize(new MicroServiceTelemetryConfiguration
+                    {
+                        DeploymentName = settingsReader.GetValue<string>("AI.DeploymentName"),
+                        InstrumentationKey = instrumentationKey,
+                        ServiceName = "GuestService",
+                        ServiceVersion = typeof(Program).Assembly.GetName().Version.ToString(),
+                    });
                 }
 
                 try
                 {
-                  // The ServiceManifest.XML file defines one or more service type names.
-                  // Registering a service maps a service type name to a .NET type.
-                  // When Service Fabric creates an instance of this service type,
-                  // an instance of the class is created in this host process.
-                  ServiceRuntime.RegisterServiceAsync("GuestServiceType",
-                      context => new GuestService(context)).GetAwaiter().GetResult();
+                    // The ServiceManifest.XML file defines one or more service type names.
+                    // Registering a service maps a service type name to a .NET type.
+                    // When Service Fabric creates an instance of this service type,
+                    // an instance of the class is created in this host process.
+                    ServiceRuntime.RegisterServiceAsync("GuestServiceType",
+                        context => new GuestService(context)).GetAwaiter().GetResult();
 
-                  ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(GuestService).Name);
-                  // Prevents this host process from terminating so services keeps running.
-                  Thread.Sleep(Timeout.Infinite);
+                    logger.Info($"ServiceType is registered. ProcessId: {Process.GetCurrentProcess().Id}, Name: {typeof(GuestService).Name}");
+
+                    // Prevents this host process from terminating so services keeps running.
+                    Thread.Sleep(Timeout.Infinite);
                 }
                 catch (Exception e)
                 {
-                    ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
+                    logger.Error("Service initialization failed.", e);
                     throw;
                 }
             }

@@ -1,14 +1,17 @@
-using System;
-using System.Configuration;
-using System.Collections.Generic;
-using System.Fabric;
-using System.Fabric.Health;
-using System.Threading;
-using System.Threading.Tasks;
+using Autofac;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Synthesis.Logging;
+using System;
+using System.Collections.Generic;
+using System.Fabric;
+using System.Fabric.Description;
+using System.Fabric.Health;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Synthesis.GuestService
 {
@@ -17,8 +20,7 @@ namespace Synthesis.GuestService
     /// </summary>
     internal sealed class GuestService : StatelessService
     {
-        private readonly string _host = ConfigurationManager.AppSettings["Host"];
-        private readonly string _protocol = ConfigurationManager.AppSettings["Protocol"];
+        public const string AppRoot = "guest";
 
         public GuestService(StatelessServiceContext context)
             : base(context)
@@ -30,11 +32,13 @@ namespace Synthesis.GuestService
         /// <returns>The collection of listeners.</returns>
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            return new ServiceInstanceListener[]
-            {
-                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, ServiceEventSource.Current, "ServiceEndpoint", "guests"), "HTTP"),
-                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, ServiceEventSource.Current, "SecureEndpoint", "guests"), "HTTPS")
-            };
+            var logger = GuestServiceBootstrapper.RootContainer.Resolve<ILogger>();
+            return Context.CodePackageActivationContext.GetEndpoints()
+                .Where(ep => ep.Protocol == EndpointProtocol.Http || ep.Protocol == EndpointProtocol.Https)
+                .Select(ep =>
+                    new ServiceInstanceListener(
+                        sc => new OwinCommunicationListener(Startup.ConfigureApp, sc, logger, ep.Name, AppRoot),
+                        ep.Protocol.ToString().ToUpper()));
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
@@ -42,21 +46,23 @@ namespace Synthesis.GuestService
             await ReportHealth(Context, cancellationToken);
         }
 
-        private async Task ReportHealth(StatelessServiceContext context, CancellationToken cancellationToken)
+        private async Task ReportHealth(ServiceContext context, CancellationToken cancellationToken)
         {
-            FabricClient client = new FabricClient();
+            var serviceEndpoint = Context.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
+            var protocol = serviceEndpoint.Protocol.ToString().ToLower();
+            var httpClient = new HttpClient
+            {
+                BaseAddress = new Uri($"{protocol}://localhost:{serviceEndpoint.Port}/{AppRoot}/")
+            };
+
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(5000);
+                await Task.Delay(5000, cancellationToken);
+
                 try
                 {
-                    var httpClient = new HttpClient
-                    {
-                        BaseAddress = new Uri(new Uri($"{_protocol}://{_host}").ToString())
-                    };
-
                     // Customize this route for the service
-                    var response = httpClient.GetAsync("/guests//api/v1/guestservice/health").Result;
+                    var response = await httpClient.GetAsync("v1/health", cancellationToken);
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
                         var info = new HealthInformation(context.NodeContext.NodeName, "GuestService-healthCheck", HealthState.Error)
@@ -81,7 +87,6 @@ namespace Synthesis.GuestService
 
                     Partition.ReportInstanceHealth(info);
                 }
-
             }
         }
     }
