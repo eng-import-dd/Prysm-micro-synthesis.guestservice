@@ -9,6 +9,12 @@ namespace Synthesis.GuestService.Dao.Models
         [JsonProperty("id")]
         public Guid Id { get; set; }
 
+        public Guid UserId { get; set; }
+
+        public string FirstName { get; set; }
+
+        public string LastName { get; set; }
+
         public Guid InvitedBy { get; set; }
 
         public Guid ProjectId { get; set; }
