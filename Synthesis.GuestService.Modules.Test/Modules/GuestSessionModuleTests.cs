@@ -86,7 +86,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsUnauthorizedRequest(string route)
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
                 .ReturnsAsync(new GuestSession());
             var response = await _browserNoAuth.Put($"{route}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
 
@@ -235,7 +235,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsOk(string route)
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
                 .ReturnsAsync(new GuestSession());
 
             var response = await _browserAuth.Put($"{route}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
@@ -249,7 +249,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
                 .Throws<Exception>();
 
             var response = await _browserAuth.Put($"{route}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
@@ -263,7 +263,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsBadRequestBindingException(string route)
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(_guestSession.Id, It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
                 .Throws<Exception>();
 
             var response = await _browserAuth.Put($"{route}/{_guestSession.Id}", BuildRequest);

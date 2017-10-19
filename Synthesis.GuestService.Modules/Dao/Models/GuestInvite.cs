@@ -28,6 +28,5 @@ namespace Synthesis.GuestService.Dao.Models
         public DateTime? CreatedDateTime { get; set; }
 
         public DateTime? LastAccessDate { get; set; }
-
     }
 }

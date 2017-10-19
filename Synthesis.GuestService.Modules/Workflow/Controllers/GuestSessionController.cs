@@ -93,9 +93,9 @@ namespace Synthesis.GuestService.Workflow.Controllers
             return result;
         }
 
-        public async Task<GuestSession> UpdateGuestSessionAsync(Guid guestSessionId, GuestSession guestSessionModel)
+        public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
         {
-            var guestSessionIdValidationResult = await _guestSessionIdValidator.ValidateAsync(guestSessionId);
+            var guestSessionIdValidationResult = await _guestSessionIdValidator.ValidateAsync(guestSessionModel.Id);
             var guestSessionValidationResult = await _guestSessionValidator.ValidateAsync(guestSessionModel);
             var errors = new List<ValidationFailure>();
 
@@ -115,9 +115,9 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            var result = await _guestSessionRepository.UpdateItemAsync(guestSessionId, guestSessionModel);
+            var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
 
-            _eventService.Publish(EventNames.GuestInviteUpdated, result);
+            _eventService.Publish(EventNames.GuestSessionUpdated, result);
 
             return result;
         }

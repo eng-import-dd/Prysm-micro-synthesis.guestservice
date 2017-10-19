@@ -10,6 +10,6 @@ namespace Synthesis.GuestService.Workflow.Interfaces
 
         Task<GuestInvite> GetGuestInviteAsync(Guid guestInviteId);
 
-        Task<GuestInvite> UpdateGuestInviteAsync(Guid guestInviteId, GuestInvite model);
+        Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite model);
     }
 }

@@ -21,6 +21,8 @@ namespace Synthesis.GuestService.Dao.Models
 
         public string ProjectAccessCode { get; set; }
 
+        public int GuestSessionState { get; set; }
+
         public DateTime? CreatedDateTime { get; set; }
 
         public DateTime? AccessGrantedDateTime { get; set; }

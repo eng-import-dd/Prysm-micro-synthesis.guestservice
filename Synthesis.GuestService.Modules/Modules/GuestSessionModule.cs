@@ -147,7 +147,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.UpdateGuestSessionAsync(guestSessionId, guestSessionModel);
+                return await _guestSessionController.UpdateGuestSessionAsync(guestSessionModel);
             }
             catch (Exception ex)
             {

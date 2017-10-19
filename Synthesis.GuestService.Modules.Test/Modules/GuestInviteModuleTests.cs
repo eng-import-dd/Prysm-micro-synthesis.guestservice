@@ -86,7 +86,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestInviteReturnsUnauthorizedRequest(string route)
         {
             _guestInviteControllerMock
-                .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
+                .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
             var response = await _browserNoAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
@@ -241,7 +241,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestInviteReturnsOk(string route)
         {
             _guestInviteControllerMock
-                .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
+                .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
             var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
@@ -255,7 +255,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestInviteControllerMock
-                .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
+                .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
             var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
@@ -269,7 +269,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestInviteReturnsBadRequestBindingException(string route)
         {
             _guestInviteControllerMock
-                .Setup(x => x.UpdateGuestInviteAsync(_guestInvite.Id, It.IsAny<GuestInvite>()))
+                .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
             var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", BuildRequest);

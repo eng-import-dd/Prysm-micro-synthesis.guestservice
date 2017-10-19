@@ -139,14 +139,14 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         [Fact]
         public async Task UpdateOfGuestIniviteBussesEvent()
         {
-            await _target.UpdateGuestSessionAsync(_defaultGuestSession.Id, _defaultGuestSession);
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession);
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestSession>>()));
         }
 
         [Fact]
         public async Task UpdateGuestSessionVerifyCalled()
         {
-            await _target.UpdateGuestSessionAsync(_defaultGuestSession.Id, _defaultGuestSession);
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession);
             _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()));
         }
 
@@ -157,7 +157,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), _defaultGuestSession))
                 .Throws(new NotFoundException("Message"));
 
-            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession.Id, _defaultGuestSession));
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession));
         }
         #endregion
     }
