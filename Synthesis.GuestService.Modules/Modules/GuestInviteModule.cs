@@ -9,7 +9,9 @@ using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Workflow.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -41,6 +43,9 @@ namespace Synthesis.GuestService.Modules
             Get(BaseRoutes.GuestInvite + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInvite");
             Get(BaseRoutes.GuestInviteLegacy + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInviteLegacy");
 
+            Get(BaseRoutes.GuestInvite + "/project/{projectId:guid}", GetGuestInvitesByProjectIdAsync, null, "GetGuestInvites");
+            Get(BaseRoutes.GuestInviteLegacy + "/project/{projectId:guid}", GetGuestInvitesByProjectIdAsync, null, "GetGuestInvitesLegacy");
+
             Put(BaseRoutes.GuestInvite + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInvite");
             Put(BaseRoutes.GuestInviteLegacy + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInviteLegacy");
 
@@ -66,6 +71,14 @@ namespace Synthesis.GuestService.Modules
                 Response = "Get GuestInvite",
                 Description = "Retrieve a specific GuestInvite resource."
             });
+
+            _metadataRegistry.SetRouteMetadata("GetGuestInvites", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = JsonConvert.SerializeObject(new List<GuestInvite>() { new GuestInvite() }),
+                Description = "Gets All GuestInvites for a specific Project"
+            });
+
 
             _metadataRegistry.SetRouteMetadata("UpdateGuestInvite", new SynthesisRouteMetadata
             {
@@ -106,37 +119,55 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestInviteAsync(dynamic input)
         {
-            Guid id = input.id;
-
             try
             {
-                return await _guestInviteController.GetGuestInviteAsync(id);
+                return await _guestInviteController.GetGuestInviteAsync(input.id);
             }
             catch (NotFoundException)
             {
-                _logger.Warning($"GuestInvite with id {id} could not be found");
+                _logger.Warning($"GuestInvite with id {input.id} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
             }
             catch (ValidationFailedException ex)
             {
-                _logger.Error($"Validation failed for guestInvite with id {id} due to an error", ex);
+                _logger.Error($"Validation failed for guestInvite with id {input.id} due to an error", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to get guestInvite with id {id} due to an error", ex);
+                _logger.Error($"Failed to get guestInvite with id {input.id} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+            }
+        }
+
+        private async Task<object> GetGuestInvitesByProjectIdAsync(dynamic input)
+        {
+            try
+            {
+                return await _guestInviteController.GetGuestInvitesByProjectIdAsync(input.projectId);
+            }
+            catch (NotFoundException)
+            {
+                _logger.Warning($"GuestInvites for projectId {input.projectId} could not be found");
+                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, $"GuestInvites could not be retrieved for projectId {input.projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
 
         private async Task<object> UpdateGuestInviteAsync(dynamic input)
         {
-            Guid guestInviteId;
             GuestInvite guestInviteModel;
 
             try
             {
-                guestInviteId = input.id;
                 guestInviteModel = this.Bind<GuestInvite>();
             }
             catch (Exception ex)

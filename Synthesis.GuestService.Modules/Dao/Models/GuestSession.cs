@@ -1,7 +1,6 @@
 using System;
 using Newtonsoft.Json;
 
-
 namespace Synthesis.GuestService.Dao.Models
 {
     public class GuestSession

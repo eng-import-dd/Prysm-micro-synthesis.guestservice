@@ -200,8 +200,10 @@
       <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.0.9-beta1\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.1.1.0-beta001\lib\net452\Synthesis.Http.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta005\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager">
       <HintPath>..\packages\Synthesis.KeyManager.2.0.2-beta\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -214,7 +216,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta004\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta009\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.0-release\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -224,6 +226,9 @@
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.3\lib\net452\Synthesis.Serialization.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Serialization.Json, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.Json.1.0.3\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Threading.1.1.0\lib\net452\Synthesis.Threading.dll</HintPath>
@@ -286,8 +291,14 @@
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
+    <Compile Include="Dao\Models\Guest.cs" />
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
+    <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
+    <Compile Include="Requests\GuestVerificationRequest.cs" />
+    <Compile Include="Responses\GuestVerificationResponse.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\Project.cs" />
+    <Compile Include="Dao\Models\ProjectStatus.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
@@ -295,17 +306,25 @@
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="GuestServiceStatelessAuthorization.cs" />
+    <Compile Include="Validators\EmailAddressValidator.cs" />
     <Compile Include="Validators\GuestSessionValidator.cs" />
     <Compile Include="Validators\GuestSessionIdValidator.cs" />
     <Compile Include="Validators\GuestInviteIdValidator.cs" />
     <Compile Include="Validators\GuestInviteValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
-    <Compile Include="Validators\IValidatorLocator.cs" />
-    <Compile Include="Validators\ValidatorLocator.cs" />
+    <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
+    <Compile Include="Validators\ProjectIdValidator.cs" />
+    <Compile Include="Validators\StringValidator.cs" />
     <Compile Include="Workflow\Controllers\GuestSessionController.cs" />
     <Compile Include="Workflow\Controllers\GuestInviteController.cs" />
     <Compile Include="Workflow\Interfaces\IGuestSessionController.cs" />
     <Compile Include="Workflow\Interfaces\IGuestInviteController.cs" />
+    <Compile Include="Workflow\ServiceInterop\Interfaces\IProjectInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Interfaces\ISettingsInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Interfaces\ITenantInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Interfaces\IUserInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
@@ -313,7 +332,9 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Workflow\ServiceInterop\Requests\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

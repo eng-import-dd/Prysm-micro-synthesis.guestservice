@@ -25,6 +25,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly IValidator _guestInviteValidator;
         private readonly IValidator _guestInviteIdValidator;
+        private readonly IValidator _projectIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
 
@@ -51,9 +52,11 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
             _guestInviteValidator = validatorLocator.GetValidator(typeof(GuestInviteValidator));
             _guestInviteIdValidator = validatorLocator.GetValidator(typeof(GuestInviteIdValidator));
+            _projectIdValidator = validatorLocator.GetValidator(typeof(ProjectIdValidator));
             _eventService = eventService;
             _logger = logger;
         }
+
 
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
@@ -84,14 +87,32 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
 
             var result = await _guestInviteRepository.GetItemAsync(id);
-
-            if (result == null)
+            if (result != null)
             {
-                _logger.Warning($"A GuestInvite resource could not be found for id {id}");
-                throw new NotFoundException("GuestInvite could not be found");
+                return result;
             }
 
-            return result;
+            _logger.Warning($"A GuestInvite resource could not be found for id {id}");
+            throw new NotFoundException("GuestInvite could not be found");
+        }
+
+        public async Task<IEnumerable<GuestInvite>> GetGuestInvitesByProjectIdAsync(Guid projectId)
+        {
+            var validationResult = await _projectIdValidator.ValidateAsync(projectId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var result = await _guestInviteRepository.GetItemsAsync(x => x.ProjectId == projectId);
+            if (result != null)
+            {
+                return result;
+            }
+
+            _logger.Warning($"GuestInvite resources could not be found for projectId {projectId}");
+            throw new NotFoundException("GuestInvites could not be found");
         }
 
         public async Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite guestInviteModel)
