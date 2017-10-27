@@ -1,36 +1,36 @@
-using FluentValidation;
-using FluentValidation.Results;
-using Synthesis.DocumentStorage;
-using Synthesis.EventBus;
-using Synthesis.Logging;
-using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.GuestService.Constants;
-using Synthesis.GuestService.Dao.Models;
-using Synthesis.GuestService.Validators;
-using Synthesis.GuestService.Workflow.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentValidation;
+using FluentValidation.Results;
+using Synthesis.DocumentStorage;
+using Synthesis.EventBus;
+using Synthesis.GuestService.Constants;
+using Synthesis.GuestService.Dao.Models;
+using Synthesis.GuestService.Validators;
+using Synthesis.GuestService.Workflow.Interfaces;
+using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Validation;
 
 namespace Synthesis.GuestService.Workflow.Controllers
 {
     /// <summary>
-    /// Represents a controller for GuestInvite resources.
+    ///     Represents a controller for GuestInvite resources.
     /// </summary>
     /// <seealso cref="Synthesis.GuestService.Workflow.Interfaces.IGuestInviteController" />
     public class GuestInviteController : IGuestInviteController
     {
+        private readonly IEventService _eventService;
+        private readonly IValidator _guestInviteIdValidator;
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly IValidator _guestInviteValidator;
-        private readonly IValidator _guestInviteIdValidator;
-        private readonly IValidator _projectIdValidator;
-        private readonly IEventService _eventService;
         private readonly ILogger _logger;
+        private readonly IValidator _projectIdValidator;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GuestInviteController"/> class.
+        ///     Initializes a new instance of the <see cref="GuestInviteController" /> class.
         /// </summary>
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
@@ -56,7 +56,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
             _eventService = eventService;
             _logger = logger;
         }
-
 
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
