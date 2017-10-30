@@ -320,14 +320,17 @@
     <Compile Include="Validators\StringValidator.cs" />
     <Compile Include="Workflow\Controllers\GuestSessionController.cs" />
     <Compile Include="Workflow\Controllers\GuestInviteController.cs" />
-    <Compile Include="Workflow\Interfaces\IGuestSessionController.cs" />
-    <Compile Include="Workflow\Interfaces\IGuestInviteController.cs" />
+    <Compile Include="Workflow\Controllers\Interfaces\IGuestSessionController.cs" />
+    <Compile Include="Workflow\Controllers\Interfaces\IGuestInviteController.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\IProjectInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\ISettingsInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\ITenantInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\IUserInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
+    <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
+    <Compile Include="Workflow\Utilities\Objects\InvitedUserDto.cs" />
+    <Compile Include="Workflow\Utilities\Objects\SynthesisUserBasicDto.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

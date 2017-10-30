@@ -1,9 +1,9 @@
-using Synthesis.GuestService.Dao.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.GuestService.Dao.Models;
 
-namespace Synthesis.GuestService.Workflow.Interfaces
+namespace Synthesis.GuestService.Workflow.Controllers
 {
     public interface IGuestInviteController
     {

@@ -8,5 +8,6 @@
         public string Password { get; set; }
         public string PasswordConfirmation { get; set; }
         public string ProjectAccessCode { get; set; }
+        public string IsIdpUser { get; set; }
     }
 }

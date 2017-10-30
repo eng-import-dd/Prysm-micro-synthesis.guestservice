@@ -7,5 +7,7 @@ namespace Synthesis.GuestService.Constants
 
         public const string GuestSessionCreated = "GuestSessionCreated";
         public const string GuestSessionUpdated = "GuestSessionUpdated";
+
+        public const string GuestCreated = "GuestCreated";
     }
 }

@@ -7,8 +7,9 @@ using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
+using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
-using Synthesis.GuestService.Workflow.Interfaces;
+using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -42,9 +43,8 @@ namespace Synthesis.GuestService.Modules
             Post(BaseRoutes.GuestSession, CreateGuestSessionAsync, null, "CreateGuestSession");
             Post(BaseRoutes.GuestSessionLegacy, CreateGuestSessionAsync, null, "CreateGuestSessionLegacy");
 
-            // TODO: will uncomment once CreateGuest is implemented
-            //Post(BaseRoutes.GuestSession + "/createguest", CreateGuestAsync, null, "CreateGuest");
-            //Post(BaseRoutes.GuestSessionLegacy + "/createguest", CreateGuestAsync, null, "CreateGuestLegacy");
+            Post(BaseRoutes.GuestSession + "/createguest", CreateGuestAsync, null, "CreateGuest");
+            Post(BaseRoutes.GuestSessionLegacy + "/createguest", CreateGuestAsync, null, "CreateGuestLegacy");
 
             Get(BaseRoutes.GuestSession + "/{id:guid}", GetGuestSessionAsync, null, "GetGuestSession");
             Get(BaseRoutes.GuestSessionLegacy + "/{id:guid}", GetGuestSessionAsync, null, "GetGuestSessionLegacy");
@@ -58,13 +58,11 @@ namespace Synthesis.GuestService.Modules
             Get(BaseRoutes.GuestSession + "/projectstatus/{projectId:guid}", GetProjectStatusAsync, null, "GetProjectStatus");
             Get(BaseRoutes.GuestSessionLegacy + "/projectstatus/{projectId:guid}", GetProjectStatusAsync, null, "GetProjectStatusLegacy");
 
-            // TODO: will uncomment once SendVerificationEmail is implemented
-            //Post(BaseRoutes.GuestSession + "/verificationemail", SendVerificationEmailAsync, null, "SendVerificationEmail");
-            //Post(BaseRoutes.GuestSessionLegacy + "/verificationemail", SendVerificationEmailAsync, null, "SendVerificationEmailLegacy");
+            Post(BaseRoutes.GuestSession + "/verificationemail", SendVerificationEmailAsync, null, "SendVerificationEmail");
+            Post(BaseRoutes.GuestSessionLegacy + "/verificationemail", SendVerificationEmailAsync, null, "SendVerificationEmailLegacy");
 
-            // TODO: will uncomment once VerifyGuest is implemented
-            //Post(BaseRoutes.GuestSession + "/verify", async _ => await VerifyGuestAsync(), null, "VerifyGuest");
-            //Post(BaseRoutes.GuestSessionLegacy + "/verify", async _ => await VerifyGuestAsync(), null, "VerifyGuestLegacy");
+            Post(BaseRoutes.GuestSession + "/verify", async _ => await VerifyGuestAsync(), null, "VerifyGuest");
+            Post(BaseRoutes.GuestSessionLegacy + "/verify", async _ => await VerifyGuestAsync(), null, "VerifyGuestLegacy");
 
             OnError += (ctx, ex) =>
                        {
@@ -161,6 +159,31 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
+        public async Task<object> CreateGuestAsync(dynamic input)
+        {
+            GuestCreationRequest request;
+
+            try
+            {
+                request = this.Bind<GuestCreationRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a guest.", ex);
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
+            }
+
+            try
+            {
+                return await _guestSessionController.CreateGuestAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while attempting to create a guest", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
+            }
+        }
+
         private async Task<object> GetGuestSessionAsync(dynamic input)
         {
             try
@@ -248,6 +271,66 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 _logger.Error($"Failed to get guestSessions for project with projectId {input.projectId} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
+            }
+        }
+
+        public async Task<object> SendVerificationEmailAsync(dynamic input)
+        {
+            GuestVerificationEmail guestVerificationEmail;
+
+            try
+            {
+                guestVerificationEmail = this.Bind<GuestVerificationEmail>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to send a verification email.", ex);
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
+            }
+
+            try
+            {
+                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while attempting to send a guest verificaiton email", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
+            }
+        }
+
+        public async Task<object> VerifyGuestAsync()
+        {
+            GuestVerificationRequest request;
+
+            try
+            {
+                request = this.Bind<GuestVerificationRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to verify a guest.", ex);
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
+            }
+
+            try
+            {
+                return await _guestSessionController.VerifyGuestAsync(request.Username, request.ProjectAccessCode);
+            }
+            catch (NotFoundException)
+            {
+                _logger.Error($"User with username {request.Username} for project access code {request.ProjectAccessCode} could not be found");
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+            }
+            catch (ValidationFailedException ex)
+            {
+                _logger.Error($"Validation failed for VerifyGuest with username {request.Username} due to an error", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to verify guest with username {request.Username} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }

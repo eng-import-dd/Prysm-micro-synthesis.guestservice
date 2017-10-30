@@ -19,7 +19,6 @@ using Synthesis.EventBus.Kafka;
 using Synthesis.GuestService.Owin;
 using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.Controllers;
-using Synthesis.GuestService.Workflow.Interfaces;
 using Synthesis.Http;
 using Synthesis.Http.Microservice;
 using Synthesis.KeyManager;
@@ -64,12 +63,12 @@ namespace Synthesis.GuestService
         protected override ILifetimeScope CreateRequestContainer(NancyContext context)
         {
             return ApplicationContainer.BeginLifetimeScope(MatchingScopeLifetimeTags.RequestLifetimeScopeTag,
-                                                           bldr =>
-                                                           {
-                                                               bldr.Register(c => new RequestHeaders(context.Request.Headers))
-                                                                   .As<IRequestHeaders>()
-                                                                   .InstancePerLifetimeScope();
-                                                           });
+                bldr =>
+                {
+                    bldr.Register(c => new RequestHeaders(context.Request.Headers))
+                        .As<IRequestHeaders>()
+                        .InstancePerLifetimeScope();
+                });
         }
 
         /// <summary>
@@ -85,14 +84,14 @@ namespace Synthesis.GuestService
             base.ConfigureApplicationContainer(container);
 
             container.Update(builder =>
-                             {
-                                 builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
+                {
+                    builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
 
-                                 // Update this registration if you need to change the authorization implementation.
-                                 builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
-                                        .As<IStatelessAuthorization>()
-                                        .SingleInstance();
-                             });
+                    // Update this registration if you need to change the authorization implementation.
+                    builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
+                        .As<IStatelessAuthorization>()
+                        .SingleInstance();
+                });
 
             container.Resolve<ILogger>().Info("GuestService Service Running....");
         }
@@ -101,18 +100,18 @@ namespace Synthesis.GuestService
         {
             // Add the micro-service authorization logic to the Nancy pipeline.
             pipelines.BeforeRequest += ctx =>
-                                       {
-                                           // TODO: This is temporary until we get JWT implemented.
-                                           var identity = new ClaimsIdentity(
-                                                                             new[]
-                                                                             {
-                                                                                 new Claim(ClaimTypes.Name, "Test User"),
-                                                                                 new Claim(ClaimTypes.Email, "test@user.com")
-                                                                             },
-                                                                             AuthenticationTypes.Basic);
-                                           ctx.CurrentUser = new ClaimsPrincipal(identity);
-                                           return null;
-                                       };
+                {
+                    // TODO: This is temporary until we get JWT implemented.
+                    var identity = new ClaimsIdentity(
+                                                        new[]
+                                                        {
+                                                            new Claim(ClaimTypes.Name, "Test User"),
+                                                            new Claim(ClaimTypes.Email, "test@user.com")
+                                                        },
+                                                        AuthenticationTypes.Basic);
+                    ctx.CurrentUser = new ClaimsPrincipal(identity);
+                    return null;
+                };
 
             base.ApplicationStartup(container, pipelines);
 

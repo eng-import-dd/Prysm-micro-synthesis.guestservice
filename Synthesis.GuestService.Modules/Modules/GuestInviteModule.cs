@@ -7,7 +7,7 @@ using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
-using Synthesis.GuestService.Workflow.Interfaces;
+using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;

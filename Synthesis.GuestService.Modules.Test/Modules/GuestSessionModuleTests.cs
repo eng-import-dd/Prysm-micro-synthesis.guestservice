@@ -10,7 +10,6 @@ using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Validators;
-using Synthesis.GuestService.Workflow.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -20,6 +19,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.Nancy.MicroService.Entity;
 using Xunit;
 

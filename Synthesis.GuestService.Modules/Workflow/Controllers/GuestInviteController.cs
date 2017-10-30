@@ -9,7 +9,6 @@ using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Validators;
-using Synthesis.GuestService.Workflow.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -19,7 +18,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
     /// <summary>
     ///     Represents a controller for GuestInvite resources.
     /// </summary>
-    /// <seealso cref="Synthesis.GuestService.Workflow.Interfaces.IGuestInviteController" />
+    /// <seealso cref="IGuestInviteController" />
     public class GuestInviteController : IGuestInviteController
     {
         private readonly IEventService _eventService;
