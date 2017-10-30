@@ -8,17 +8,5 @@ namespace Synthesis.GuestService.Responses
         public User SynthesisUser { get; set; }
     }
 
-    public enum CreateGuestResponseCode
-    {
-        Failed,
-        Unauthorized,
-        FirstOrLastNameIsNull,
-        InvalidEmail,
-        UserExists,
-        UsernameIsNotUnique,
-        InvalidPassword,
-        PasswordConfirmationError,
-        SucessEmailVerificationNeeded,
-        Success
-    }
+    
 }

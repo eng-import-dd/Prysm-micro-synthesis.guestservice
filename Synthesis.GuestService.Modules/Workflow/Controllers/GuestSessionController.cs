@@ -12,6 +12,7 @@ using Synthesis.GuestService.Responses;
 using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.ServiceInterop;
 using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
+using Synthesis.GuestService.Workflow.Utilities;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -66,6 +67,86 @@ namespace Synthesis.GuestService.Workflow.Controllers
             _participantInterop = participantInterop;
         }
 
+        public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request)
+        {
+            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(request.Email);
+            if (!emailValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the email address while attempting to create a new guest.");
+                throw new ValidationFailedException(emailValidationResult.Errors);
+            }
+
+            // Create default response
+            var response = new GuestCreationResponse
+            {
+                SynthesisUser = null,
+                ResultCode = CreateGuestResponseCode.Failed
+            };
+
+            var guestVerificationResponse = await VerifyGuestAsync(request.Email, request.ProjectAccessCode);
+            if (!(guestVerificationResponse.ResultCode == VerifyGuestResponseCode.Success || guestVerificationResponse.ResultCode == VerifyGuestResponseCode.SuccessNoUser))
+            {
+                response.ResultCode = guestVerificationResponse.ResultCode == VerifyGuestResponseCode.EmailVerificationNeeded ? CreateGuestResponseCode.UserExists : CreateGuestResponseCode.Unauthorized;
+                return response;
+            }
+
+            request.FirstName = request.FirstName?.Trim();
+            request.LastName = request.LastName?.Trim();
+            if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+            {
+                response.ResultCode = CreateGuestResponseCode.FirstOrLastNameIsNull;
+                return response;
+            }
+
+            if (!EmailValidator.IsValid(request.Email))
+            {
+                response.ResultCode = CreateGuestResponseCode.InvalidEmail;
+                return response;
+            }
+
+            if (request.IsIdpUser)
+            {
+                var throwAwayPassword = await _userInterop.GenerateRandomPassword(64);
+                request.Password = throwAwayPassword;
+                request.PasswordConfirmation = throwAwayPassword;
+            }
+
+            var isUniqueEmail = await _userInterop.IsUniqueEmail(request.Email);
+            if (!isUniqueEmail)
+            {
+                response.ResultCode = CreateGuestResponseCode.EmailIsNotUnique;
+                return response;
+            }
+
+            var isUniqueUsername = await _userInterop.IsUniqueUsername(request.Email);
+            if (!isUniqueUsername)
+            {
+                response.ResultCode = CreateGuestResponseCode.UsernameIsNotUnique;
+                return response;
+            }
+
+            PasswordUtility.HashAndSalt(request.Password, out var passwordHash, out var passwordSalt);
+
+            var provisionGuestUserResult = await _userInterop.ProvisionGuestUser(request.FirstName, request.LastName, request.Email, passwordHash, passwordSalt, request.IsIdpUser);
+
+            if (provisionGuestUserResult == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
+            {
+                response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
+
+                //TODO: What should we do here if SendVerificaitonEmail Fails?
+                //SendVerificationEmail(new SendVerificationEmailRequest
+                //{
+                //    Email = userDTO.Email,
+                //    ProjectAccessCode = createGuestRequest.ProjectAccessCode
+                //});
+
+                return response;
+            }
+
+            response.ResultCode = CreateGuestResponseCode.Success;
+            return response;
+        }
+
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
         {
             var validationResult = _validatorLocator.Validate<GuestSessionValidator>(model);
@@ -82,154 +163,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
             _eventService.Publish(EventNames.GuestSessionCreated, result);
 
             return result;
-        }
-
-        // TODO: In progress...
-        public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest model)
-        {
-            //TODO: Delete me
-            await Task.Yield();
-            
-
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(model.Email);
-            if (!emailValidationResult.IsValid)
-            {
-                _logger.Warning("Failed to validate the email address while attempting to create a new guest.");
-                throw new ValidationFailedException(emailValidationResult.Errors);
-            }
-
-            #region COLLABORATION SERVICE CODE
-
-            // Create default response
-            //    var result = new ServiceResult<CreateGuestResponse>
-            //    {
-            //        ResultCode = ResultCode.Failed,
-            //        Message = "Could not complete request.",
-            //        Payload = new CreateGuestResponse
-            //        {
-            //            User = null,
-            //            ResultCode = CreateGuestResponseCode.Failed
-            //        }
-            //    };
-
-            //    try
-            //    {
-            //        // Guest verification check
-            //        ServiceResult<VerifyGuestResponseInternal> verificationResult = VerifyGuest(new VerifyGuestRequest() { Username = createGuestRequest.Email, ProjectAccessCode = createGuestRequest.ProjectAccessCode });
-            //        if (!(verificationResult.Payload.ResultCode == VerifyGuestResponseCode.Success || verificationResult.Payload.ResultCode == VerifyGuestResponseCode.SuccessNoUser))
-            //        {
-            //            result.Message = "Guest verification failed";
-            //            result.Payload.ResultCode = (verificationResult.Payload.ResultCode == VerifyGuestResponseCode.EmailVerificationNeeded) ? CreateGuestResponseCode.UserExists : CreateGuestResponseCode.Unauthorized;
-            //            return result;
-            //        }
-
-            //        createGuestRequest.FirstName = createGuestRequest.FirstName?.Trim();
-            //        createGuestRequest.LastName = createGuestRequest.LastName?.Trim();
-
-            //        if (string.IsNullOrWhiteSpace(createGuestRequest.FirstName) || string.IsNullOrWhiteSpace(createGuestRequest.LastName))
-            //        {
-            //            result.Message = "First and Last Name can not be null";
-            //            result.Payload.ResultCode = CreateGuestResponseCode.FirstOrLastNameIsNull;
-            //            return result;
-            //        }
-
-            //        if (!EmailValidator.IsValid(createGuestRequest.Email))
-            //        {
-            //            result.Message = "Email is not valid";
-            //            result.Payload.ResultCode = CreateGuestResponseCode.InvalidEmail;
-            //            return result;
-            //        }
-
-            //        if (isIdpUser)
-            //        {
-            //            var throwAwayPassword = UserService.GenerateRandomPassword(64);
-            //            createGuestRequest.Password = throwAwayPassword;
-            //            createGuestRequest.PasswordConfirmation = throwAwayPassword;
-            //        }
-            //        else
-            //        {
-            //            // check the configured password validation policy
-            //            var defaultPasswordPolicy = new DefaultPasswordPolicy();
-
-            //            if (!(defaultPasswordPolicy.IsValidPolicy(createGuestRequest.Password)))
-            //            {
-            //                result.Payload.ResultCode = CreateGuestResponseCode.InvalidPassword;
-            //                result.Message = defaultPasswordPolicy.Description;
-            //                return result;
-            //            }
-
-            //            if (createGuestRequest.Password != createGuestRequest.PasswordConfirmation)
-            //            {
-            //                result.Payload.ResultCode = CreateGuestResponseCode.PasswordConfirmationError;
-            //                result.Message = "Password and PasswordConfirmation must match";
-            //                return result;
-            //            }
-            //        }
-
-            //        string passwordHash;
-            //        string passwordSalt;
-            //        PasswordUtility.HashAndSalt(createGuestRequest.Password, out passwordHash, out passwordSalt);
-
-            //        ProvisionGuestUserResult dbResult = _databaseService.ProvisionGuestUser(createGuestRequest.FirstName, createGuestRequest.LastName, createGuestRequest.Email, passwordHash, passwordSalt, isIdpUser);
-
-            //        if (dbResult.ReturnCode == ProvisionGuestUserReturnCode.EmailIsNotUnique)
-            //        {
-            //            result.Message = "Email is not unique";
-            //            result.Payload.ResultCode = CreateGuestResponseCode.UserExists;
-            //            return result;
-            //        }
-
-            //        if (dbResult.ReturnCode == ProvisionGuestUserReturnCode.UsernameIsNotUnique)
-            //        {
-            //            result.Message = "Username is not unique";
-            //            result.Payload.ResultCode = CreateGuestResponseCode.UsernameIsNotUnique;
-            //            return result;
-            //        }
-
-            //        if (dbResult.ReturnCode == ProvisionGuestUserReturnCode.Success || dbResult.ReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
-            //        {
-            //            var userDTO = Mapper.Map<SynthesisUser, SynthesisUserDTO>(dbResult.User);
-            //            if (userDTO == null)
-            //            {
-            //                result.Message = "Failed to create guest user!";
-            //                result.Payload.ResultCode = CreateGuestResponseCode.Failed;
-            //                return result;
-            //            }
-
-            //            result.Payload.ResultCode = dbResult.ReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded
-            //                ? CreateGuestResponseCode.SucessEmailVerificationNeeded
-            //                : CreateGuestResponseCode.Success;
-
-            //            result.Message = "CreateGuest";
-            //            result.Payload.User = userDTO;
-
-            //            result.ResultCode = ResultCode.Success;
-
-            //            if (dbResult.ReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
-            //            {
-            //                //TODO: What should we do here if SendVerificaitonEmail Fails?
-            //                SendVerificationEmail(new SendVerificationEmailRequest
-            //                {
-            //                    Email = userDTO.Email,
-            //                    ProjectAccessCode = createGuestRequest.ProjectAccessCode
-            //                });
-            //            }
-
-            //            return result;
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        LogError(ex, MethodBase.GetCurrentMethod().Name);
-            //        result.Message = ex.ToString();
-            //    }
-            //    return result;
-            //}
-
-            #endregion
-
-            // TODO: Delete me
-            return null;
         }
 
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
@@ -286,23 +219,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
             return new ProjectStatus(lobbyStatus);
         }
 
-        public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
-        {
-            var errors = GetFailures(Tuple.Create<Type, object>(typeof(GuestSessionIdValidator), guestSessionModel.Id),
-                                     Tuple.Create<Type, object>(typeof(GuestSessionValidator), guestSessionModel));
-            if (errors.Any())
-            {
-                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
-                throw new ValidationFailedException(errors);
-            }
-
-            var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
-
-            _eventService.Publish(EventNames.GuestSessionUpdated, result);
-
-            return result;
-        }
-
         public async Task<GuestVerificationEmail> SendVerificationEmailAsync(GuestVerificationEmail guestVerificationEmail)
         {
             var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmail.Email);
@@ -339,40 +255,93 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
         }
 
+        public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
+        {
+            var errors = GetFailures(Tuple.Create<Type, object>(typeof(GuestSessionIdValidator), guestSessionModel.Id),
+                                     Tuple.Create<Type, object>(typeof(GuestSessionValidator), guestSessionModel));
+            if (errors.Any())
+            {
+                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                throw new ValidationFailedException(errors);
+            }
+
+            var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
+
+            _eventService.Publish(EventNames.GuestSessionUpdated, result);
+
+            return result;
+        }
+
         public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
         {
             //TODO: Implement the error handling for this method
             var errors = GetFailures(Tuple.Create<Type, object>(typeof(EmailValidator), username),
                                      Tuple.Create<Type, object>(typeof(ProjectAccessCodeValidator), projectAccessCode));
+
             if (errors.Any())
             {
                 _logger.Error("Failed to validate the guest verification request.");
                 throw new ValidationFailedException(errors);
             }
 
-            // -- Make the call to the Project service
+            var response = new GuestVerificationResponse();
             var project = await _projectInterop.GetProjectByAccessCodeAsync(projectAccessCode);
+            if (project == null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            response.AccountId = project.TenantId;
+            response.AssociatedProject = project;
+            response.ProjectAccessCode = projectAccessCode;
+            response.ProjectName = project.Name;
+            response.UserId = project.OwnerId;
+            response.Username = username;
+
             if (project.IsGuestModeEnabled != true)
             {
-                //todo fail
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
             }
 
             var settings = await _settingsInterop.GetUserSettingsAsync(project.AccountId);
-            if (settings.IsGuestModeEnabled != true)
+            if (settings != null)
             {
-                //todo fail
+                if (settings.IsGuestModeEnabled != true)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.Failed;
+                    return response;
+                }
             }
 
             var user = await _userInterop.GetUserAsync(username);
-            if (user.IsLocked == true
-                && user.IsEmailVerified != true
-                && user.AccountId != null)
+            if (user == null)
             {
-                //todo fail
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
             }
 
-            //TODO: Return success
-            throw new NotImplementedException();
+            if (user.IsLocked == true)
+            {
+                response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
+                return response;
+            }
+
+            if (user.IsEmailVerified != true)
+            {
+                response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
+                return response;
+            }
+
+            if (user.AccountId != null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
+                return response;
+            }
+
+            response.ResultCode = VerifyGuestResponseCode.Success;
+            return response;
         }
 
         private List<ValidationFailure> GetFailures(params Tuple<Type, object>[] validations)

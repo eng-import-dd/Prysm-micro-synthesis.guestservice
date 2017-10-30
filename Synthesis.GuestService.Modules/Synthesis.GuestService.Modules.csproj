@@ -174,6 +174,9 @@
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="SimpleCrypto">
+      <HintPath>..\..\synthesis-cloud\Synthesis.Cloud.BLL\bin\Dev\SimpleCrypto.dll</HintPath>
+    </Reference>
     <Reference Include="StackExchange.Redis.StrongName, Version=1.2.6.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
       <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.6\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
@@ -296,8 +299,10 @@
     <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />
     <Compile Include="Requests\GuestVerificationRequest.cs" />
+    <Compile Include="Responses\CreateGuestResponseCode.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\GuestVerificationResponse.cs" />
+    <Compile Include="Responses\VerifyGuestResponseCode.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\IParticipantInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\Participant.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\Project.cs" />
@@ -326,11 +331,14 @@
     <Compile Include="Workflow\ServiceInterop\Interfaces\ISettingsInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\ITenantInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\IUserInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
+    <Compile Include="Workflow\Utilities\Interfaces\IPasswordUtility.cs" />
     <Compile Include="Workflow\Utilities\Objects\InvitedUserDto.cs" />
     <Compile Include="Workflow\Utilities\Objects\SynthesisUserBasicDto.cs" />
+    <Compile Include="Workflow\Utilities\PasswordUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
