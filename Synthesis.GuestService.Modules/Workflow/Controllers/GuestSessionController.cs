@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -26,10 +27,14 @@ namespace Synthesis.GuestService.Workflow.Controllers
     public class GuestSessionController : IGuestSessionController
     {
         private const int MaxGuestsAllowedInProject = 10;
+        private readonly IValidator _emailValidator;
         private readonly IEventService _eventService;
+        private readonly IValidator _guestSessionIdValidator;
         private readonly IRepository<GuestSession> _guestSessionRepository;
+        private readonly IValidator _guestSessionValidator;
         private readonly ILogger _logger;
         private readonly IParticipantInterop _participantInterop;
+        private readonly IValidator _projectIdValidator;
         private readonly IProjectInterop _projectInterop;
         private readonly ISettingsInterop _settingsInterop;
         private readonly IUserInterop _userInterop;
@@ -56,7 +61,19 @@ namespace Synthesis.GuestService.Workflow.Controllers
             IUserInterop userInterop,
             IParticipantInterop participantInterop)
         {
-            _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            try
+            {
+                _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            }
+            catch (Exception)
+            {
+                // supressing the repository exceptions for initial testing
+            }
+
+            _guestSessionValidator = validatorLocator.GetValidator(typeof(GuestSession));
+            _guestSessionIdValidator = validatorLocator.GetValidator(typeof(GuestSessionIdValidator));
+            _emailValidator = validatorLocator.GetValidator(typeof(EmailValidator));
+            _projectIdValidator = validatorLocator.GetValidator(typeof(ProjectIdValidator));
 
             _validatorLocator = validatorLocator;
             _eventService = eventService;
@@ -69,7 +86,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request)
         {
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(request.Email);
+            var emailValidationResult = await _emailValidator.ValidateAsync(request.Email);
             if (!emailValidationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the email address while attempting to create a new guest.");
@@ -149,7 +166,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
         {
-            var validationResult = _validatorLocator.Validate<GuestSessionValidator>(model);
+            var validationResult = await _guestSessionValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a GuestSession resource.");
@@ -167,7 +184,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
         {
-            var validationResult = _validatorLocator.Validate<GuestSessionIdValidator>(id);
+            var validationResult = await _guestSessionIdValidator.ValidateAsync(id);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a GuestSession resource.");
@@ -186,7 +203,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdAsync(Guid projectId)
         {
-            var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
+            var validationResult = await _projectIdValidator.ValidateAsync(projectId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the projectId while attempting to retrieve GuestSession resources.");
@@ -205,7 +222,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<ProjectStatus> GetProjectStatusAsync(Guid projectId)
         {
-            var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
+            var validationResult = await _projectIdValidator.ValidateAsync(projectId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the projectId while attempting to reset the project access code.");
@@ -221,7 +238,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestVerificationEmail> SendVerificationEmailAsync(GuestVerificationEmail guestVerificationEmail)
         {
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmail.Email);
+            var emailValidationResult = await _emailValidator.ValidateAsync(guestVerificationEmail.Email);
             if (!emailValidationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the email address while attempting to send a verification email.");
@@ -274,7 +291,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
         {
-            //TODO: Implement the error handling for this method
             var errors = GetFailures(Tuple.Create<Type, object>(typeof(EmailValidator), username),
                                      Tuple.Create<Type, object>(typeof(ProjectAccessCodeValidator), projectAccessCode));
 

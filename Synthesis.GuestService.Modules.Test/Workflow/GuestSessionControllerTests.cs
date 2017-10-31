@@ -36,6 +36,10 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()))
                 .ReturnsAsync((Guid id, GuestSession participant) => participant);
 
+            repositoryFactoryMock
+                .Setup(x => x.CreateRepository<GuestSession>())
+                .Returns(_guestSessionRepositoryMock.Object);
+
             _validatorMock
                 .Setup(v => v.ValidateAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ValidationResult());
@@ -66,7 +70,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();
             _defaultGuestSession.ProjectId = Guid.NewGuid();
-            _defaultGuestSession.ProjectAccessCode = "123123";
+            _defaultGuestSession.ProjectAccessCode = "123123123123";
 
             var result = await _target.CreateGuestSessionAsync(_defaultGuestSession);
             Assert.NotNull(result);
