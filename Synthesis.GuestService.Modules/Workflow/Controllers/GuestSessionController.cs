@@ -27,6 +27,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
     public class GuestSessionController : IGuestSessionController
     {
         private const int MaxGuestsAllowedInProject = 10;
+        private readonly IEmailUtility _emailUtility;
         private readonly IValidator _emailValidator;
         private readonly IEventService _eventService;
         private readonly IValidator _guestSessionIdValidator;
@@ -51,6 +52,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
         /// <param name="settingsInterop"></param>
         /// <param name="userInterop"></param>
         /// <param name="participantInterop"></param>
+        /// <param name="emailUtility"></param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -59,7 +61,8 @@ namespace Synthesis.GuestService.Workflow.Controllers
             IProjectInterop projectInterop,
             ISettingsInterop settingsInterop,
             IUserInterop userInterop,
-            IParticipantInterop participantInterop)
+            IParticipantInterop participantInterop,
+            IEmailUtility emailUtility)
         {
             try
             {
@@ -82,6 +85,8 @@ namespace Synthesis.GuestService.Workflow.Controllers
             _settingsInterop = settingsInterop;
             _userInterop = userInterop;
             _participantInterop = participantInterop;
+
+            _emailUtility = emailUtility;
         }
 
         public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request)
@@ -150,12 +155,18 @@ namespace Synthesis.GuestService.Workflow.Controllers
             {
                 response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
 
-                //TODO: What should we do here if SendVerificaitonEmail Fails?
-                //SendVerificationEmail(new SendVerificationEmailRequest
-                //{
-                //    Email = userDTO.Email,
-                //    ProjectAccessCode = createGuestRequest.ProjectAccessCode
-                //});
+                var sendVerificationEmailResponse = await SendVerificationEmailAsync(new GuestVerificationEmail
+                {
+                    FirstName = request.FirstName,
+                    Email = request.Email,
+                    ProjectAccessCode = request.ProjectAccessCode,
+                    LastName = request.LastName
+                });
+
+                if (sendVerificationEmailResponse.SendVerificationStatus != SendVerificationResult.Success)
+                {
+                    //TODO: What should we do here if SendVerificaitonEmail Fails?
+                }
 
                 return response;
             }
@@ -260,8 +271,15 @@ namespace Synthesis.GuestService.Workflow.Controllers
                     return guestVerificationEmail;
                 }
 
-                //TODO: Implement email utility to send the email here
-                guestVerificationEmail.SendVerificationStatus = SendVerificationResult.Success;
+                //TODO: Update the email utility call with the correct EmailVerificationId
+                if (_emailUtility.SendVerifyAccountEmail(guestVerificationEmail.FirstName, guestVerificationEmail.Email,
+                                                         guestVerificationEmail.ProjectAccessCode, "ReplaceThisWithEmailVerificationId"))
+                {
+                    guestVerificationEmail.SendVerificationStatus = SendVerificationResult.Success;
+                    return guestVerificationEmail;
+                }
+
+                guestVerificationEmail.SendVerificationStatus = SendVerificationResult.FailedToSend;
                 return guestVerificationEmail;
             }
             catch (Exception e)
