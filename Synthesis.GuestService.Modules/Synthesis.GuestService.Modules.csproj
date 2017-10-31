@@ -44,6 +44,9 @@
     <Reference Include="Autofac.Integration.Owin, Version=4.1.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.Owin.4.1.0\lib\net45\Autofac.Integration.Owin.dll</HintPath>
     </Reference>
+    <Reference Include="AutoMapper, Version=6.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\packages\AutoMapper.6.1.1\lib\net45\AutoMapper.dll</HintPath>
+    </Reference>
     <Reference Include="Castle.Core, Version=4.1.1.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
       <HintPath>..\packages\Castle.Core.4.1.1\lib\net45\Castle.Core.dll</HintPath>
       <Private>True</Private>
@@ -297,14 +300,22 @@
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
     <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
+    <Compile Include="Extensions\LoggerFactoryExtension.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />
     <Compile Include="Requests\GuestVerificationRequest.cs" />
     <Compile Include="Responses\CreateGuestResponseCode.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\GuestVerificationResponse.cs" />
     <Compile Include="Responses\VerifyGuestResponseCode.cs" />
+    <Compile Include="Workflow\ServiceInterop\BaseInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Interfaces\IParticipantInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Interfaces\IServiceLocator.cs" />
+    <Compile Include="Workflow\ServiceInterop\ParticipantInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\ProjectInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\BaseInteropResponse.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\InteropResponseCode.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\Participant.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\ParticipantInteropResponse.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\Project.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\ProjectStatus.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
@@ -333,7 +344,12 @@
     <Compile Include="Workflow\ServiceInterop\Interfaces\IUserInterop.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\PrincipalSettings.cs" />
+    <Compile Include="Workflow\ServiceInterop\Responses\UserInteropResponse.cs" />
+    <Compile Include="Workflow\ServiceInterop\ServiceLocator.cs" />
+    <Compile Include="Workflow\ServiceInterop\SettingsInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\TenantInterop.cs" />
+    <Compile Include="Workflow\ServiceInterop\UserInterop.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IPasswordUtility.cs" />
     <Compile Include="Workflow\Utilities\Objects\DataSortOrder.cs" />

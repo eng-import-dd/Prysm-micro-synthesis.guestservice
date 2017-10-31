@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
-using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
+using Synthesis.GuestService.Workflow.ServiceInterop;
 
 namespace Synthesis.GuestService.Workflow.Controllers
 {

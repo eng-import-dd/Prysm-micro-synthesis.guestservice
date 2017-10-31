@@ -12,7 +12,6 @@ using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
 using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.ServiceInterop;
-using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
 using Synthesis.GuestService.Workflow.Utilities;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -35,10 +34,11 @@ namespace Synthesis.GuestService.Workflow.Controllers
         private readonly IValidator _guestSessionValidator;
         private readonly ILogger _logger;
         private readonly IParticipantInterop _participantInterop;
+        private readonly IPasswordUtility _passwordUtility;
+        private readonly IUserInterop _userInterop;
         private readonly IValidator _projectIdValidator;
         private readonly IProjectInterop _projectInterop;
         private readonly ISettingsInterop _settingsInterop;
-        private readonly IUserInterop _userInterop;
         private readonly IValidatorLocator _validatorLocator;
 
         /// <summary>
@@ -53,6 +53,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
         /// <param name="userInterop"></param>
         /// <param name="participantInterop"></param>
         /// <param name="emailUtility"></param>
+        /// <param name="passwordUtility"></param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -62,7 +63,8 @@ namespace Synthesis.GuestService.Workflow.Controllers
             ISettingsInterop settingsInterop,
             IUserInterop userInterop,
             IParticipantInterop participantInterop,
-            IEmailUtility emailUtility)
+            IEmailUtility emailUtility,
+            IPasswordUtility passwordUtility)
         {
             try
             {
@@ -87,6 +89,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             _participantInterop = participantInterop;
 
             _emailUtility = emailUtility;
+            _passwordUtility = passwordUtility;
         }
 
         public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request)
@@ -128,7 +131,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             if (request.IsIdpUser)
             {
-                var throwAwayPassword = await _userInterop.GenerateRandomPassword(64);
+                var throwAwayPassword = _passwordUtility.GenerateRandomPassword(64);
                 request.Password = throwAwayPassword;
                 request.PasswordConfirmation = throwAwayPassword;
             }
@@ -339,7 +342,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return response;
             }
 
-            var settings = await _settingsInterop.GetUserSettingsAsync(project.AccountId);
+            var settings = await _settingsInterop.GetPrincipalSettingsAsync(project.AccountId);
             if (settings != null)
             {
                 if (settings.IsGuestModeEnabled != true)

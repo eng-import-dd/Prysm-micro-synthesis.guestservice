@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Synthesis.GuestService.Workflow.ServiceInterop.Responses
+namespace Synthesis.GuestService.Workflow.ServiceInterop
 {
     public class Participant
     {

@@ -9,6 +9,7 @@ using Synthesis.EventBus;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.GuestService.Workflow.ServiceInterop;
+using Synthesis.GuestService.Workflow.Utilities;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -49,7 +50,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Returns(_validatorMock.Object);
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _guestSessionValidator.Object, _eventServiceMock.Object, _loggerMock.Object,
-                                                 _projectInteropMock.Object, _settingsInteropMock.Object, _userInteropMock.Object, _participantInteropMock.Object);
+                                                 _projectInteropMock.Object, _settingsInteropMock.Object, _userInteropMock.Object, _participantInteropMock.Object, _emailUtility.Object, _passwordUtility.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -57,11 +58,15 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _guestSessionValidator = new Mock<IValidatorLocator>();
+        private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
+        private readonly Mock<IPasswordUtility> _passwordUtility = new Mock<IPasswordUtility>();
+
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
         private readonly Mock<IProjectInterop> _projectInteropMock = new Mock<IProjectInterop>();
         private readonly Mock<ISettingsInterop> _settingsInteropMock = new Mock<ISettingsInterop>();
         private readonly Mock<IUserInterop> _userInteropMock = new Mock<IUserInterop>();
         private readonly Mock<IParticipantInterop> _participantInteropMock = new Mock<IParticipantInterop>();
+
         private readonly GuestSession _defaultGuestSession;
 
         [Fact]

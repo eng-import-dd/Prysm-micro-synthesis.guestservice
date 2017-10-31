@@ -1,19 +1,15 @@
-﻿using System.Threading.Tasks;
-using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
+using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Workflow.ServiceInterop
 {
     public interface IUserInterop
     {
-        // TODO: Implement these methods
-        Task<User> GetUserAsync(string username);
+        Task<UserInteropResponse> GetUserAsync(string username);
 
-        Task<string> GenerateRandomPassword(int bitSize);
+        Task<UserInteropResponse> IsUniqueEmail(string email);
 
-        Task<bool> IsUniqueEmail(string email);
+        Task<UserInteropResponse> IsUniqueUsername(string username);
 
-        Task<bool> IsUniqueUsername(string username);
-
-        Task<ProvisionGuestUserReturnCode> ProvisionGuestUser(string firstName, string lastName, string email, string passwordHash, string passwordSalt, bool isIdpUser);
+        Task<UserInteropResponse> ProvisionGuestUser(string firstName, string lastName, string email, string passwordHash, string passwordSalt, bool isIdpUser);
     }
 }

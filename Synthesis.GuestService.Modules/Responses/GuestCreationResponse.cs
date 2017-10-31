@@ -1,4 +1,4 @@
-﻿using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
+﻿using Synthesis.GuestService.Workflow.ServiceInterop;
 
 namespace Synthesis.GuestService.Responses
 {
