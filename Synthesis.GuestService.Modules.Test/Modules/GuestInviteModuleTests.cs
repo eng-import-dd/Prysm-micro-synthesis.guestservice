@@ -31,20 +31,18 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
         private readonly GuestInvite _guestInvite = new GuestInvite { Id = Guid.NewGuid(), InvitedBy = Guid.NewGuid(), ProjectId = Guid.NewGuid(), CreatedDateTime = DateTime.UtcNow };
         private readonly Mock<IGuestInviteController> _guestInviteControllerMock = new Mock<IGuestInviteController>();
-        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
-        private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
 
         public GuestInviteModuleTests()
         {
             _browserAuth = BrowserWithRequestStartup((container, pipelines, context) =>
             {
                 context.CurrentUser = new ClaimsPrincipal(
-                            new ClaimsIdentity(new[]
-                            {
-                                new Claim(ClaimTypes.Name, "TestUser"),
-                                new Claim(ClaimTypes.Email, "test@user.com")
-                            },
-                            AuthenticationTypes.Basic));
+                    new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.Name, "TestUser"),
+                        new Claim(ClaimTypes.Email, "test@user.com")
+                    },
+                    AuthenticationTypes.Basic));
             });
 
             _browserNoAuth = BrowserWithRequestStartup((container, pipelines, context) => { });
@@ -53,54 +51,54 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         private Browser BrowserWithRequestStartup(Action<TinyIoCContainer, IPipelines, NancyContext> requestStartup)
         {
             return new Browser(with =>
-            {
-                var mockLogger = new Mock<ILogger>();
-
-                mockLogger.Setup(l => l.LogMessage(It.IsAny<LogLevel>(), It.IsAny<string>(), It.IsAny<Exception>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>())).Callback(() => Console.Write(""));
-                var logger = mockLogger.Object;
-                var loggerFactoryMock = new Mock<ILoggerFactory>();
-                loggerFactoryMock.Setup(f => f.Get(It.IsAny<LogTopic>())).Returns(logger);
-
-                var loggerFactory = loggerFactoryMock.Object;
-                var resource = new GuestInvite
                 {
-                    Id = Guid.Parse("2c1156fa-5902-4978-9c3d-ebcb77ae0d55"),
-                    CreatedDateTime = DateTime.UtcNow,
-                    LastAccessDate = DateTime.UtcNow
-                };
-                var repositoryMock = new Mock<IRepository<GuestInvite>>();
-                repositoryMock
-                    .Setup(r => r.GetItemAsync(It.IsAny<Guid>()))
-                    .ReturnsAsync(resource);
+                    var mockLogger = new Mock<ILogger>();
 
-                var repositoryFactoryMock = new Mock<IRepositoryFactory>();
-                repositoryFactoryMock
-                    .Setup(f => f.CreateRepository<GuestInvite>())
-                    .Returns(repositoryMock.Object);
+                    mockLogger.Setup(l => l.LogMessage(It.IsAny<LogLevel>(), It.IsAny<string>(), It.IsAny<Exception>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>())).Callback(() => Console.Write(""));
+                    var logger = mockLogger.Object;
+                    var loggerFactoryMock = new Mock<ILoggerFactory>();
+                    loggerFactoryMock.Setup(f => f.Get(It.IsAny<LogTopic>())).Returns(logger);
 
-                var eventServiceMock = new Mock<IEventService>();
-                eventServiceMock.Setup(s => s.PublishAsync(It.IsAny<string>()));
+                    var loggerFactory = loggerFactoryMock.Object;
+                    var resource = new GuestInvite
+                    {
+                        Id = Guid.Parse("2c1156fa-5902-4978-9c3d-ebcb77ae0d55"),
+                        CreatedDateTime = DateTime.UtcNow,
+                        LastAccessDate = DateTime.UtcNow
+                    };
+                    var repositoryMock = new Mock<IRepository<GuestInvite>>();
+                    repositoryMock
+                        .Setup(r => r.GetItemAsync(It.IsAny<Guid>()))
+                        .ReturnsAsync(resource);
 
-                var validatorMock = new Mock<IValidator>();
-                validatorMock
-                    .Setup(v => v.ValidateAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new ValidationResult());
-                var validatorLocatorMock = new Mock<IValidatorLocator>();
-                validatorLocatorMock
-                    .Setup(l => l.GetValidator(It.IsAny<Type>()))
-                    .Returns(validatorMock.Object);
+                    var repositoryFactoryMock = new Mock<IRepositoryFactory>();
+                    repositoryFactoryMock
+                        .Setup(f => f.CreateRepository<GuestInvite>())
+                        .Returns(repositoryMock.Object);
 
-                with.EnableAutoRegistration();
-                with.RequestStartup(requestStartup);
-                with.Dependency(new Mock<IMetadataRegistry>().Object);
-                with.Dependency(loggerFactory);
-                with.Dependency(logger);
-                with.Dependency(_guestInviteControllerMock.Object);
-                with.Dependency(validatorLocatorMock.Object);
-                with.Dependency(repositoryFactoryMock.Object);
-                with.Dependency(eventServiceMock.Object);
-                with.Module<GuestInviteModule>();
-            });
+                    var eventServiceMock = new Mock<IEventService>();
+                    eventServiceMock.Setup(s => s.PublishAsync(It.IsAny<string>()));
+
+                    var validatorMock = new Mock<IValidator>();
+                    validatorMock
+                        .Setup(v => v.ValidateAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(new ValidationResult());
+                    var validatorLocatorMock = new Mock<IValidatorLocator>();
+                    validatorLocatorMock
+                        .Setup(l => l.GetValidator(It.IsAny<Type>()))
+                        .Returns(validatorMock.Object);
+
+                    with.EnableAutoRegistration();
+                    with.RequestStartup(requestStartup);
+                    with.Dependency(new Mock<IMetadataRegistry>().Object);
+                    with.Dependency(loggerFactory);
+                    with.Dependency(logger);
+                    with.Dependency(_guestInviteControllerMock.Object);
+                    with.Dependency(validatorLocatorMock.Object);
+                    with.Dependency(repositoryFactoryMock.Object);
+                    with.Dependency(eventServiceMock.Object);
+                    with.Module<GuestInviteModule>();
+                });
         }
 
         private static void BuildRequest(BrowserContext context)
@@ -249,21 +247,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         [Theory]
         [InlineData(BaseRoutes.GuestInvite)]
         [InlineData(BaseRoutes.GuestInviteLegacy)]
-        public async Task CreateGuestInviteReturnsBadRequestBindingException(string route)
-        {
-            _guestInviteControllerMock
-                .Setup(x => x.CreateGuestInviteAsync(_guestInvite))
-                .Throws<Exception>();
-
-            var response = await _browserAuth.Post($"{route}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
-        }
-
-        [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
         public async Task CreateGuestInviteReturnsBadRequestValidationFailedException(string route)
         {
             _guestInviteControllerMock
@@ -311,21 +294,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
-        public async Task UpdateGuestInviteReturnsBadRequestBindingException(string route)
-        {
-            _guestInviteControllerMock
-                .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
-                .Throws<Exception>();
-
-            var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseMessages.FailedToBind, response.ReasonPhrase);
         }
     }
 }

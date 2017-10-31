@@ -336,7 +336,9 @@
     <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IPasswordUtility.cs" />
+    <Compile Include="Workflow\Utilities\Objects\DataSortOrder.cs" />
     <Compile Include="Workflow\Utilities\Objects\InvitedUserDto.cs" />
+    <Compile Include="Workflow\Utilities\Objects\PagingMetaData.cs" />
     <Compile Include="Workflow\Utilities\Objects\SynthesisUserBasicDto.cs" />
     <Compile Include="Workflow\Utilities\PasswordUtility.cs" />
   </ItemGroup>
