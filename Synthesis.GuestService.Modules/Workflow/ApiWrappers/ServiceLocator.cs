@@ -3,7 +3,7 @@ using Synthesis.Configuration;
 using Synthesis.GuestService.Extensions;
 using Synthesis.Logging;
 
-namespace Synthesis.GuestService.Workflow.ServiceInterop
+namespace Synthesis.GuestService.Workflow.ApiWrappers
 {
     public class ServiceLocator : IServiceLocator
     {
@@ -14,7 +14,6 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
                 ParticipantUrl = reader.GetValue<string>("ParticipantUrl");
                 ProjectUrl = reader.GetValue<string>("ProjectUrl");
                 SettingsUrl = reader.GetValue<string>("SettingsUrl");
-                TenantUrl = reader.GetValue<string>("TenantUrl");
                 UserUrl = reader.GetValue<string>("UserUrl");
             }
             catch (Exception e)
@@ -31,9 +30,6 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
 
         /// <inheritdoc />
         public string SettingsUrl { get; }
-
-        /// <inheritdoc />
-        public string TenantUrl { get; }
 
         /// <inheritdoc />
         public string UserUrl { get; }

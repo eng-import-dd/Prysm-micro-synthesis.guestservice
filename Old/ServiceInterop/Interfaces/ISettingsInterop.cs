@@ -5,6 +5,6 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
 {
     public interface ISettingsInterop
     {
-        Task<PrincipalSettings> GetPrincipalSettingsAsync(Guid projectAccountId);
+        Task<SettingsInteropResponse> GetPrincipalSettingsAsync(Guid projectAccountId);
     }
 }

@@ -293,6 +293,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Workflow\ApiWrappers\BaseApiWrapper.cs" />
+    <Compile Include="Enums\LobbyState.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IParticipantApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IPrincipalApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IProjectApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\ISettingsApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\ParticipantApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\ProjectApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Requests\UserRequest.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\ParticipantResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\ProjectResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\SettingsResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\UserResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\SettingsApiWrapper.cs" />
     <Compile Include="Constants\BaseRoutes.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
@@ -300,24 +314,17 @@
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
     <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
+    <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Extensions\LoggerFactoryExtension.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />
     <Compile Include="Requests\GuestVerificationRequest.cs" />
     <Compile Include="Responses\CreateGuestResponseCode.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\GuestVerificationResponse.cs" />
+    <Compile Include="Responses\ProjectStatus.cs" />
     <Compile Include="Responses\VerifyGuestResponseCode.cs" />
-    <Compile Include="Workflow\ServiceInterop\BaseInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IParticipantInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IServiceLocator.cs" />
-    <Compile Include="Workflow\ServiceInterop\ParticipantInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\ProjectInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\BaseInteropResponse.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\InteropResponseCode.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\Participant.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\ParticipantInteropResponse.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\Project.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\ProjectStatus.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IServiceLocator.cs" />
+    <Compile Include="Workflow\ApiWrappers\PrincipalApiWrapper.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
@@ -338,18 +345,7 @@
     <Compile Include="Workflow\Controllers\GuestInviteController.cs" />
     <Compile Include="Workflow\Controllers\Interfaces\IGuestSessionController.cs" />
     <Compile Include="Workflow\Controllers\Interfaces\IGuestInviteController.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IProjectInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\ISettingsInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\ITenantInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IUserInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\ProvisionGuestUserReturnCode.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\PrincipalSettings.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\UserInteropResponse.cs" />
-    <Compile Include="Workflow\ServiceInterop\ServiceLocator.cs" />
-    <Compile Include="Workflow\ServiceInterop\SettingsInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\TenantInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\UserInterop.cs" />
+    <Compile Include="Workflow\ApiWrappers\ServiceLocator.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IPasswordUtility.cs" />
     <Compile Include="Workflow\Utilities\Objects\DataSortOrder.cs" />
@@ -364,9 +360,7 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Workflow\ServiceInterop\Requests\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Synthesis.GuestService.ApiWrappers;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
-using AutoMapper;
 
 namespace Synthesis.GuestService.Workflow.ServiceInterop
 {
     public class UserInterop : BaseInterop, IUserInterop
     {
-
         public UserInterop(IServiceLocator serviceLocator, IMicroserviceHttpClient httpClient, ILoggerFactory loggerFactory)
             : base(httpClient, loggerFactory)
         {
@@ -20,7 +19,7 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
         {
             try
             {
-                //TODO: Verify route format
+                // TODO: Verify route
                 var result = await HttpClient.GetAsync<User>($"{ServiceUrl}/v1/{username}");
 
                 if (!IsSuccess(result))
@@ -36,7 +35,7 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
                 {
                     return new UserInteropResponse
                     {
-                        SynthesisUser = Mapper.Map<User, SynthesisUserDTO>(result.Payload),
+                        //SynthesisUser = Mapper.Map<User, SynthesisUserDTO>(result.Payload),
                         ResponseCode = InteropResponseCode.Success
                     };
                 }
@@ -62,7 +61,7 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
         {
             try
             {
-                //TODO: Need to verify route exists for getting a list of principals by email
+                // TODO: Verify route
                 var result = await HttpClient.GetManyAsync<User>($"{ServiceUrl}/v1/projects/{email}");
 
                 if (!IsSuccess(result))
@@ -92,7 +91,7 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
                     };
                 }
 
-                Logger.Warning($"No user records found for the given username");
+                Logger.Warning("No user records found for the given username");
                 return new UserInteropResponse
                 {
                     ResponseCode = InteropResponseCode.NoRecordsReturned
@@ -142,7 +141,7 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
                     };
                 }
 
-                Logger.Warning($"No user records found for the given username");
+                Logger.Warning("No user records found for the given username");
                 return new UserInteropResponse
                 {
                     ResponseCode = InteropResponseCode.NoRecordsReturned

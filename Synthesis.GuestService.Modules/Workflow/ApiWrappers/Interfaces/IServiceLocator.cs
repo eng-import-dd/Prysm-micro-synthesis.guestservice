@@ -1,11 +1,10 @@
-﻿namespace Synthesis.GuestService.Workflow.ServiceInterop
+﻿namespace Synthesis.GuestService.Workflow.ApiWrappers
 {
     public interface IServiceLocator
     {
         string ParticipantUrl { get; }
         string ProjectUrl { get; }
         string SettingsUrl { get; }
-        string TenantUrl { get; }
         string UserUrl { get; }
     }
 }

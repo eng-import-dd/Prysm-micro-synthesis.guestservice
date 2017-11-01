@@ -1,4 +1,5 @@
-﻿using Synthesis.Http.Microservice;
+﻿using Synthesis.GuestService.ApiWrappers;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 
 namespace Synthesis.GuestService.Workflow.ServiceInterop

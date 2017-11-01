@@ -1,12 +1,10 @@
-﻿using Synthesis.GuestService.Workflow.ServiceInterop;
+﻿using Synthesis.GuestService.Workflow.ApiWrappers;
 
 namespace Synthesis.GuestService.Responses
 {
     public class GuestCreationResponse
     {
         public CreateGuestResponseCode ResultCode { get; set; }
-        public User SynthesisUser { get; set; }
+        public UserResponse SynthesisUser { get; set; }
     }
-
-    
 }

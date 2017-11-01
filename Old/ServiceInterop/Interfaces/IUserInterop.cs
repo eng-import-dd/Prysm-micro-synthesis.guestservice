@@ -10,6 +10,6 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop
 
         Task<UserInteropResponse> IsUniqueUsername(string username);
 
-        Task<UserInteropResponse> ProvisionGuestUser(string firstName, string lastName, string email, string passwordHash, string passwordSalt, bool isIdpUser);
+        Task<UserInteropResponse> ProvisionGuestUser(User user);
     }
 }

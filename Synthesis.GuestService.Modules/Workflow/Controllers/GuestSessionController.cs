@@ -11,7 +11,7 @@ using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
 using Synthesis.GuestService.Validators;
-using Synthesis.GuestService.Workflow.ServiceInterop;
+using Synthesis.GuestService.Workflow.ApiWrappers;
 using Synthesis.GuestService.Workflow.Utilities;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -33,12 +33,12 @@ namespace Synthesis.GuestService.Workflow.Controllers
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IValidator _guestSessionValidator;
         private readonly ILogger _logger;
-        private readonly IParticipantInterop _participantInterop;
+        private readonly IParticipantApiWrapper _participantApi;
         private readonly IPasswordUtility _passwordUtility;
-        private readonly IUserInterop _userInterop;
+        private readonly IProjectApiWrapper _projectApi;
         private readonly IValidator _projectIdValidator;
-        private readonly IProjectInterop _projectInterop;
-        private readonly ISettingsInterop _settingsInterop;
+        private readonly ISettingsApiWrapper _settingsApi;
+        private readonly IPrincipalApiWrapper _userApi;
         private readonly IValidatorLocator _validatorLocator;
 
         /// <summary>
@@ -48,10 +48,10 @@ namespace Synthesis.GuestService.Workflow.Controllers
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="logger">The logger.</param>
-        /// <param name="projectInterop"></param>
-        /// <param name="settingsInterop"></param>
-        /// <param name="userInterop"></param>
-        /// <param name="participantInterop"></param>
+        /// <param name="projectApi"></param>
+        /// <param name="settingsApi"></param>
+        /// <param name="userApi"></param>
+        /// <param name="participantApi"></param>
         /// <param name="emailUtility"></param>
         /// <param name="passwordUtility"></param>
         public GuestSessionController(
@@ -59,12 +59,12 @@ namespace Synthesis.GuestService.Workflow.Controllers
             IValidatorLocator validatorLocator,
             IEventService eventService,
             ILogger logger,
-            IProjectInterop projectInterop,
-            ISettingsInterop settingsInterop,
-            IUserInterop userInterop,
-            IParticipantInterop participantInterop,
             IEmailUtility emailUtility,
-            IPasswordUtility passwordUtility)
+            IPasswordUtility passwordUtility,
+            IProjectApiWrapper projectApi,
+            IParticipantApiWrapper participantApi,
+            IPrincipalApiWrapper userApi,
+            ISettingsApiWrapper settingsApi)
         {
             try
             {
@@ -83,13 +83,14 @@ namespace Synthesis.GuestService.Workflow.Controllers
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = logger;
-            _projectInterop = projectInterop;
-            _settingsInterop = settingsInterop;
-            _userInterop = userInterop;
-            _participantInterop = participantInterop;
 
             _emailUtility = emailUtility;
             _passwordUtility = passwordUtility;
+
+            _projectApi = projectApi;
+            _participantApi = participantApi;
+            _userApi = userApi;
+            _settingsApi = settingsApi;
         }
 
         public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request)
@@ -101,7 +102,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 throw new ValidationFailedException(emailValidationResult.Errors);
             }
 
-            // Create default response
             var response = new GuestCreationResponse
             {
                 SynthesisUser = null,
@@ -136,25 +136,19 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 request.PasswordConfirmation = throwAwayPassword;
             }
 
-            var isUniqueEmail = await _userInterop.IsUniqueEmail(request.Email);
-            if (!isUniqueEmail)
-            {
-                response.ResultCode = CreateGuestResponseCode.EmailIsNotUnique;
-                return response;
-            }
-
-            var isUniqueUsername = await _userInterop.IsUniqueUsername(request.Email);
-            if (!isUniqueUsername)
-            {
-                response.ResultCode = CreateGuestResponseCode.UsernameIsNotUnique;
-                return response;
-            }
-
             PasswordUtility.HashAndSalt(request.Password, out var passwordHash, out var passwordSalt);
+            var userRequest = new UserRequest
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                PasswordHash = passwordHash,
+                PasswordSalt = passwordSalt,
+                IsIdpUser = request.IsIdpUser
+            };
 
-            var provisionGuestUserResult = await _userInterop.ProvisionGuestUser(request.FirstName, request.LastName, request.Email, passwordHash, passwordSalt, request.IsIdpUser);
-
-            if (provisionGuestUserResult == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
+            var provisionGuestUserResult = await _userApi.ProvisionGuestUserAsync(userRequest);
+            if (provisionGuestUserResult.Payload.ProvisionReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
             {
                 response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
 
@@ -261,22 +255,22 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             try
             {
-                var user = await _userInterop.GetUserAsync(guestVerificationEmail.Email);
-                if (user?.IsEmailVerified == null || user.IsEmailVerified.Value)
+                var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmail.Email });
+                if (user.Payload.IsEmailVerified != null && user.Payload.IsEmailVerified.Value)
                 {
                     guestVerificationEmail.SendVerificationStatus = SendVerificationResult.EmailNotVerified;
                     return guestVerificationEmail;
                 }
 
-                if (user.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
+                if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
                 {
                     guestVerificationEmail.SendVerificationStatus = SendVerificationResult.MsgAlreadySentWithinLastMinute;
                     return guestVerificationEmail;
                 }
 
-                //TODO: Update the email utility call with the correct EmailVerificationId
+                // TODO: Update the email utility call with the correct EmailVerificationId
                 if (_emailUtility.SendVerifyAccountEmail(guestVerificationEmail.FirstName, guestVerificationEmail.Email,
-                                                         guestVerificationEmail.ProjectAccessCode, "ReplaceThisWithEmailVerificationId"))
+                                                         guestVerificationEmail.ProjectAccessCode, "<---ReplaceThisWithEmailVerificationId--->"))
                 {
                     guestVerificationEmail.SendVerificationStatus = SendVerificationResult.Success;
                     return guestVerificationEmail;
@@ -322,56 +316,56 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            var project = await _projectInterop.GetProjectByAccessCodeAsync(projectAccessCode);
+            var project = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
             if (project == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
                 return response;
             }
 
-            response.AccountId = project.TenantId;
-            response.AssociatedProject = project;
+            response.AccountId = project.Payload.TenantId;
+            response.AssociatedProject = project.Payload;
             response.ProjectAccessCode = projectAccessCode;
-            response.ProjectName = project.Name;
-            response.UserId = project.OwnerId;
+            response.ProjectName = project.Payload.Name;
+            response.UserId = project.Payload.OwnerId;
             response.Username = username;
 
-            if (project.IsGuestModeEnabled != true)
+            if (project.Payload.IsGuestModeEnabled != true)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
                 return response;
             }
 
-            var settings = await _settingsInterop.GetPrincipalSettingsAsync(project.AccountId);
+            var settings = await _settingsApi.GetSettingsAsync(project.Payload.AccountId);
             if (settings != null)
             {
-                if (settings.IsGuestModeEnabled != true)
+                if (settings.Payload.IsGuestModeEnabled != true)
                 {
                     response.ResultCode = VerifyGuestResponseCode.Failed;
                     return response;
                 }
             }
 
-            var user = await _userInterop.GetUserAsync(username);
+            var user = await _userApi.GetUserAsync(new UserRequest { UserName = username });
             if (user == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
                 return response;
             }
 
-            if (user.IsLocked == true)
+            if (user.Payload.IsLocked)
             {
                 response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
                 return response;
             }
 
-            if (user.IsEmailVerified != true)
+            if (user.Payload.IsEmailVerified != true)
             {
                 response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
                 return response;
             }
 
-            if (user.AccountId != null)
+            if (user.Payload.TenantId != null)
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
                 return response;
@@ -406,27 +400,43 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         private async Task<bool> IsHostCurrentlyPresentInProjectAsync(Guid projectId)
         {
-            var project = await _projectInterop.GetProjectByIdAsync(projectId);
+            var project = await _projectApi.GetProjectByIdAsync(projectId);
             if (project == null)
             {
                 _logger.Warning($"Failed to retrieve the project with id {projectId} when verifying if host is present.");
                 throw new NotFoundException($"Error retrieving project with id {projectId} while verifying if host is present.");
             }
 
-            var participants = await _participantInterop.GetParticipantsByProjectId(projectId);
+            var participants = await _participantApi.GetParticipantsByProjectId(projectId);
             if (participants == null)
             {
                 _logger.Warning($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
                 throw new NotFoundException($"Error retrieving participants for project {projectId} while verifying if host is present.");
             }
 
-            if (participants.Any())
+            if (participants.Payload != null && participants.Payload.Any())
             {
-                return participants.Any(p => p.UserId == project.OwnerId);
+                return participants.Payload.Any(p => p.UserId == project.Payload.OwnerId);
             }
 
             _logger.Warning($"There are no current participants for projectId {projectId} when verifying if host is present.");
             throw new NotFoundException($"There are no participants for project {projectId} while verifying if host is present.");
+        }
+
+        public async Task KickGuestsFromProject(Guid projectId, bool kickGuestsFromLobby)
+        {
+            var projectGuests = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId).Result;
+
+            var guestsToKick = new List<GuestSession>();
+            guestsToKick.AddRange(!kickGuestsFromLobby
+                                      ? projectGuests.Where(g => g.GuestSessionState == GuestState.InProject)
+                                      : projectGuests.Where(g => g.GuestSessionState == GuestState.Ended));
+
+            foreach (var g in guestsToKick)
+            {
+                g.GuestSessionState = GuestState.Ended;
+                await _guestSessionRepository.UpdateItemAsync(g.Id, g);
+            }
         }
     }
 }
