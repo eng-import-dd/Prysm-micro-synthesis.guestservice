@@ -160,11 +160,13 @@ namespace Synthesis.GuestService.Workflow.Controllers
                     LastName = request.LastName
                 });
 
-                if (sendVerificationEmailResponse.SendVerificationStatus != SendVerificationResult.Success)
+                if (sendVerificationEmailResponse.SendVerificationStatus == SendVerificationResult.Success)
                 {
-                    //TODO: What should we do here if SendVerificaitonEmail Fails?
+                    _logger.Warning($"Failed to send verification email, reason: {sendVerificationEmailResponse.SendVerificationStatus.ToString()}");
+                    return response;
                 }
 
+                response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
                 return response;
             }
 
