@@ -39,5 +39,6 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
         public string UserName { get; set; }
         public DateTime? VerificationEmailSentDateTime { get; set; }
         public ProvisionGuestUserReturnCode? ProvisionReturnCode { get; set; }
+        public Guid? EmailVerificationId { get; set; }
     }
 }

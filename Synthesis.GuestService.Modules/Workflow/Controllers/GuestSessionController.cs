@@ -268,9 +268,8 @@ namespace Synthesis.GuestService.Workflow.Controllers
                     return guestVerificationEmail;
                 }
 
-                // TODO: Update the email utility call with the correct EmailVerificationId
                 if (_emailUtility.SendVerifyAccountEmail(guestVerificationEmail.FirstName, guestVerificationEmail.Email,
-                                                         guestVerificationEmail.ProjectAccessCode, "<---ReplaceThisWithEmailVerificationId--->"))
+                                                         guestVerificationEmail.ProjectAccessCode, user.Payload.EmailVerificationId.ToString()))
                 {
                     guestVerificationEmail.SendVerificationStatus = SendVerificationResult.Success;
                     return guestVerificationEmail;
