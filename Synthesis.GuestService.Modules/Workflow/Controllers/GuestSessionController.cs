@@ -94,7 +94,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var emailValidationResult = await _emailValidator.ValidateAsync(request.Email);
             if (!emailValidationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the email address while attempting to create a new guest.");
+                _logger.Error("Failed to validate the email address while attempting to create a new guest.");
                 throw new ValidationFailedException(emailValidationResult.Errors);
             }
 
@@ -180,7 +180,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _guestSessionValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to create a GuestSession resource.");
+                _logger.Error("Validation failed while attempting to create a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -198,7 +198,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _guestSessionIdValidator.ValidateAsync(id);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a GuestSession resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -208,7 +208,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return result;
             }
 
-            _logger.Warning($"A GuestSession resource could not be found for id {id}");
+            _logger.Error($"A GuestSession resource could not be found for id {id}");
             throw new NotFoundException("GuestSession could not be found");
         }
 
@@ -217,7 +217,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _projectIdValidator.ValidateAsync(projectId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the projectId while attempting to retrieve GuestSession resources.");
+                _logger.Error("Failed to validate the projectId while attempting to retrieve GuestSession resources.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -227,7 +227,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return result;
             }
 
-            _logger.Warning($"GuestSession resources could not be found for projectId {projectId}");
+            _logger.Error($"GuestSession resources could not be found for projectId {projectId}");
             throw new NotFoundException("GuestSessions could not be found");
         }
 
@@ -236,7 +236,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _projectIdValidator.ValidateAsync(projectId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the projectId while attempting to reset the project access code.");
+                _logger.Error("Failed to validate the projectId while attempting to reset the project access code.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -252,7 +252,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var emailValidationResult = await _emailValidator.ValidateAsync(guestVerificationEmail.Email);
             if (!emailValidationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the email address while attempting to send a verification email.");
+                _logger.Error("Failed to validate the email address while attempting to send a verification email.");
                 throw new ValidationFailedException(emailValidationResult.Errors);
             }
 
@@ -296,7 +296,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                                      Tuple.Create<Type, object>(typeof(GuestSessionValidator), guestSessionModel));
             if (errors.Any())
             {
-                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
                 throw new ValidationFailedException(errors);
             }
 
@@ -406,14 +406,14 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var project = await _projectInterop.GetProjectByIdAsync(projectId);
             if (project == null)
             {
-                _logger.Warning($"Failed to retrieve the project with id {projectId} when verifying if host is present.");
+                _logger.Error($"Failed to retrieve the project with id {projectId} when verifying if host is present.");
                 throw new NotFoundException($"Error retrieving project with id {projectId} while verifying if host is present.");
             }
 
             var participants = await _participantInterop.GetParticipantsByProjectId(projectId);
             if (participants == null)
             {
-                _logger.Warning($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
+                _logger.Error($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
                 throw new NotFoundException($"Error retrieving participants for project {projectId} while verifying if host is present.");
             }
 
@@ -422,7 +422,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return participants.Any(p => p.UserId == project.OwnerId);
             }
 
-            _logger.Warning($"There are no current participants for projectId {projectId} when verifying if host is present.");
+            _logger.Error($"There are no current participants for projectId {projectId} when verifying if host is present.");
             throw new NotFoundException($"There are no participants for project {projectId} while verifying if host is present.");
         }
     }

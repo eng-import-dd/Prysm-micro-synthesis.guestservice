@@ -61,7 +61,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _guestInviteValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to create a GuestInvite resource.");
+                _logger.Error("Validation failed while attempting to create a GuestInvite resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -80,7 +80,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _guestInviteIdValidator.ValidateAsync(id);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a GuestInvite resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a GuestInvite resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -90,7 +90,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return result;
             }
 
-            _logger.Warning($"A GuestInvite resource could not be found for id {id}");
+            _logger.Error($"A GuestInvite resource could not be found for id {id}");
             throw new NotFoundException("GuestInvite could not be found");
         }
 
@@ -99,7 +99,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             var validationResult = await _projectIdValidator.ValidateAsync(projectId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
+                _logger.Error("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -109,7 +109,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return result;
             }
 
-            _logger.Warning($"GuestInvite resources could not be found for projectId {projectId}");
+            _logger.Error($"GuestInvite resources could not be found for projectId {projectId}");
             throw new NotFoundException("GuestInvites could not be found");
         }
 
@@ -131,7 +131,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             if (errors.Any())
             {
-                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a GuestInvite resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestInvite resource.");
                 throw new ValidationFailedException(errors);
             }
 
