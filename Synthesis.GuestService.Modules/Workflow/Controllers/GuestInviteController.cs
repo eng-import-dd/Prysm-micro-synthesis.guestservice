@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -22,11 +21,9 @@ namespace Synthesis.GuestService.Workflow.Controllers
     public class GuestInviteController : IGuestInviteController
     {
         private readonly IEventService _eventService;
-        private readonly IValidator _guestInviteIdValidator;
         private readonly IRepository<GuestInvite> _guestInviteRepository;
-        private readonly IValidator _guestInviteValidator;
         private readonly ILogger _logger;
-        private readonly IValidator _projectIdValidator;
+        private readonly IValidatorLocator _validatorLocator;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestInviteController" /> class.
@@ -49,16 +46,16 @@ namespace Synthesis.GuestService.Workflow.Controllers
             {
                 // supressing the repository exceptions for initial testing
             }
-            _guestInviteValidator = validatorLocator.GetValidator(typeof(GuestInviteValidator));
-            _guestInviteIdValidator = validatorLocator.GetValidator(typeof(GuestInviteIdValidator));
-            _projectIdValidator = validatorLocator.GetValidator(typeof(ProjectIdValidator));
+
+            _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = logger;
         }
 
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
-            var validationResult = await _guestInviteValidator.ValidateAsync(model);
+            var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
+            ;
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a GuestInvite resource.");
@@ -77,7 +74,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestInvite> GetGuestInviteAsync(Guid id)
         {
-            var validationResult = await _guestInviteIdValidator.ValidateAsync(id);
+            var validationResult = _validatorLocator.Validate<GuestInviteIdValidator>(id);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the resource id while attempting to retrieve a GuestInvite resource.");
@@ -96,7 +93,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<IEnumerable<GuestInvite>> GetGuestInvitesByProjectIdAsync(Guid projectId)
         {
-            var validationResult = await _projectIdValidator.ValidateAsync(projectId);
+            var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
@@ -115,8 +112,8 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite guestInviteModel)
         {
-            var guestInviteIdValidationResult = await _guestInviteIdValidator.ValidateAsync(guestInviteModel.Id);
-            var guestInviteValidationResult = await _guestInviteValidator.ValidateAsync(guestInviteModel);
+            var guestInviteIdValidationResult = _validatorLocator.Validate<GuestInviteIdValidator>(guestInviteModel.Id);
+            var guestInviteValidationResult = _validatorLocator.Validate<GuestInviteValidator>(guestInviteModel);
             var errors = new List<ValidationFailure>();
 
             if (!guestInviteIdValidationResult.IsValid)
