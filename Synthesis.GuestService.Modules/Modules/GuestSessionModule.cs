@@ -139,7 +139,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a GuestSession resource", ex);
+                _logger.Error("Binding failed while attempting to create a GuestSession resource", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -168,7 +168,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a guest.", ex);
+                _logger.Error("Binding failed while attempting to create a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -235,7 +235,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a GuestSession resource.", ex);
+                _logger.Error("Binding failed while attempting to update a GuestSession resource.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -281,7 +281,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to send a verification email.", ex);
+                _logger.Error("Binding failed while attempting to send a verification email.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -306,7 +306,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to verify a guest.", ex);
+                _logger.Error("Binding failed while attempting to verify a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
