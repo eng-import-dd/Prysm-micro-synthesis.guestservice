@@ -284,6 +284,8 @@
   <ItemGroup>
     <Compile Include="Constants\BaseRoutes.cs" />
     <Compile Include="Constants\EventNames.cs" />
+    <Compile Include="Constants\IGuestEventHandler.cs" />
+    <Compile Include="Constants\ResetAccessCodeRequest.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\GuestSession.cs" />
