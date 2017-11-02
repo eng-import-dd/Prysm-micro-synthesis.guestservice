@@ -275,6 +275,7 @@
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
@@ -335,6 +336,7 @@
     <Compile Include="Workflow\ServiceInterop\Responses\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
     <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
+    <Compile Include="Workflow\Utilities\EmailUtiltiy.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IPasswordUtility.cs" />
     <Compile Include="Workflow\Utilities\Objects\DataSortOrder.cs" />
