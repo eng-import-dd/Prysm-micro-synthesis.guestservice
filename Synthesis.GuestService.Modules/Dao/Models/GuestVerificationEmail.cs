@@ -12,12 +12,4 @@
 
         public SendVerificationResult SendVerificationStatus { get; set; }
     }
-
-    public enum SendVerificationResult
-    {
-        Success,
-        MsgAlreadySentWithinLastMinute,
-        EmailNotVerified,
-        FailedToSend
-    }
 }

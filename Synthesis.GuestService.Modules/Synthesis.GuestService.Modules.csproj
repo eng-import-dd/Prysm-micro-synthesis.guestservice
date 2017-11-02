@@ -297,6 +297,7 @@
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
     <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
+    <Compile Include="Enums\SendVerificationResult.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />
     <Compile Include="Requests\GuestVerificationRequest.cs" />
     <Compile Include="Responses\CreateGuestResponseCode.cs" />

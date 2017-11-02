@@ -9,6 +9,7 @@ using Synthesis.EventBus;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.GuestService.Workflow.ServiceInterop;
+using Synthesis.GuestService.Workflow.Utilities;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -49,7 +50,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Returns(_validatorMock.Object);
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _guestSessionValidator.Object, _eventServiceMock.Object, _loggerMock.Object,
-                                                 _projectInteropMock.Object, _settingsInteropMock.Object, _userInteropMock.Object, _participantInteropMock.Object);
+                                                 _projectInteropMock.Object, _settingsInteropMock.Object, _userInteropMock.Object, _participantInteropMock.Object, _emailUtilityMock.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -63,6 +64,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         private readonly Mock<IUserInterop> _userInteropMock = new Mock<IUserInterop>();
         private readonly Mock<IParticipantInterop> _participantInteropMock = new Mock<IParticipantInterop>();
         private readonly GuestSession _defaultGuestSession;
+        private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
 
         [Fact]
         public async Task CreateGuestSessionReturnsProvidedGuestSession()
