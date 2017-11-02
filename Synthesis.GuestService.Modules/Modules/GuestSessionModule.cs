@@ -149,7 +149,6 @@ namespace Synthesis.GuestService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                _logger.Error("Validation failed while attempting to create a GuestSession resource", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -192,12 +191,10 @@ namespace Synthesis.GuestService.Modules
             }
             catch (NotFoundException)
             {
-                _logger.Warning($"GuestSession with id {input.id} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
-                _logger.Error($"Validation failed for guestSession with id {input.id} due to an error", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -215,7 +212,6 @@ namespace Synthesis.GuestService.Modules
             }
             catch (NotFoundException)
             {
-                _logger.Error($"GuestSessions for projectId {input.projectId} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
             }
             catch (ValidationFailedException ex)
@@ -320,12 +316,10 @@ namespace Synthesis.GuestService.Modules
             }
             catch (NotFoundException)
             {
-                _logger.Error($"User with username {request.Username} for project access code {request.ProjectAccessCode} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
-                _logger.Error($"Validation failed for VerifyGuest with username {request.Username} due to an error", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
