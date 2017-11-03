@@ -11,8 +11,7 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
         public string LastName { get; set; }
         public string LdapId { get; set; }
         public int? LicenseType { get; set; }
-        public string PasswordHash { get; set; }
-        public string PasswordSalt { get; set; }
+        public string Password { get; set;  }
         public Guid TenantId { get; set; }
         public string UserName { get; set; }
     }

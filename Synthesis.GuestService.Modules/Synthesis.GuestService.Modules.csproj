@@ -301,6 +301,7 @@
     <Compile Include="Workflow\ApiWrappers\Interfaces\ISettingsApiWrapper.cs" />
     <Compile Include="Workflow\ApiWrappers\ParticipantApiWrapper.cs" />
     <Compile Include="Workflow\ApiWrappers\ProjectApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Requests\GuestVerificationEmailRequest.cs" />
     <Compile Include="Workflow\ApiWrappers\Requests\UserRequest.cs" />
     <Compile Include="Workflow\ApiWrappers\Responses\ParticipantResponse.cs" />
     <Compile Include="Workflow\ApiWrappers\Responses\ProjectResponse.cs" />
@@ -313,7 +314,7 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
-    <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\GuestVerificationEmailResponse.cs" />
     <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Extensions\LoggerFactoryExtension.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />

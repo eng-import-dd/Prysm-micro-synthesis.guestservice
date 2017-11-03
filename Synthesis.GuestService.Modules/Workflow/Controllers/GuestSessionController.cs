@@ -136,14 +136,12 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 request.PasswordConfirmation = throwAwayPassword;
             }
 
-            PasswordUtility.HashAndSalt(request.Password, out var passwordHash, out var passwordSalt);
             var userRequest = new UserRequest
             {
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Email = request.Email,
-                PasswordHash = passwordHash,
-                PasswordSalt = passwordSalt,
+                Password = request.Password,
                 IsIdpUser = request.IsIdpUser
             };
 
@@ -152,7 +150,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             {
                 response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
 
-                var sendVerificationEmailResponse = await SendVerificationEmailAsync(new GuestVerificationEmail
+                var sendVerificationEmailResponse = await SendVerificationEmailAsync(new GuestVerificationEmailRequest
                 {
                     FirstName = request.FirstName,
                     Email = request.Email,
@@ -160,14 +158,10 @@ namespace Synthesis.GuestService.Workflow.Controllers
                     LastName = request.LastName
                 });
 
-                if (sendVerificationEmailResponse.SendVerificationStatus == SendVerificationResult.Success)
+                if (!sendVerificationEmailResponse.IsEmailVerified || sendVerificationEmailResponse.HasMsgAlreadySentWithinLastMinute)
                 {
-                    _logger.Warning($"Failed to send verification email, reason: {sendVerificationEmailResponse.SendVerificationStatus.ToString()}");
-                    return response;
+                    response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
                 }
-
-                response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
-                return response;
             }
 
             response.ResultCode = CreateGuestResponseCode.Success;
@@ -246,46 +240,40 @@ namespace Synthesis.GuestService.Workflow.Controllers
             return new ProjectStatus(lobbyStatus);
         }
 
-        public async Task<GuestVerificationEmail> SendVerificationEmailAsync(GuestVerificationEmail guestVerificationEmail)
+        public async Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest guestVerificationEmailRequest)
         {
-            var emailValidationResult = await _emailValidator.ValidateAsync(guestVerificationEmail.Email);
+            var emailValidationResult = await _emailValidator.ValidateAsync(guestVerificationEmailRequest.Email);
             if (!emailValidationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the email address while attempting to send a verification email.");
                 throw new ValidationFailedException(emailValidationResult.Errors);
             }
 
-            try
+            var guestVerificationEmailResponse = new GuestVerificationEmailResponse
             {
-                var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmail.Email });
-                if (user.Payload.IsEmailVerified != null && user.Payload.IsEmailVerified.Value)
-                {
-                    guestVerificationEmail.SendVerificationStatus = SendVerificationResult.EmailNotVerified;
-                    return guestVerificationEmail;
-                }
+                Email = guestVerificationEmailRequest.Email,
+                FirstName = guestVerificationEmailRequest.FirstName,
+                LastName = guestVerificationEmailRequest.LastName,
+                ProjectAccessCode = guestVerificationEmailRequest.ProjectAccessCode
+            };
 
-                if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
-                {
-                    guestVerificationEmail.SendVerificationStatus = SendVerificationResult.MsgAlreadySentWithinLastMinute;
-                    return guestVerificationEmail;
-                }
-
-                if (_emailUtility.SendVerifyAccountEmail(guestVerificationEmail.FirstName, guestVerificationEmail.Email,
-                                                         guestVerificationEmail.ProjectAccessCode, user.Payload.EmailVerificationId.ToString()))
-                {
-                    guestVerificationEmail.SendVerificationStatus = SendVerificationResult.Success;
-                    return guestVerificationEmail;
-                }
-
-                guestVerificationEmail.SendVerificationStatus = SendVerificationResult.FailedToSend;
-                return guestVerificationEmail;
-            }
-            catch (Exception e)
+            var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
+            if (user.Payload.IsEmailVerified == true)
             {
-                _logger.Error("Error sending guest verification email: " + e.Message);
-                guestVerificationEmail.SendVerificationStatus = SendVerificationResult.FailedToSend;
-                return guestVerificationEmail;
+
+                guestVerificationEmailResponse.IsEmailVerified = true;
+                return guestVerificationEmailResponse;
             }
+
+            if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
+            {
+                guestVerificationEmailResponse.HasMsgAlreadySentWithinLastMinute = true;
+                return guestVerificationEmailResponse;
+            }
+
+            _emailUtility.SendVerifyAccountEmail(guestVerificationEmailRequest.FirstName, guestVerificationEmailRequest.Email,
+                                                 guestVerificationEmailRequest.ProjectAccessCode, user.Payload.EmailVerificationId.ToString());
+            return guestVerificationEmailResponse;
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
