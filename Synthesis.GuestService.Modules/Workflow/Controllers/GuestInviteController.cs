@@ -55,7 +55,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
             var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
-            ;
+
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a GuestInvite resource.");
