@@ -293,6 +293,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enums\LicenseType.cs" />
     <Compile Include="Workflow\ApiWrappers\BaseApiWrapper.cs" />
     <Compile Include="Enums\LobbyState.cs" />
     <Compile Include="Workflow\ApiWrappers\Interfaces\IParticipantApiWrapper.cs" />
