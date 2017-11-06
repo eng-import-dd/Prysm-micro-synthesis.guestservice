@@ -32,7 +32,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
         private readonly IParticipantApiWrapper _participantApi;
         private readonly IPasswordUtility _passwordUtility;
         private readonly IProjectApiWrapper _projectApi;
-        private readonly IValidator _projectIdValidator;
         private readonly ISettingsApiWrapper _settingsApi;
         private readonly IPrincipalApiWrapper _userApi;
         private readonly IValidatorLocator _validatorLocator;
@@ -233,7 +232,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         public async Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest guestVerificationEmailRequest)
         {
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmail.Email);
+            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmailRequest.Email);
             if (!emailValidationResult.IsValid)
             {
                 _logger.Error("Failed to validate the email address while attempting to send a verification email.");

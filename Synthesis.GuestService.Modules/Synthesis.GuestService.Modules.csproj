@@ -319,7 +319,6 @@
     <Compile Include="Workflow\ApiWrappers\Responses\GuestVerificationEmailResponse.cs" />
     <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Extensions\LoggerFactoryExtension.cs" />
-    <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
     <Compile Include="Enums\SendVerificationResult.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />
     <Compile Include="Requests\GuestVerificationRequest.cs" />

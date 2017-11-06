@@ -273,11 +273,11 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> SendVerificationEmailAsync(dynamic input)
         {
-            GuestVerificationEmailRequest guestVerificationEmail;
+            GuestVerificationEmailRequest guestVerificationEmailRequest;
 
             try
             {
-                guestVerificationEmail = this.Bind<GuestVerificationEmailRequest>();
+                guestVerificationEmailRequest = this.Bind<GuestVerificationEmailRequest>();
             }
             catch (Exception ex)
             {
@@ -287,7 +287,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmail);
+                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmailRequest);
             }
             catch (Exception ex)
             {
