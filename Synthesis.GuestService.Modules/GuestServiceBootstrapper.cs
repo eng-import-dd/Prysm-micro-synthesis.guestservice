@@ -1,6 +1,13 @@
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Claims;
 using Autofac;
 using Autofac.Core;
+using Autofac.Core.Lifetime;
 using FluentValidation;
+using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
 using Synthesis.Configuration;
@@ -9,23 +16,23 @@ using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka;
+using Synthesis.GuestService.Owin;
+using Synthesis.GuestService.Validators;
+using Synthesis.GuestService.Workflow.Controllers;
+using Synthesis.Http;
+using Synthesis.Http.Microservice;
 using Synthesis.KeyManager;
 using Synthesis.Logging;
 using Synthesis.Logging.Log4Net;
 using Synthesis.Nancy.MicroService.Authorization;
 using Synthesis.Nancy.MicroService.Metadata;
-using Synthesis.GuestService.Owin;
-using Synthesis.Tracking.Web;
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Security.Claims;
-using Synthesis.GuestService.Validators;
-using Synthesis.GuestService.Workflow.Controllers;
-using Synthesis.GuestService.Workflow.Interfaces;
+using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
+using Synthesis.Tracking.Web;
+using IValidatorLocator = Synthesis.Nancy.MicroService.Validation.IValidatorLocator;
+using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
+using ValidatorLocator = Synthesis.Nancy.MicroService.Validation.ValidatorLocator;
 
 namespace Synthesis.GuestService
 {
@@ -33,7 +40,6 @@ namespace Synthesis.GuestService
     {
         public static readonly LogTopic DefaultLogTopic = new LogTopic("Synthesis.GuestService");
         public static readonly LogTopic EventServiceLogTopic = new LogTopic("Synthesis.GuestService.EventHub");
-
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
 
         public GuestServiceBootstrapper()
@@ -42,20 +48,31 @@ namespace Synthesis.GuestService
         }
 
         /// <summary>
-        /// Gets the root injection container for this service.
-        /// </summary>
-        /// <value>
-        /// The root injection container for this service.
-        /// </value>
-        public static ILifetimeScope RootContainer => LazyRootContainer.Value;
-
-        /// <summary>
-        /// Gets container for this bootstrapper instance.
+        ///     Gets container for this bootstrapper instance.
         /// </summary>
         public new ILifetimeScope ApplicationContainer { get; }
 
         /// <summary>
-        /// Gets a logger using the default log topic for this service.
+        ///     Gets the root injection container for this service.
+        /// </summary>
+        /// <value>
+        ///     The root injection container for this service.
+        /// </value>
+        public static ILifetimeScope RootContainer => LazyRootContainer.Value;
+
+        protected override ILifetimeScope CreateRequestContainer(NancyContext context)
+        {
+            return ApplicationContainer.BeginLifetimeScope(MatchingScopeLifetimeTags.RequestLifetimeScopeTag,
+                bldr =>
+                {
+                    bldr.Register(c => new RequestHeaders(context.Request.Headers))
+                        .As<IRequestHeaders>()
+                        .InstancePerLifetimeScope();
+                });
+        }
+
+        /// <summary>
+        ///     Gets a logger using the default log topic for this service.
         /// </summary>
         public ILogger GetDefaultLogger()
         {
@@ -67,14 +84,14 @@ namespace Synthesis.GuestService
             base.ConfigureApplicationContainer(container);
 
             container.Update(builder =>
-            {
-                builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
+                {
+                    builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
 
-                // Update this registration if you need to change the authorization implementation.
-                builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
-                    .As<IStatelessAuthorization>()
-                    .SingleInstance();
-            });
+                    // Update this registration if you need to change the authorization implementation.
+                    builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
+                        .As<IStatelessAuthorization>()
+                        .SingleInstance();
+                });
 
             container.Resolve<ILogger>().Info("GuestService Service Running....");
         }
@@ -83,20 +100,21 @@ namespace Synthesis.GuestService
         {
             // Add the micro-service authorization logic to the Nancy pipeline.
             pipelines.BeforeRequest += ctx =>
-            {
-                // TODO: This is temporary until we get JWT implemented.
-                var identity = new ClaimsIdentity(
-                    new[]
-                    {
-                        new Claim(ClaimTypes.Name, "Test User"),
-                        new Claim(ClaimTypes.Email, "test@user.com")
-                    },
-                    AuthenticationTypes.Basic);
-                ctx.CurrentUser = new ClaimsPrincipal(identity);
-                return null;
-            };
+                {
+                    // TODO: This is temporary until we get JWT implemented.
+                    var identity = new ClaimsIdentity(
+                                                        new[]
+                                                        {
+                                                            new Claim(ClaimTypes.Name, "Test User"),
+                                                            new Claim(ClaimTypes.Email, "test@user.com")
+                                                        },
+                                                        AuthenticationTypes.Basic);
+                    ctx.CurrentUser = new ClaimsPrincipal(identity);
+                    return null;
+                };
 
             base.ApplicationStartup(container, pipelines);
+
             //
             //            Metric.Config
             //                .WithAllCounters()
@@ -137,6 +155,8 @@ namespace Synthesis.GuestService
             builder.RegisterInstance(defaultLogger);
             builder.RegisterInstance(loggerFactory).As<ILoggerFactory>();
 
+            RegisterHttpClient(builder, settingsReader);
+
             // Tracking
             builder.RegisterType<ApplicationInsightsTrackingService>().As<ITrackingService>();
 
@@ -146,29 +166,29 @@ namespace Synthesis.GuestService
 
             // Event Service registration.
             builder.Register(
-                c =>
-                {
-                    var connectionString = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server");
-                    return EventBus.Kafka.EventBus.Create(connectionString).CreateEventPublisher();
-                })
-                .As<IEventPublisher>();
+                             c =>
+                             {
+                                 var connectionString = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server");
+                                 return EventBus.Kafka.EventBus.Create(connectionString).CreateEventPublisher();
+                             })
+                   .As<IEventPublisher>();
             builder.Register(c => new EventServiceContext { ServiceName = "Synthesis.GuestService" });
             builder.RegisterType<EventService>().As<IEventService>().SingleInstance()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.Name == "logger",
-                    (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)));
+                   .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.Name == "logger",
+                                                        (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)));
 
             // DocumentDB registration.
             builder.Register(c =>
-            {
-                var settings = c.Resolve<IAppSettingsReader>();
-                return new DocumentDbContext
-                {
-                    AuthKey = settings.GetValue<string>("DocumentDB.AuthKey"),
-                    DatabaseName = settings.GetValue<string>("DocumentDB.DatabaseName"),
-                    Endpoint = settings.GetValue<string>("DocumentDB.Endpoint"),
-                };
-            });
+                             {
+                                 var settings = c.Resolve<IAppSettingsReader>();
+                                 return new DocumentDbContext
+                                 {
+                                     AuthKey = settings.GetValue<string>("DocumentDB.AuthKey"),
+                                     DatabaseName = settings.GetValue<string>("DocumentDB.DatabaseName"),
+                                     Endpoint = settings.GetValue<string>("DocumentDB.Endpoint")
+                                 };
+                             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
 
             // Key Manager
@@ -186,6 +206,17 @@ namespace Synthesis.GuestService
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>();
 
             return builder.Build();
+        }
+
+        private static void RegisterHttpClient(ContainerBuilder builder, DefaultAppSettingsReader settingsReader)
+        {
+            builder.RegisterType<SynthesisHttpClient>()
+                   .As<IHttpClient>()
+                   .SingleInstance();
+            builder.RegisterType<JsonObjectSerializer>().As<IObjectSerializer>();
+            builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
+            builder.RegisterType<AuthorizationPassThroughClient>()
+                   .As<IMicroserviceHttpClient>();
         }
 
         private static ILogLayout CreateLogLayout(IAppSettingsReader settingsReader)
