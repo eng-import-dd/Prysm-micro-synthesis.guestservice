@@ -4,13 +4,13 @@ using SimpleCrypto;
 
 namespace Synthesis.GuestService.Workflow.Utilities
 {
-    public static class PasswordUtility
+    public class PasswordUtility : IPasswordUtility
     {
         /// <summary>
         ///     Method for generating a new random password
         /// </summary>
         /// <param name="length">Desired length of the password to be returned</param>
-        public static string GenerateRandomPassword(int length)
+        public string GenerateRandomPassword(int length)
         {
             const string valid = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+-={}|:<>?[]\;',./'";
             var res = new StringBuilder();
