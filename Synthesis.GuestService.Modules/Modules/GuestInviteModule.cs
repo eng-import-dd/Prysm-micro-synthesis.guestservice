@@ -96,7 +96,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a GuestInvite resource", ex);
+                _logger.Error("Binding failed while attempting to create a GuestInvite resource", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -106,7 +106,6 @@ namespace Synthesis.GuestService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                _logger.Error("Validation failed while attempting to create a GuestInvite resource", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -124,12 +123,10 @@ namespace Synthesis.GuestService.Modules
             }
             catch (NotFoundException)
             {
-                _logger.Warning($"GuestInvite with id {input.id} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
             }
             catch (ValidationFailedException ex)
             {
-                _logger.Error($"Validation failed for guestInvite with id {input.id} due to an error", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -147,7 +144,6 @@ namespace Synthesis.GuestService.Modules
             }
             catch (NotFoundException)
             {
-                _logger.Warning($"GuestInvites for projectId {input.projectId} could not be found");
                 return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
             }
             catch (ValidationFailedException ex)
@@ -156,7 +152,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, $"GuestInvites could not be retrieved for projectId {input.projectId}", ex);
+                _logger.Error($"GuestInvites could not be retrieved for projectId {input.projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
@@ -171,7 +167,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a GuestInvite resource.", ex);
+                _logger.Error("Binding failed while attempting to update a GuestInvite resource.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 

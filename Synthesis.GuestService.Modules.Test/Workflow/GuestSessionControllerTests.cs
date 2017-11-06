@@ -67,6 +67,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
         private readonly Mock<IParticipantApiWrapper> _participantApiMock = new Mock<IParticipantApiWrapper>();
         private readonly GuestSession _defaultGuestSession;
+        private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
 
         [Fact]
         public async Task CreateGuestSessionReturnsProvidedGuestSession()
