@@ -295,27 +295,29 @@ namespace Synthesis.GuestService.Workflow.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            var project = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
-            if (project == null)
+            var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
+            if (projectResponse == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
                 return response;
             }
 
-            response.AccountId = project.Payload.TenantId;
-            response.AssociatedProject = project.Payload;
+            var project = projectResponse.Payload;
+
+            response.AccountId = project.TenantId;
+            response.AssociatedProject = project;
             response.ProjectAccessCode = projectAccessCode;
-            response.ProjectName = project.Payload.Name;
-            response.UserId = project.Payload.OwnerId;
+            response.ProjectName = project.Name;
+            response.UserId = project.OwnerId;
             response.Username = username;
 
-            if (project.Payload.IsGuestModeEnabled != true)
+            if (project.IsGuestModeEnabled != true)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
                 return response;
             }
 
-            var settings = await _settingsApi.GetSettingsAsync(project.Payload.AccountId);
+            var settings = await _settingsApi.GetSettingsAsync(project.AccountId);
             if (settings != null)
             {
                 if (settings.Payload.IsGuestModeEnabled != true)
@@ -325,26 +327,28 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 }
             }
 
-            var user = await _userApi.GetUserAsync(new UserRequest { UserName = username });
-            if (user == null)
+            var userResponse = await _userApi.GetUserAsync(new UserRequest { UserName = username });
+            if (userResponse == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
                 return response;
             }
 
-            if (user.Payload.IsLocked)
+            var user = userResponse.Payload;
+
+            if (user.IsLocked)
             {
                 response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
                 return response;
             }
 
-            if (user.Payload.IsEmailVerified != true)
+            if (user.IsEmailVerified != true)
             {
                 response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
                 return response;
             }
 
-            if (user.Payload.TenantId != null)
+            if (user.TenantId != null)
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
                 return response;
@@ -379,23 +383,28 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
         private async Task<bool> IsHostCurrentlyPresentInProjectAsync(Guid projectId)
         {
-            var project = await _projectApi.GetProjectByIdAsync(projectId);
-            if (project == null)
+            var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+            if (projectResponse == null)
             {
                 _logger.Error($"Failed to retrieve the project with id {projectId} when verifying if host is present.");
                 throw new NotFoundException($"Error retrieving project with id {projectId} while verifying if host is present.");
             }
 
-            var participants = await _participantApi.GetParticipantsByProjectIdAsync(projectId);
-            if (participants == null)
+            var project = projectResponse.Payload;
+
+            var participantResponse = await _participantApi.GetParticipantsByProjectIdAsync(projectId);
+            if (participantResponse == null)
             {
                 _logger.Error($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
                 throw new NotFoundException($"Error retrieving participants for project {projectId} while verifying if host is present.");
             }
 
-            if (participants.Payload != null && participants.Payload.Any())
+            var participants = participantResponse.Payload;
+
+            var participantResponses = participants as ParticipantResponse[] ?? participants.ToArray();
+            if (participantResponses.Any())
             {
-                return participants.Payload.Any(p => p.UserId == project.Payload.OwnerId);
+                return participantResponses.Any(p => p.UserId == project.OwnerId);
             }
 
             _logger.Error($"There are no current participants for projectId {projectId} when verifying if host is present.");
