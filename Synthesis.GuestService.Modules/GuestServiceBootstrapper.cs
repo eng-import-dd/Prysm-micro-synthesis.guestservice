@@ -217,6 +217,31 @@ namespace Synthesis.GuestService
             builder.RegisterType<GuestSessionValidator>().As<IValidator>();
             builder.RegisterType<ServiceLocator>().As<IServiceLocator>();
 
+            // Api Wrappers
+            builder.RegisterType<ProjectApiWrapper>()
+                   .As<IProjectApiWrapper>()
+                   .WithParameter(new ResolvedParameter(
+                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ProjectService.Url")));
+
+            builder.RegisterType<SettingsApiWrapper>()
+                .As<ISettingsApiWrapper>()
+                .WithParameter(new ResolvedParameter(
+                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("SynthesisCloud.Url")));
+
+            builder.RegisterType<PrincipalApiWrapper>()
+                   .As<IPrincipalApiWrapper>()
+                   .WithParameter(new ResolvedParameter(
+                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("PrincipalService.Url")));
+
+            builder.RegisterType<ParticipantApiWrapper>()
+                   .As<IParticipantApiWrapper>()
+                   .WithParameter(new ResolvedParameter(
+                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
+
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>();
