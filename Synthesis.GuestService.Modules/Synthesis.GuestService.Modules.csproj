@@ -294,6 +294,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enums\ClientType.cs" />
     <Compile Include="Enums\LicenseType.cs" />
     <Compile Include="Workflow\ApiWrappers\BaseApiWrapper.cs" />
     <Compile Include="Enums\LobbyState.cs" />

@@ -10,7 +10,7 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
         public Guid Id { get; set; }
         public bool IsFollowing { get; set; }
         public bool IsGuest { get; set; }
-        public bool IsWebClient { get; set; }
+        public ClientType Client { get; set; }
         public string Location { get; set; }
         public float PanPercentage { get; set; }
         public Guid ProjectId { get; set; }
