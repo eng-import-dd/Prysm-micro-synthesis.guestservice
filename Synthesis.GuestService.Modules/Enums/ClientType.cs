@@ -2,9 +2,10 @@
 {
     public enum ClientType
     {
-        WPF = 0,
-        Web = 1,
-        iPhone = 2,
-        UWP = 3
+        Undefined = 0,
+        WPF = 1,
+        Web = 2,
+        iPhone = 3,
+        UWP = 4
     }
 }
