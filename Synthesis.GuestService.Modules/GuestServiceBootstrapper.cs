@@ -10,6 +10,7 @@ using FluentValidation;
 using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
+using Newtonsoft.Json;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
 using Synthesis.DocumentStorage;
@@ -213,7 +214,8 @@ namespace Synthesis.GuestService
             builder.RegisterType<SynthesisHttpClient>()
                    .As<IHttpClient>()
                    .SingleInstance();
-            builder.RegisterType<JsonObjectSerializer>().As<IObjectSerializer>();
+            builder.Register(c => JsonSerializer.Create()).As<JsonSerializer>();
+            builder.RegisterType<JsonObjectSerializer>().As<Serialization.IObjectSerializer>();
             builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
             builder.RegisterType<AuthorizationPassThroughClient>()
                    .As<IMicroserviceHttpClient>();
