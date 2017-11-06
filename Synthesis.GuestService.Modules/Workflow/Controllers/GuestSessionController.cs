@@ -148,7 +148,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                     LastName = request.LastName
                 });
 
-                if (!sendVerificationEmailResponse.IsEmailVerified || sendVerificationEmailResponse.HasMsgAlreadySentWithinLastMinute)
+                if (!sendVerificationEmailResponse.IsEmailVerified || sendVerificationEmailResponse.MessageSentRecently)
                 {
                     response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
                 }
@@ -257,7 +257,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
             {
-                guestVerificationEmailResponse.HasMsgAlreadySentWithinLastMinute = true;
+                guestVerificationEmailResponse.MessageSentRecently = true;
                 return guestVerificationEmailResponse;
             }
 
