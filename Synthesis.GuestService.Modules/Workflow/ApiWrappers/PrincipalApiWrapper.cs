@@ -4,9 +4,9 @@ using Synthesis.Logging;
 
 namespace Synthesis.GuestService.Workflow.ApiWrappers
 {
-    public class PrincipalApiWrapperWrapper : BaseApiWrapper, IPrincipalApiWrapper
+    public class PrincipalApiWrapper : BaseApiWrapper, IPrincipalApiWrapper
     {
-        public PrincipalApiWrapperWrapper(IServiceLocator serviceLocator, IMicroserviceHttpClient microserviceHttpClient, ILoggerFactory loggerFactory)
+        public PrincipalApiWrapper(IServiceLocator serviceLocator, IMicroserviceHttpClient microserviceHttpClient, ILoggerFactory loggerFactory)
             : base(microserviceHttpClient, loggerFactory)
         {
             ServiceUrl = serviceLocator.ProjectUrl;
