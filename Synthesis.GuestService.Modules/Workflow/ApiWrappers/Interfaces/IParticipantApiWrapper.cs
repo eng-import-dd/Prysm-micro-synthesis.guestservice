@@ -7,6 +7,6 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
 {
     public interface IParticipantApiWrapper
     {
-        Task<MicroserviceResponse<IEnumerable<ParticipantResponse>>> GetParticipantsByProjectId(Guid projectId);
+        Task<MicroserviceResponse<IEnumerable<ParticipantResponse>>> GetParticipantsByProjectIdAsync(Guid projectId);
     }
 }

@@ -14,7 +14,7 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
             ServiceUrl = serviceLocator.ProjectUrl;
         }
 
-        public async Task<MicroserviceResponse<IEnumerable<ParticipantResponse>>> GetParticipantsByProjectId(Guid projectId)
+        public async Task<MicroserviceResponse<IEnumerable<ParticipantResponse>>> GetParticipantsByProjectIdAsync(Guid projectId)
         {
             return await HttpClient.GetManyAsync<ParticipantResponse>($"{ServiceUrl}/v1/projects/{projectId}/participants");
         }
