@@ -386,7 +386,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 throw new NotFoundException($"Error retrieving project with id {projectId} while verifying if host is present.");
             }
 
-            var participants = await _participantApi.GetParticipantsByProjectId(projectId);
+            var participants = await _participantApi.GetParticipantsByProjectIdAsync(projectId);
             if (participants == null)
             {
                 _logger.Error($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
