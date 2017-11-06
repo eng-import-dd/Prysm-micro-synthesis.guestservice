@@ -25,7 +25,7 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
         public string Email { get; set; }
         public DateTime? EmailVerifiedDateTime { get; set; }
         public string FirstName { get; set; }
-        public Guid? Id { get; set; }
+        public Guid Id { get; set; }
         public bool? IsEmailVerified { get; set; }
         public bool? IsIdpUser { get; set; }
         public bool IsLocked { get; set; }

@@ -13,9 +13,9 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
             ServiceUrl = serviceLocator.ProjectUrl;
         }
 
-        public async Task<MicroserviceResponse<SettingsResponse>> GetSettingsAsync(Guid projectAccountId)
+        public async Task<MicroserviceResponse<SettingsResponse>> GetSettingsAsync(Guid userId)
         {
-            return await HttpClient.GetAsync<SettingsResponse>($"");
+            return await HttpClient.GetAsync<SettingsResponse>($"{ServiceUrl}/v1/settings/user/{userId}");
         }
     }
 }

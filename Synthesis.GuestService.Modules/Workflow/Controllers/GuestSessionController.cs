@@ -317,16 +317,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 return response;
             }
 
-            var settings = await _settingsApi.GetSettingsAsync(project.AccountId);
-            if (settings != null)
-            {
-                if (settings.Payload.IsGuestModeEnabled != true)
-                {
-                    response.ResultCode = VerifyGuestResponseCode.Failed;
-                    return response;
-                }
-            }
-
             var userResponse = await _userApi.GetUserAsync(new UserRequest { UserName = username });
             if (userResponse == null)
             {
@@ -352,6 +342,17 @@ namespace Synthesis.GuestService.Workflow.Controllers
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
                 return response;
+            }
+
+            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id);
+            if (settingsResponse != null)
+            {
+                var settings = settingsResponse.Payload;
+                if (settings.IsGuestModeEnabled != true)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.Failed;
+                    return response;
+                }
             }
 
             response.ResultCode = VerifyGuestResponseCode.Success;
