@@ -19,8 +19,10 @@ using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka;
 using Synthesis.GuestService.Owin;
 using Synthesis.GuestService.Validators;
+using Synthesis.GuestService.Workflow.ApiWrappers;
 using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.Http;
+using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
 using Synthesis.KeyManager;
 using Synthesis.Logging;
@@ -195,12 +197,25 @@ namespace Synthesis.GuestService
             // Key Manager
             builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
 
+            // Http
+            builder.RegisterType<JsonObjectSerializer>()
+                   .As<Serialization.IObjectSerializer>()
+                   .WithParameter(new ResolvedParameter(
+                            (p, c) => p.ParameterType == typeof(JsonSerializer),
+                            (p, c) => JsonSerializer.Create()));
+
+            builder.RegisterType<HttpClientConfiguration>().As<IHttpClientConfiguration>();
+            builder.RegisterType<SynthesisHttpClient>()
+                   .As<IHttpClient>()
+                   .SingleInstance();
+
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             builder.RegisterType<GuestInviteIdValidator>().As<IValidator>();
             builder.RegisterType<GuestInviteValidator>().As<IValidator>();
             builder.RegisterType<GuestSessionIdValidator>().As<IValidator>();
             builder.RegisterType<GuestSessionValidator>().As<IValidator>();
+            builder.RegisterType<ServiceLocator>().As<IServiceLocator>();
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
