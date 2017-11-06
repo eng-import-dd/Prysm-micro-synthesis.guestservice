@@ -30,12 +30,12 @@ namespace Synthesis.GuestService.Workflow.Utilities
         {
             _loggingService = loggingService;
 
-            _prysmLogo = new LinkedResource(MapPath("EmailTemplates/Images/Prysm-logo.png"), "image/png");
-            _facebookIcon = new LinkedResource(MapPath("EmailTemplates/Images/facebook-icon.png"), "image/png");
-            _googlePlusIcon = new LinkedResource(MapPath("EmailTemplates/Images/google-plus-icon.png"), "image/png");
-            _linkedInIcon = new LinkedResource(MapPath("EmailTemplates/Images/linkedin-icon.png"), "image/png");
-            _twitterIcon = new LinkedResource(MapPath("EmailTemplates/Images/twitter-icon.png"), "image/png");
-            _youtubeIcon = new LinkedResource(MapPath("EmailTemplates/Images/youtube-icon.png"), "image/png");
+            _prysmLogo = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/Prysm-logo.png"), "image/png");
+            _facebookIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/facebook-icon.png"), "image/png");
+            _googlePlusIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/google-plus-icon.png"), "image/png");
+            _linkedInIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/linkedin-icon.png"), "image/png");
+            _twitterIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/twitter-icon.png"), "image/png");
+            _youtubeIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/youtube-icon.png"), "image/png");
 
             _linkedResources.Add(_facebookIcon);
             _linkedResources.Add(_googlePlusIcon);
@@ -49,9 +49,9 @@ namespace Synthesis.GuestService.Workflow.Utilities
                 _emailTemplate = streamReader.ReadToEnd();
             }
 
-            _guestInviteEmail = GetContent("EmailTemplates/GuestInvite.html");
-            _createGuestInviteEmail = GetContent("EmailTemplates/VerifyNewAccount.html");
-            _emailHostEmail = GetContent("EmailTemplates/EmailHost.html");
+            _guestInviteEmail = GetContent("/Workflow/Utilities/EmailTemplates/GuestInvite.html");
+            _createGuestInviteEmail = GetContent("/Workflow/Utilities/EmailTemplates/VerifyNewAccount.html");
+            _emailHostEmail = GetContent("/Workflow/Utilities/EmailTemplates/EmailHost.html");
         }
 
         public bool SendGuestInvite(string projectName, string projectCode, string guestEmail, string from)

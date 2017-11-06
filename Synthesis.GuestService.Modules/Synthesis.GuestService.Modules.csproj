@@ -368,6 +368,18 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
+  <ItemGroup>
+    <Content Include="Workflow\Utilities\EmailTemplates\EmailHost.html" />
+    <Content Include="Workflow\Utilities\EmailTemplates\EmailTemplate.html" />
+    <Content Include="Workflow\Utilities\EmailTemplates\GuestInvite.html" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\facebook-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\google-plus-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\linkedin-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\Prysm-logo.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\twitter-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\youtube-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\UserInvite.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
