@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace Synthesis.GuestService.Workflow.ServiceInterop.Responses
+namespace Synthesis.GuestService.Responses
 {
     public class ProjectStatus
     {
         public ProjectStatus()
         {
-
         }
 
         public ProjectStatus(LobbyState lobbyStatus)
@@ -15,6 +14,7 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop.Responses
         }
 
         public LobbyState LobbyStatus { get; set; }
+        public Guid ProjectId { get; set; }
 
         public static LobbyState CalculateLobbyStatus(bool isGuestLimitReached, bool isHostPresent)
         {
@@ -35,15 +35,5 @@ namespace Synthesis.GuestService.Workflow.ServiceInterop.Responses
 
             return status;
         }
-
-        public Guid ProjectId { get; set; }
-    }
-
-    public enum LobbyState
-    {
-        Normal,
-        GuestLimitReached,
-        HostNotPresent,
-        Error
     }
 }

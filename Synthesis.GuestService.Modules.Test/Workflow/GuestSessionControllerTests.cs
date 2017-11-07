@@ -7,8 +7,8 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Dao.Models;
+using Synthesis.GuestService.Workflow.ApiWrappers;
 using Synthesis.GuestService.Workflow.Controllers;
-using Synthesis.GuestService.Workflow.ServiceInterop;
 using Synthesis.GuestService.Workflow.Utilities;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -49,8 +49,9 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Setup(g => g.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
 
-            _target = new GuestSessionController(repositoryFactoryMock.Object, _guestSessionValidator.Object, _eventServiceMock.Object, _loggerMock.Object,
-                                                 _projectInteropMock.Object, _settingsInteropMock.Object, _userInteropMock.Object, _participantInteropMock.Object, _emailUtilityMock.Object);
+            _target = new GuestSessionController(repositoryFactoryMock.Object, _guestSessionValidator.Object, _eventServiceMock.Object,
+                                                 _loggerMock.Object, _emailUtility.Object, _passwordUtility.Object, _projectApiMock.Object,
+                                                 _participantApiMock.Object, _userApiMock.Object, _settingsApiMock.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -58,11 +59,13 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _guestSessionValidator = new Mock<IValidatorLocator>();
+        private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
+        private readonly Mock<IPasswordUtility> _passwordUtility = new Mock<IPasswordUtility>();
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
-        private readonly Mock<IProjectInterop> _projectInteropMock = new Mock<IProjectInterop>();
-        private readonly Mock<ISettingsInterop> _settingsInteropMock = new Mock<ISettingsInterop>();
-        private readonly Mock<IUserInterop> _userInteropMock = new Mock<IUserInterop>();
-        private readonly Mock<IParticipantInterop> _participantInteropMock = new Mock<IParticipantInterop>();
+        private readonly Mock<IProjectApiWrapper> _projectApiMock = new Mock<IProjectApiWrapper>();
+        private readonly Mock<ISettingsApiWrapper> _settingsApiMock = new Mock<ISettingsApiWrapper>();
+        private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
+        private readonly Mock<IParticipantApiWrapper> _participantApiMock = new Mock<IParticipantApiWrapper>();
         private readonly GuestSession _defaultGuestSession;
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
 

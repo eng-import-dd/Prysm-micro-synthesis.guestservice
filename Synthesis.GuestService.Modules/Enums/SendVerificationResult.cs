@@ -3,7 +3,7 @@
     public enum SendVerificationResult
     {
         Success,
-        MsgAlreadySentWithinLastMinute,
+        MessageSentRecently,
         EmailNotVerified,
         FailedToSend
     }

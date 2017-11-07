@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Web;
 using Synthesis.Logging;
 
@@ -10,32 +11,29 @@ namespace Synthesis.GuestService.Workflow.Utilities
 {
     public class EmailUtility : IEmailUtility
     {
-        private readonly ILogger _loggingService;
-
-        private readonly string _emailTemplate;
-        private readonly string _guestInviteEmail;
         private readonly string _createGuestInviteEmail;
         private readonly string _emailHostEmail;
-
+        private readonly string _emailTemplate;
         private readonly LinkedResource _facebookIcon;
         private readonly LinkedResource _googlePlusIcon;
+        private readonly string _guestInviteEmail;
         private readonly LinkedResource _linkedInIcon;
+        private readonly List<LinkedResource> _linkedResources = new List<LinkedResource>();
+        private readonly ILogger _logger;
         private readonly LinkedResource _prysmLogo;
         private readonly LinkedResource _twitterIcon;
         private readonly LinkedResource _youtubeIcon;
 
-        private readonly List<LinkedResource> _linkedResources = new List<LinkedResource>();
-
-        public EmailUtility(ILogger loggingService)
+        public EmailUtility(ILoggerFactory loggerFactory)
         {
-            _loggingService = loggingService;
+            _logger = loggerFactory.GetLogger(this);
 
-            _prysmLogo = new LinkedResource(MapPath("EmailTemplates/Images/Prysm-logo.png"), "image/png");
-            _facebookIcon = new LinkedResource(MapPath("EmailTemplates/Images/facebook-icon.png"), "image/png");
-            _googlePlusIcon = new LinkedResource(MapPath("EmailTemplates/Images/google-plus-icon.png"), "image/png");
-            _linkedInIcon = new LinkedResource(MapPath("EmailTemplates/Images/linkedin-icon.png"), "image/png");
-            _twitterIcon = new LinkedResource(MapPath("EmailTemplates/Images/twitter-icon.png"), "image/png");
-            _youtubeIcon = new LinkedResource(MapPath("EmailTemplates/Images/youtube-icon.png"), "image/png");
+            _prysmLogo = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/Prysm-logo.png"), "image/png");
+            _facebookIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/facebook-icon.png"), "image/png");
+            _googlePlusIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/google-plus-icon.png"), "image/png");
+            _linkedInIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/linkedin-icon.png"), "image/png");
+            _twitterIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/twitter-icon.png"), "image/png");
+            _youtubeIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/youtube-icon.png"), "image/png");
 
             _linkedResources.Add(_facebookIcon);
             _linkedResources.Add(_googlePlusIcon);
@@ -44,14 +42,14 @@ namespace Synthesis.GuestService.Workflow.Utilities
             _linkedResources.Add(_twitterIcon);
             _linkedResources.Add(_youtubeIcon);
 
-            using (var streamReader = new StreamReader(MapPath("EmailTemplates/EmailTemplate.html")))
+            using (var streamReader = new StreamReader(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/EmailTemplate.html")))
             {
                 _emailTemplate = streamReader.ReadToEnd();
             }
 
-            _guestInviteEmail = GetContent("EmailTemplates/GuestInvite.html");
-            _createGuestInviteEmail = GetContent("EmailTemplates/VerifyNewAccount.html");
-            _emailHostEmail = GetContent("EmailTemplates/EmailHost.html");
+            _guestInviteEmail = GetContent("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/GuestInvite.html");
+            _createGuestInviteEmail = GetContent("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/VerifyNewAccount.html");
+            _emailHostEmail = GetContent("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/EmailHost.html");
         }
 
         public bool SendGuestInvite(string projectName, string projectCode, string guestEmail, string from)
@@ -70,7 +68,30 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error(ex.Message, ex);
+                _logger.Error(ex.Message, ex);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
+        {
+            try
+            {
+                const string subject = "You have a guest waiting for you in the lobby";
+
+                var replacedContent = _emailHostEmail.Replace("{FullName}", userFullName);
+                replacedContent = replacedContent.Replace("{Project}", projectName);
+                replacedContent = replacedContent.Replace("{HostEmail}", userEmail);
+                replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
+                replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
+
+                SendEmail(email, "", "", subject, replacedContent, "");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message, ex);
                 return false;
             }
 
@@ -94,30 +115,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error(ex.Message, ex);
-                return false;
-            }
-
-            return true;
-        }
-
-        public bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
-        {
-            try
-            {
-                const string subject = "You have a guest waiting for you in the lobby";
-
-                var replacedContent = _emailHostEmail.Replace("{FullName}", userFullName);
-                replacedContent = replacedContent.Replace("{Project}", projectName);
-                replacedContent = replacedContent.Replace("{HostEmail}", userEmail);
-                replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
-                replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
-
-                SendEmail(email, "", "", subject, replacedContent, "");
-            }
-            catch (Exception ex)
-            {
-                _loggingService.Error(ex.Message, ex);
+                _logger.Error(ex.Message, ex);
                 return false;
             }
 
@@ -125,7 +123,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
         }
 
         private void SendEmail(string toEmail, string ccEmail, string bccEmail, string subject, string htmlBody,
-            string textBody)
+                               string textBody)
         {
             string[] to = { toEmail };
             string[] cc = { ccEmail };
@@ -135,7 +133,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
         }
 
         private void SendEmail(IEnumerable<string> toEmail, IEnumerable<string> ccEmail, IEnumerable<string> bccEmail, string subject,
-            string htmlBody, string textBody, bool asHtml, IEnumerable<Attachment> attachments)
+                               string htmlBody, string textBody, bool asHtml, IEnumerable<Attachment> attachments)
         {
             var message = new MailMessage();
 
@@ -163,8 +161,8 @@ namespace Synthesis.GuestService.Workflow.Utilities
             message.Priority = MailPriority.Normal;
             message.IsBodyHtml = asHtml;
             message.Subject = subject;
-            var plain = AlternateView.CreateAlternateViewFromString(textBody, new System.Net.Mime.ContentType("text/plain"));
-            var html = AlternateView.CreateAlternateViewFromString(htmlBody, new System.Net.Mime.ContentType("text/html"));
+            var plain = AlternateView.CreateAlternateViewFromString(textBody, new ContentType("text/plain"));
+            var html = AlternateView.CreateAlternateViewFromString(htmlBody, new ContentType("text/html"));
             message.AlternateViews.Add(plain);
             message.AlternateViews.Add(html);
 
@@ -198,9 +196,9 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error("First Attempt of sending email failed", ex);
+                _logger.Error("First Attempt of sending email failed", ex);
                 client.Send(message);
-                _loggingService.Info("Second Attempt of sending email succeeded", ex);
+                _logger.Info("Second Attempt of sending email succeeded", ex);
             }
         }
 

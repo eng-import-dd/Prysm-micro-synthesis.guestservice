@@ -9,8 +9,8 @@ using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
+using Synthesis.GuestService.Workflow.ApiWrappers;
 using Synthesis.GuestService.Workflow.Controllers;
-using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -118,7 +118,7 @@ namespace Synthesis.GuestService.Modules
             _metadataRegistry.SetRouteMetadata("SendVerificationEmail", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestVerificationEmail()),
+                Response = JsonConvert.SerializeObject(new GuestVerificationEmailResponse()),
                 Description = "Sends a verification email to a specific Guest User resource."
             });
 
@@ -273,11 +273,11 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> SendVerificationEmailAsync(dynamic input)
         {
-            GuestVerificationEmail guestVerificationEmail;
+            GuestVerificationEmailRequest guestVerificationEmailRequest;
 
             try
             {
-                guestVerificationEmail = this.Bind<GuestVerificationEmail>();
+                guestVerificationEmailRequest = this.Bind<GuestVerificationEmailRequest>();
             }
             catch (Exception ex)
             {
@@ -287,7 +287,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmail);
+                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmailRequest);
             }
             catch (Exception ex)
             {

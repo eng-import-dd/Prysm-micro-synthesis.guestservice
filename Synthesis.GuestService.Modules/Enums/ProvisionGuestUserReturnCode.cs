@@ -1,4 +1,4 @@
-﻿namespace Synthesis.GuestService.Workflow.ServiceInterop.Responses
+﻿namespace Synthesis.GuestService
 {
     public enum ProvisionGuestUserReturnCode
     {

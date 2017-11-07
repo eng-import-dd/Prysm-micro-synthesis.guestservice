@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
-using Synthesis.GuestService.Workflow.ServiceInterop.Responses;
+using Synthesis.GuestService.Workflow.ApiWrappers;
 
 namespace Synthesis.GuestService.Workflow.Controllers
 {
@@ -16,7 +16,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
         Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdAsync(Guid projectId);
         Task<GuestSession> UpdateGuestSessionAsync(GuestSession model);
         Task<ProjectStatus> GetProjectStatusAsync(Guid projectId);
-        Task<GuestVerificationEmail> SendVerificationEmailAsync(GuestVerificationEmail email);
+        Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest email);
         Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode);
     }
 }

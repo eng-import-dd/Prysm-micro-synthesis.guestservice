@@ -44,6 +44,9 @@
     <Reference Include="Autofac.Integration.Owin, Version=4.1.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.Owin.4.1.0\lib\net45\Autofac.Integration.Owin.dll</HintPath>
     </Reference>
+    <Reference Include="AutoMapper, Version=6.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\packages\AutoMapper.6.1.1\lib\net45\AutoMapper.dll</HintPath>
+    </Reference>
     <Reference Include="Castle.Core, Version=4.1.1.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
       <HintPath>..\packages\Castle.Core.4.1.1\lib\net45\Castle.Core.dll</HintPath>
       <Private>True</Private>
@@ -174,8 +177,8 @@
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleCrypto">
-      <HintPath>..\..\synthesis-cloud\Synthesis.Cloud.BLL\bin\Dev\SimpleCrypto.dll</HintPath>
+    <Reference Include="SimpleCrypto, Version=26.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleCrypto.0.3.30.26\lib\SimpleCrypto.dll</HintPath>
     </Reference>
     <Reference Include="StackExchange.Redis.StrongName, Version=1.2.6.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
       <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.6\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
@@ -212,8 +215,8 @@
       <HintPath>..\packages\Synthesis.KeyManager.2.0.2-beta\lib\net452\Synthesis.KeyManager.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Synthesis.Logging, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Logging.2.0.4-beta\lib\net452\Synthesis.Logging.dll</HintPath>
+    <Reference Include="Synthesis.Logging, Version=2.0.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Logging.2.0.5-beta001\lib\net452\Synthesis.Logging.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Logging.Log4Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
@@ -291,24 +294,42 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enums\ClientType.cs" />
+    <Compile Include="Enums\LicenseType.cs" />
+    <Compile Include="HttpClientConfiguration.cs" />
+    <Compile Include="Workflow\ApiWrappers\BaseApiWrapper.cs" />
+    <Compile Include="Enums\LobbyState.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IParticipantApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IPrincipalApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IProjectApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\ISettingsApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\ParticipantApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\ProjectApiWrapper.cs" />
+    <Compile Include="Workflow\ApiWrappers\Requests\GuestVerificationEmailRequest.cs" />
+    <Compile Include="Workflow\ApiWrappers\Requests\UserRequest.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\ParticipantResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\ProjectResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\SettingsResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\UserResponse.cs" />
+    <Compile Include="Workflow\ApiWrappers\SettingsApiWrapper.cs" />
     <Compile Include="Constants\BaseRoutes.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\GuestSession.cs" />
     <Compile Include="Dao\Models\GuestInvite.cs" />
-    <Compile Include="Dao\Models\GuestVerificationEmail.cs" />
+    <Compile Include="Workflow\ApiWrappers\Responses\GuestVerificationEmailResponse.cs" />
+    <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Enums\SendVerificationResult.cs" />
     <Compile Include="Requests\GuestCreationRequest.cs" />
     <Compile Include="Requests\GuestVerificationRequest.cs" />
     <Compile Include="Responses\CreateGuestResponseCode.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\GuestVerificationResponse.cs" />
+    <Compile Include="Responses\ProjectStatus.cs" />
     <Compile Include="Responses\VerifyGuestResponseCode.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IParticipantInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\Participant.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\Project.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\ProjectStatus.cs" />
+    <Compile Include="Workflow\ApiWrappers\Interfaces\IServiceLocator.cs" />
+    <Compile Include="Workflow\ApiWrappers\PrincipalApiWrapper.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
@@ -329,13 +350,7 @@
     <Compile Include="Workflow\Controllers\GuestInviteController.cs" />
     <Compile Include="Workflow\Controllers\Interfaces\IGuestSessionController.cs" />
     <Compile Include="Workflow\Controllers\Interfaces\IGuestInviteController.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IProjectInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\ISettingsInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\ITenantInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Interfaces\IUserInterop.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\ProvisionGuestUserReturnCode.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\User.cs" />
-    <Compile Include="Workflow\ServiceInterop\Responses\UserSettings.cs" />
+    <Compile Include="Workflow\ApiWrappers\ServiceLocator.cs" />
     <Compile Include="Workflow\Utilities\EmailUtiltiy.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Workflow\Utilities\Interfaces\IPasswordUtility.cs" />
@@ -351,8 +366,18 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="Workflow\ServiceInterop\Requests\" />
+    <Content Include="Workflow\Utilities\EmailTemplates\EmailHost.html" />
+    <Content Include="Workflow\Utilities\EmailTemplates\EmailTemplate.html" />
+    <Content Include="Workflow\Utilities\EmailTemplates\GuestInvite.html" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\facebook-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\google-plus-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\linkedin-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\Prysm-logo.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\twitter-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\Images\youtube-icon.png" />
+    <Content Include="Workflow\Utilities\EmailTemplates\UserInvite.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

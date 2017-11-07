@@ -1,24 +1,26 @@
-﻿using SimpleCrypto;
+﻿using System;
+using System.Text;
+using SimpleCrypto;
 
 namespace Synthesis.GuestService.Workflow.Utilities
 {
-    public static class PasswordUtility
+    public class PasswordUtility : IPasswordUtility
     {
         /// <summary>
-        ///     Method for taking in password and providing the one way hash and salt for it.
+        ///     Method for generating a new random password
         /// </summary>
-        /// <param name="pass"></param>
-        /// <param name="hash"></param>
-        /// <param name="salt"></param>
-        public static void HashAndSalt(string pass, out string hash, out string salt)
+        /// <param name="length">Desired length of the password to be returned</param>
+        public string GenerateRandomPassword(int length)
         {
-            //hashing parameters
-            const int saltSize = 64;
-            const int hashIterations = 10000;
+            const string valid = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+-={}|:<>?[]\;',./'";
+            var res = new StringBuilder();
+            var rnd = new Random();
+            while (0 < length--)
+            {
+                res.Append(valid[rnd.Next(valid.Length)]);
+            }
 
-            ICryptoService cryptoService = new PBKDF2();
-            hash = cryptoService.Compute(pass, saltSize, hashIterations);
-            salt = cryptoService.Salt;
+            return res.ToString();
         }
     }
 }
