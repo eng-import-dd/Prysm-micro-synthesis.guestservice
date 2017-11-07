@@ -44,7 +44,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
             _linkedResources.Add(_twitterIcon);
             _linkedResources.Add(_youtubeIcon);
 
-            using (var streamReader = new StreamReader(MapPath("EmailTemplates/EmailTemplate.html")))
+            using (var streamReader = new StreamReader(MapPath("/Workflow/Utilities/EmailTemplates/EmailTemplate.html")))
             {
                 _emailTemplate = streamReader.ReadToEnd();
             }
