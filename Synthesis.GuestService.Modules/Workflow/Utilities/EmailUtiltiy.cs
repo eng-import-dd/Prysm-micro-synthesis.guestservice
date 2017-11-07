@@ -4,13 +4,14 @@ using System.Configuration;
 using System.IO;
 using System.Net.Mail;
 using System.Web;
+using Synthesis.GuestService.Extensions;
 using Synthesis.Logging;
 
 namespace Synthesis.GuestService.Workflow.Utilities
 {
     public class EmailUtility : IEmailUtility
     {
-        private readonly ILogger _loggingService;
+        private readonly ILogger _logger;
 
         private readonly string _emailTemplate;
         private readonly string _guestInviteEmail;
@@ -26,9 +27,9 @@ namespace Synthesis.GuestService.Workflow.Utilities
 
         private readonly List<LinkedResource> _linkedResources = new List<LinkedResource>();
 
-        public EmailUtility(ILogger loggingService)
+        public EmailUtility(ILoggerFactory loggerFactory)
         {
-            _loggingService = loggingService;
+            _logger = loggerFactory.GetLogger(this);
 
             _prysmLogo = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/Prysm-logo.png"), "image/png");
             _facebookIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/facebook-icon.png"), "image/png");
@@ -70,7 +71,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error(ex.Message, ex);
+                _logger.Error(ex.Message, ex);
                 return false;
             }
 
@@ -94,7 +95,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error(ex.Message, ex);
+                _logger.Error(ex.Message, ex);
                 return false;
             }
 
@@ -117,7 +118,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error(ex.Message, ex);
+                _logger.Error(ex.Message, ex);
                 return false;
             }
 
@@ -198,9 +199,9 @@ namespace Synthesis.GuestService.Workflow.Utilities
             }
             catch (Exception ex)
             {
-                _loggingService.Error("First Attempt of sending email failed", ex);
+                _logger.Error("First Attempt of sending email failed", ex);
                 client.Send(message);
-                _loggingService.Info("Second Attempt of sending email succeeded", ex);
+                _logger.Info("Second Attempt of sending email succeeded", ex);
             }
         }
 
