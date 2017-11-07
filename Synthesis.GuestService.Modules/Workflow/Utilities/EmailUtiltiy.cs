@@ -30,12 +30,12 @@ namespace Synthesis.GuestService.Workflow.Utilities
         {
             _loggingService = loggingService;
 
-            _prysmLogo = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/Prysm-logo.png"), "image/png");
-            _facebookIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/facebook-icon.png"), "image/png");
-            _googlePlusIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/google-plus-icon.png"), "image/png");
-            _linkedInIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/linkedin-icon.png"), "image/png");
-            _twitterIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/twitter-icon.png"), "image/png");
-            _youtubeIcon = new LinkedResource(MapPath("/Workflow/Utilities/EmailTemplates/Images/youtube-icon.png"), "image/png");
+            _prysmLogo = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/Prysm-logo.png"), "image/png");
+            _facebookIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/facebook-icon.png"), "image/png");
+            _googlePlusIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/google-plus-icon.png"), "image/png");
+            _linkedInIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/linkedin-icon.png"), "image/png");
+            _twitterIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/twitter-icon.png"), "image/png");
+            _youtubeIcon = new LinkedResource(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/Images/youtube-icon.png"), "image/png");
 
             _linkedResources.Add(_facebookIcon);
             _linkedResources.Add(_googlePlusIcon);
@@ -44,14 +44,14 @@ namespace Synthesis.GuestService.Workflow.Utilities
             _linkedResources.Add(_twitterIcon);
             _linkedResources.Add(_youtubeIcon);
 
-            using (var streamReader = new StreamReader(MapPath("/Workflow/Utilities/EmailTemplates/EmailTemplate.html")))
+            using (var streamReader = new StreamReader(MapPath("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/EmailTemplate.html")))
             {
                 _emailTemplate = streamReader.ReadToEnd();
             }
 
-            _guestInviteEmail = GetContent("/Workflow/Utilities/EmailTemplates/GuestInvite.html");
-            _createGuestInviteEmail = GetContent("/Workflow/Utilities/EmailTemplates/VerifyNewAccount.html");
-            _emailHostEmail = GetContent("/Workflow/Utilities/EmailTemplates/EmailHost.html");
+            _guestInviteEmail = GetContent("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/GuestInvite.html");
+            _createGuestInviteEmail = GetContent("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/VerifyNewAccount.html");
+            _emailHostEmail = GetContent("Synthesis/GuestService/Workflow/Utilities/EmailTemplates/EmailHost.html");
         }
 
         public bool SendGuestInvite(string projectName, string projectCode, string guestEmail, string from)
