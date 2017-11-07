@@ -3,29 +3,26 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Web;
-using Synthesis.GuestService.Extensions;
 using Synthesis.Logging;
 
 namespace Synthesis.GuestService.Workflow.Utilities
 {
     public class EmailUtility : IEmailUtility
     {
-        private readonly ILogger _logger;
-
-        private readonly string _emailTemplate;
-        private readonly string _guestInviteEmail;
         private readonly string _createGuestInviteEmail;
         private readonly string _emailHostEmail;
-
+        private readonly string _emailTemplate;
         private readonly LinkedResource _facebookIcon;
         private readonly LinkedResource _googlePlusIcon;
+        private readonly string _guestInviteEmail;
         private readonly LinkedResource _linkedInIcon;
+        private readonly List<LinkedResource> _linkedResources = new List<LinkedResource>();
+        private readonly ILogger _logger;
         private readonly LinkedResource _prysmLogo;
         private readonly LinkedResource _twitterIcon;
         private readonly LinkedResource _youtubeIcon;
-
-        private readonly List<LinkedResource> _linkedResources = new List<LinkedResource>();
 
         public EmailUtility(ILoggerFactory loggerFactory)
         {
@@ -78,6 +75,29 @@ namespace Synthesis.GuestService.Workflow.Utilities
             return true;
         }
 
+        public bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
+        {
+            try
+            {
+                const string subject = "You have a guest waiting for you in the lobby";
+
+                var replacedContent = _emailHostEmail.Replace("{FullName}", userFullName);
+                replacedContent = replacedContent.Replace("{Project}", projectName);
+                replacedContent = replacedContent.Replace("{HostEmail}", userEmail);
+                replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
+                replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
+
+                SendEmail(email, "", "", subject, replacedContent, "");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.Message, ex);
+                return false;
+            }
+
+            return true;
+        }
+
         public bool SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId)
         {
             try
@@ -102,31 +122,8 @@ namespace Synthesis.GuestService.Workflow.Utilities
             return true;
         }
 
-        public bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
-        {
-            try
-            {
-                const string subject = "You have a guest waiting for you in the lobby";
-
-                var replacedContent = _emailHostEmail.Replace("{FullName}", userFullName);
-                replacedContent = replacedContent.Replace("{Project}", projectName);
-                replacedContent = replacedContent.Replace("{HostEmail}", userEmail);
-                replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
-                replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
-
-                SendEmail(email, "", "", subject, replacedContent, "");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex.Message, ex);
-                return false;
-            }
-
-            return true;
-        }
-
         private void SendEmail(string toEmail, string ccEmail, string bccEmail, string subject, string htmlBody,
-            string textBody)
+                               string textBody)
         {
             string[] to = { toEmail };
             string[] cc = { ccEmail };
@@ -136,7 +133,7 @@ namespace Synthesis.GuestService.Workflow.Utilities
         }
 
         private void SendEmail(IEnumerable<string> toEmail, IEnumerable<string> ccEmail, IEnumerable<string> bccEmail, string subject,
-            string htmlBody, string textBody, bool asHtml, IEnumerable<Attachment> attachments)
+                               string htmlBody, string textBody, bool asHtml, IEnumerable<Attachment> attachments)
         {
             var message = new MailMessage();
 
@@ -164,8 +161,8 @@ namespace Synthesis.GuestService.Workflow.Utilities
             message.Priority = MailPriority.Normal;
             message.IsBodyHtml = asHtml;
             message.Subject = subject;
-            var plain = AlternateView.CreateAlternateViewFromString(textBody, new System.Net.Mime.ContentType("text/plain"));
-            var html = AlternateView.CreateAlternateViewFromString(htmlBody, new System.Net.Mime.ContentType("text/html"));
+            var plain = AlternateView.CreateAlternateViewFromString(textBody, new ContentType("text/plain"));
+            var html = AlternateView.CreateAlternateViewFromString(htmlBody, new ContentType("text/html"));
             message.AlternateViews.Add(plain);
             message.AlternateViews.Add(html);
 

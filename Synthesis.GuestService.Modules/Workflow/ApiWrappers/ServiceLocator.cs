@@ -1,6 +1,5 @@
 ﻿using System;
 using Synthesis.Configuration;
-using Synthesis.GuestService.Extensions;
 using Synthesis.Logging;
 
 namespace Synthesis.GuestService.Workflow.ApiWrappers
