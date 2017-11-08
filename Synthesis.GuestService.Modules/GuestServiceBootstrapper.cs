@@ -192,7 +192,12 @@ namespace Synthesis.GuestService
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
 
             // Key Manager
-            builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
+            builder.RegisterType<SimpleKeyManager>()
+                   .As<IKeyManager>()
+                   .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.ParameterType == typeof(ILogger),
+                                                        (p, c) => c.Resolve<ILoggerFactory>().GetLogger(nameof(SimpleKeyManager))))
+                   .SingleInstance();
 
             // Http
             builder.RegisterType<JsonObjectSerializer>()
