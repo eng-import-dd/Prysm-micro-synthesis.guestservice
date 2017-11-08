@@ -79,7 +79,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task CreateGuestInviteVerifyCalled()
+        public async Task CreateGuestInvitCallsCreate()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
             _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>()));
@@ -128,7 +128,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task GetGuestInviteVerifyCalled()
+        public async Task GetGuestInviteCallsGet()
         {
             var id = Guid.NewGuid();
             await _target.GetGuestInviteAsync(id);

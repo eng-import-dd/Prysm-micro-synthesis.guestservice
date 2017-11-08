@@ -138,7 +138,7 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task GetGuestSessionVerifyCalled()
+        public async Task GetGuestSessionCallsGet()
         {
             var id = Guid.NewGuid();
             await _target.GetGuestSessionAsync(id);
