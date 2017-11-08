@@ -24,12 +24,12 @@ namespace Synthesis.GuestService.Modules
         public GuestInviteModule(
             IMetadataRegistry metadataRegistry,
             IGuestInviteController guestInviteController,
-            ILogger logger)
+            ILoggerFactory loggerFactory)
         {
             // Init DI
             _metadataRegistry = metadataRegistry;
             _guestInviteController = guestInviteController;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 

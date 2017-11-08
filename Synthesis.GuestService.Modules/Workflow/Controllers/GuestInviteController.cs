@@ -31,12 +31,12 @@ namespace Synthesis.GuestService.Workflow.Controllers
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
-        /// <param name="logger">The logger.</param>
+        /// <param name="loggerFactory">The logger.</param>
         public GuestInviteController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
-            ILogger logger)
+            ILoggerFactory loggerFactory)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             _validatorLocator = validatorLocator;
             _eventService = eventService;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
         }
 
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)

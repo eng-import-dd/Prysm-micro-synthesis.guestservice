@@ -11,7 +11,7 @@ namespace Synthesis.GuestService.Workflow.ApiWrappers
         protected BaseApiWrapper(IMicroserviceHttpClient httpClient, ILoggerFactory loggerFactory)
         {
             HttpClient = httpClient;
-            Logger = loggerFactory.GetLogger(GetType().FullName);
+            Logger = loggerFactory.GetLogger(this);
         }
 
         protected string ServiceUrl { get; set; }

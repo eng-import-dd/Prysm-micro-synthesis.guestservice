@@ -10,7 +10,8 @@ namespace Synthesis.GuestService
     public class GuestServiceStatelessAuthorization : LegacyStatelessAuthorization
     {
         /// <inheritdoc />
-        public GuestServiceStatelessAuthorization(ISynthesisMonolithicCloudDao synthesisMonolithicCloudDao, ILogger logger) : base(synthesisMonolithicCloudDao, logger)
+        public GuestServiceStatelessAuthorization(ISynthesisMonolithicCloudDao synthesisMonolithicCloudDao, ILoggerFactory loggerFactory)
+            : base(synthesisMonolithicCloudDao, loggerFactory.GetLogger(typeof(GuestServiceStatelessAuthorization)))
         {
         }
 

@@ -7,7 +7,6 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Dao.Models;
-using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.ApiWrappers;
 using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.GuestService.Workflow.Utilities;
@@ -20,20 +19,6 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
 {
     public class GuestSessionControllerTests
     {
-        private readonly GuestSessionController _target;
-        private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
-        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
-        private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
-        private readonly Mock<IPasswordUtility> _passwordUtility = new Mock<IPasswordUtility>();
-        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
-        private readonly Mock<IProjectApiWrapper> _projectApiMock = new Mock<IProjectApiWrapper>();
-        private readonly Mock<ISettingsApiWrapper> _settingsApiMock = new Mock<ISettingsApiWrapper>();
-        private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
-        private readonly Mock<IParticipantApiWrapper> _participantApiMock = new Mock<IParticipantApiWrapper>();
-        private readonly GuestSession _defaultGuestSession = new GuestSession();
-        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
-
         public GuestSessionControllerTests()
         {
             _defaultGuestSession.Id = Guid.NewGuid();
@@ -72,9 +57,34 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Setup(g => g.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
 
+            var loggerFactoryMock = new Mock<ILoggerFactory>();
+            loggerFactoryMock
+                .Setup(x => x.Get(It.IsAny<LogTopic>()))
+                .Returns(new Mock<ILogger>().Object);
+
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
-                                                 _loggerMock.Object, _emailUtility.Object, _passwordUtility.Object, _projectApiMock.Object,
+                                                 loggerFactoryMock.Object, _emailUtility.Object, _passwordUtility.Object, _projectApiMock.Object,
                                                  _participantApiMock.Object, _userApiMock.Object, _settingsApiMock.Object);
+        }
+
+        private readonly GuestSessionController _target;
+        private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
+        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
+        private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
+        private readonly Mock<IPasswordUtility> _passwordUtility = new Mock<IPasswordUtility>();
+        private readonly Mock<IProjectApiWrapper> _projectApiMock = new Mock<IProjectApiWrapper>();
+        private readonly Mock<ISettingsApiWrapper> _settingsApiMock = new Mock<ISettingsApiWrapper>();
+        private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
+        private readonly Mock<IParticipantApiWrapper> _participantApiMock = new Mock<IParticipantApiWrapper>();
+        private readonly GuestSession _defaultGuestSession = new GuestSession();
+        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
+        private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
+
+        [Fact]
+        public async Task CreateGuestSessionCallsCreate()
+        {
+            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            _guestSessionRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestSession>()));
         }
 
         [Fact]
@@ -86,13 +96,6 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
             Assert.Equal(_defaultGuestSession.UserId, result.UserId);
             Assert.Equal(_defaultGuestSession.ProjectId, result.ProjectId);
             Assert.Equal(_defaultGuestSession.ProjectAccessCode, result.ProjectAccessCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestSessionCallsCreate()
-        {
-            await _target.CreateGuestSessionAsync(_defaultGuestSession);
-            _guestSessionRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestSession>()));
         }
 
         [Fact]
@@ -121,6 +124,14 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         }
 
         [Fact]
+        public async Task GetGuestSessionCallsGet()
+        {
+            var id = Guid.NewGuid();
+            await _target.GetGuestSessionAsync(id);
+            _guestSessionRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>()));
+        }
+
+        [Fact]
         public async Task GetGuestSessionReturnsProjectIfExists()
         {
             var result = await _target.GetGuestSessionAsync(Guid.NewGuid());
@@ -135,14 +146,6 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Throws(new NotFoundException("GuestSession could not be found."));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.GetGuestSessionAsync(Guid.NewGuid()));
-        }
-
-        [Fact]
-        public async Task GetGuestSessionCallsGet()
-        {
-            var id = Guid.NewGuid();
-            await _target.GetGuestSessionAsync(id);
-            _guestSessionRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>()));
         }
 
         [Fact]

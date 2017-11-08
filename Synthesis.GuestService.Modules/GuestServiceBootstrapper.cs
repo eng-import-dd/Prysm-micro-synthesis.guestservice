@@ -29,13 +29,13 @@ using Synthesis.Logging;
 using Synthesis.Logging.Log4Net;
 using Synthesis.Nancy.MicroService.Authorization;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
-using IValidatorLocator = Synthesis.Nancy.MicroService.Validation.IValidatorLocator;
+using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
-using ValidatorLocator = Synthesis.Nancy.MicroService.Validation.ValidatorLocator;
 
 namespace Synthesis.GuestService
 {
@@ -66,20 +66,12 @@ namespace Synthesis.GuestService
         protected override ILifetimeScope CreateRequestContainer(NancyContext context)
         {
             return ApplicationContainer.BeginLifetimeScope(MatchingScopeLifetimeTags.RequestLifetimeScopeTag,
-                bldr =>
-                {
-                    bldr.Register(c => new RequestHeaders(context.Request.Headers))
-                        .As<IRequestHeaders>()
-                        .InstancePerLifetimeScope();
-                });
-        }
-
-        /// <summary>
-        ///     Gets a logger using the default log topic for this service.
-        /// </summary>
-        public ILogger GetDefaultLogger()
-        {
-            return ApplicationContainer.Resolve<ILogger>();
+                                                           bldr =>
+                                                           {
+                                                               bldr.Register(c => new RequestHeaders(context.Request.Headers))
+                                                                   .As<IRequestHeaders>()
+                                                                   .InstancePerLifetimeScope();
+                                                           });
         }
 
         protected override void ConfigureApplicationContainer(ILifetimeScope container)
@@ -87,34 +79,34 @@ namespace Synthesis.GuestService
             base.ConfigureApplicationContainer(container);
 
             container.Update(builder =>
-                {
-                    builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
+                             {
+                                 builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
 
-                    // Update this registration if you need to change the authorization implementation.
-                    builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
-                        .As<IStatelessAuthorization>()
-                        .SingleInstance();
-                });
+                                 // Update this registration if you need to change the authorization implementation.
+                                 builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILoggerFactory>().GetLogger(typeof(SynthesisStatelessAuthorization))))
+                                        .As<IStatelessAuthorization>()
+                                        .SingleInstance();
+                             });
 
-            container.Resolve<ILogger>().Info("GuestService Service Running....");
+            container.Resolve<ILoggerFactory>().GetLogger(this).Info("GuestService Service Running....");
         }
 
         protected override void ApplicationStartup(ILifetimeScope container, IPipelines pipelines)
         {
             // Add the micro-service authorization logic to the Nancy pipeline.
             pipelines.BeforeRequest += ctx =>
-                {
-                    // TODO: This is temporary until we get JWT implemented.
-                    var identity = new ClaimsIdentity(
-                                                        new[]
-                                                        {
-                                                            new Claim(ClaimTypes.Name, "Test User"),
-                                                            new Claim(ClaimTypes.Email, "test@user.com")
-                                                        },
-                                                        AuthenticationTypes.Basic);
-                    ctx.CurrentUser = new ClaimsPrincipal(identity);
-                    return null;
-                };
+                                       {
+                                           // TODO: This is temporary until we get JWT implemented.
+                                           var identity = new ClaimsIdentity(
+                                                                             new[]
+                                                                             {
+                                                                                 new Claim(ClaimTypes.Name, "Test User"),
+                                                                                 new Claim(ClaimTypes.Email, "test@user.com")
+                                                                             },
+                                                                             AuthenticationTypes.Basic);
+                                           ctx.CurrentUser = new ClaimsPrincipal(identity);
+                                           return null;
+                                       };
 
             base.ApplicationStartup(container, pipelines);
 
@@ -149,13 +141,11 @@ namespace Synthesis.GuestService
 
             var settingsReader = new DefaultAppSettingsReader();
             var loggerFactory = new LoggerFactory();
-            var defaultLogger = loggerFactory.Get(DefaultLogTopic);
 
             builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
 
             // Logging
             builder.RegisterInstance(CreateLogLayout(settingsReader));
-            builder.RegisterInstance(defaultLogger);
             builder.RegisterInstance(loggerFactory).As<ILoggerFactory>();
 
             RegisterHttpClient(builder, settingsReader);
@@ -178,6 +168,13 @@ namespace Synthesis.GuestService
             builder.Register(c => new EventServiceContext { ServiceName = "Synthesis.GuestService" });
             builder.RegisterType<EventService>().As<IEventService>().SingleInstance()
                    .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.Name == "eventBus",
+                                                        (p, c) =>
+                                                        {
+                                                            var connectionString = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server");
+                                                            return EventBus.Kafka.EventBus.Create(connectionString);
+                                                        }))
+                   .WithParameter(new ResolvedParameter(
                                                         (p, c) => p.Name == "logger",
                                                         (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)));
 
@@ -199,10 +196,10 @@ namespace Synthesis.GuestService
 
             // Http
             builder.RegisterType<JsonObjectSerializer>()
-                   .As<Serialization.IObjectSerializer>()
+                   .As<IObjectSerializer>()
                    .WithParameter(new ResolvedParameter(
-                            (p, c) => p.ParameterType == typeof(JsonSerializer),
-                            (p, c) => JsonSerializer.Create()));
+                                                        (p, c) => p.ParameterType == typeof(JsonSerializer),
+                                                        (p, c) => JsonSerializer.Create()));
 
             builder.RegisterType<HttpClientConfiguration>().As<IHttpClientConfiguration>();
             builder.RegisterType<SynthesisHttpClient>()
@@ -221,26 +218,26 @@ namespace Synthesis.GuestService
             builder.RegisterType<ProjectApiWrapper>()
                    .As<IProjectApiWrapper>()
                    .WithParameter(new ResolvedParameter(
-                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ProjectService.Url")));
+                                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ProjectService.Url")));
 
             builder.RegisterType<SettingsApiWrapper>()
-                .As<ISettingsApiWrapper>()
-                .WithParameter(new ResolvedParameter(
-                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("SynthesisCloud.Url")));
+                   .As<ISettingsApiWrapper>()
+                   .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("SynthesisCloud.Url")));
 
             builder.RegisterType<PrincipalApiWrapper>()
                    .As<IPrincipalApiWrapper>()
                    .WithParameter(new ResolvedParameter(
-                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("PrincipalService.Url")));
+                                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("PrincipalService.Url")));
 
             builder.RegisterType<ParticipantApiWrapper>()
                    .As<IParticipantApiWrapper>()
                    .WithParameter(new ResolvedParameter(
-                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
+                                                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
@@ -255,7 +252,7 @@ namespace Synthesis.GuestService
                    .As<IHttpClient>()
                    .SingleInstance();
             builder.Register(c => JsonSerializer.Create()).As<JsonSerializer>();
-            builder.RegisterType<JsonObjectSerializer>().As<Serialization.IObjectSerializer>();
+            builder.RegisterType<JsonObjectSerializer>().As<IObjectSerializer>();
             builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
             builder.RegisterType<AuthorizationPassThroughClient>()
                    .As<IMicroserviceHttpClient>();
