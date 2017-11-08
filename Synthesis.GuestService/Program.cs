@@ -19,7 +19,7 @@ namespace Synthesis.GuestService
         {
             var rootContainer = GuestServiceBootstrapper.RootContainer;
             var settingsReader = rootContainer.Resolve<IAppSettingsReader>();
-            var logger = rootContainer.Resolve<ILogger>();
+            var logger = rootContainer.Resolve<ILoggerFactory>().GetLogger(typeof(Program));
 
             if (args == null || args.Length == 0)
             {

@@ -7,7 +7,6 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Dao.Models;
-using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.Controllers;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -18,14 +17,6 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
 {
     public class GuestInviteControllerTests
     {
-        private readonly GuestInviteController _target;
-        private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
-        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
-        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
-        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
-        private readonly GuestInvite _defaultGuestInvite;
-
         public GuestInviteControllerTests()
         {
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
@@ -60,10 +51,28 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Setup(g => g.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
 
-            _target = new GuestInviteController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object, _loggerMock.Object);
+            var loggerFactoryMock = new Mock<ILoggerFactory>();
+            loggerFactoryMock
+                .Setup(x => x.Get(It.IsAny<LogTopic>()))
+                .Returns(new Mock<ILogger>().Object);
+
+            _target = new GuestInviteController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object, loggerFactoryMock.Object);
         }
 
-        
+        private readonly GuestInviteController _target;
+        private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
+        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
+        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
+        private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
+        private readonly GuestInvite _defaultGuestInvite;
+
+        [Fact]
+        public async Task CreateGuestInvitCallsCreate()
+        {
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>()));
+        }
+
         [Fact]
         public async Task CreateGuestInviteReturnsProvidedGuestInvite()
         {
@@ -76,13 +85,6 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
             Assert.Equal(_defaultGuestInvite.Id, result.Id);
             Assert.Equal(_defaultGuestInvite.InvitedBy, result.InvitedBy);
             Assert.Equal(_defaultGuestInvite.ProjectId, result.ProjectId);
-        }
-
-        [Fact]
-        public async Task CreateGuestInvitCallsCreate()
-        {
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>()));
         }
 
         [Fact]
@@ -111,6 +113,14 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
         }
 
         [Fact]
+        public async Task GetGuestInviteCallsGet()
+        {
+            var id = Guid.NewGuid();
+            await _target.GetGuestInviteAsync(id);
+            _guestInviteRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>()));
+        }
+
+        [Fact]
         public async Task GetGuestInviteReturnsProjectIfExists()
         {
             var result = await _target.GetGuestInviteAsync(Guid.NewGuid());
@@ -125,14 +135,6 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
                 .Throws(new NotFoundException("GuestInvite not found"));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.GetGuestInviteAsync(It.IsAny<Guid>()));
-        }
-
-        [Fact]
-        public async Task GetGuestInviteCallsGet()
-        {
-            var id = Guid.NewGuid();
-            await _target.GetGuestInviteAsync(id);
-            _guestInviteRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>()));
         }
 
         [Fact]
