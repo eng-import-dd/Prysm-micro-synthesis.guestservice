@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
@@ -83,6 +85,38 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
             Assert.Equal(_defaultGuestSession.UserId, result.UserId);
             Assert.Equal(_defaultGuestSession.ProjectId, result.ProjectId);
             Assert.Equal(_defaultGuestSession.ProjectAccessCode, result.ProjectAccessCode);
+        }
+
+        [Fact]
+        public async Task KillGuestSessionsForProjectKillsAllActiveSessions()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>()
+                {
+                    new GuestSession() {GuestSessionState = GuestState.InLobby},
+                    new GuestSession() {GuestSessionState = GuestState.InProject},
+                    new GuestSession() {GuestSessionState = GuestState.Ended}
+                });
+
+            await _target.DeleteGuestSessionsForProject(_defaultGuestSession.ProjectId, false);
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task KillGuestSessionsForProjectKillsInProjectSessions()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>()
+                {
+                    new GuestSession() {GuestSessionState = GuestState.InLobby},
+                    new GuestSession() {GuestSessionState = GuestState.InProject},
+                    new GuestSession() {GuestSessionState = GuestState.Ended}
+                });
+
+            await _target.DeleteGuestSessionsForProject(_defaultGuestSession.ProjectId, true);
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Once);
         }
 
         [Fact]

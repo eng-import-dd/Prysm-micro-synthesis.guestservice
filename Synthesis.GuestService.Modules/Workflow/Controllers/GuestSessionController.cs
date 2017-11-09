@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Requests;
@@ -412,20 +413,21 @@ namespace Synthesis.GuestService.Workflow.Controllers
             throw new NotFoundException($"There are no participants for project {projectId} while verifying if host is present.");
         }
 
-        public async Task KickGuestsFromProject(Guid projectId, bool kickGuestsFromLobby)
+        public async Task DeleteGuestSessionsForProject(Guid projectId, bool onlyKickGuestsInProject)
         {
-            var projectGuests = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId).Result;
+            var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
-            var guestsToKick = new List<GuestSession>();
-            guestsToKick.AddRange(!kickGuestsFromLobby
-                                      ? projectGuests.Where(g => g.GuestSessionState == GuestState.InProject)
-                                      : projectGuests.Where(g => g.GuestSessionState == GuestState.Ended));
+            guestSessions
+                .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
+                            !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
+                .ToList()
+                .ForEach(async session =>
+                {
+                    session.GuestSessionState = GuestState.Ended;
+                    await _guestSessionRepository.UpdateItemAsync(session.Id, session);
+                });
 
-            foreach (var g in guestsToKick)
-            {
-                g.GuestSessionState = GuestState.Ended;
-                await _guestSessionRepository.UpdateItemAsync(g.Id, g);
-            }
+            _eventService.Publish(new ServiceBusEvent<Guid>() {Name = EventNames.GuestSessionsForProjectDeleted, Payload = projectId });
         }
     }
 }

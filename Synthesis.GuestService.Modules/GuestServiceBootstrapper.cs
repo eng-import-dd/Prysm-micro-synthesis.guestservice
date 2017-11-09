@@ -17,6 +17,7 @@ using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka;
+using Synthesis.GuestService.Events;
 using Synthesis.GuestService.Owin;
 using Synthesis.GuestService.Validators;
 using Synthesis.GuestService.Workflow.ApiWrappers;
@@ -208,6 +209,12 @@ namespace Synthesis.GuestService
             builder.RegisterType<SynthesisHttpClient>()
                    .As<IHttpClient>()
                    .SingleInstance();
+
+            // Event Subscription
+            builder.RegisterType<AllUsersHaveDepartedProjectHandler>().As<IEventHandler>().SingleInstance();
+            builder.RegisterType<ResetGuestAccessCodeHandler>().As<IEventHandler>().SingleInstance();
+            builder.RegisterType<EventHandlerLocator>().As<IEventHandlerLocator>().SingleInstance();
+            builder.RegisterType<EventSubscriber>().SingleInstance();
 
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
