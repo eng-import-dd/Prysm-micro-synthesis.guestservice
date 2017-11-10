@@ -18,5 +18,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
         Task<ProjectStatus> GetProjectStatusAsync(Guid projectId);
         Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest email);
         Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode);
+        Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject);
     }
 }

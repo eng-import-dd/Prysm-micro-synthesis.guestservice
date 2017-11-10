@@ -199,11 +199,11 @@
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus, Version=1.0.0.12, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.1.0.0.12-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
+    <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta006\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.0.9, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.0.9-beta1\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
+    <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.0.11, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.0.11-beta4\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -294,8 +294,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Events\AllUsersHaveDepartedProjectHandler.cs" />
+    <Compile Include="Constants\EventNamespaces.cs" />
+    <Compile Include="Events\EventSubscriber.cs" />
+    <Compile Include="Events\ResetGuestAccessCodeHandler.cs" />
     <Compile Include="Enums\ClientType.cs" />
     <Compile Include="Enums\LicenseType.cs" />
+    <Compile Include="Extensions\MicroserviceExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Workflow\ApiWrappers\BaseApiWrapper.cs" />
     <Compile Include="Enums\LobbyState.cs" />
@@ -364,7 +369,13 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="x64\librdkafka.lib" />
+    <None Include="x64\librdkafkacpp.lib" />
+    <None Include="x86\librdkafka.lib" />
+    <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -378,6 +389,14 @@
     <Content Include="Workflow\Utilities\EmailTemplates\Images\twitter-icon.png" />
     <Content Include="Workflow\Utilities\EmailTemplates\Images\youtube-icon.png" />
     <Content Include="Workflow\Utilities\EmailTemplates\UserInvite.html" />
+    <Content Include="x64\librdkafka.dll" />
+    <Content Include="x64\librdkafkacpp.dll" />
+    <Content Include="x64\msvcr120.dll" />
+    <Content Include="x64\zlib.dll" />
+    <Content Include="x86\librdkafka.dll" />
+    <Content Include="x86\librdkafkacpp.dll" />
+    <Content Include="x86\msvcr120.dll" />
+    <Content Include="x86\zlib.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

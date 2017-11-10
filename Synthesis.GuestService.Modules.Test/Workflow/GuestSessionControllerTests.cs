@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
@@ -6,6 +8,8 @@ using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.EventBus.Events;
+using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
 using Synthesis.GuestService.Workflow.ApiWrappers;
 using Synthesis.GuestService.Workflow.Controllers;
@@ -96,6 +100,57 @@ namespace Synthesis.GuestService.Modules.Test.Workflow
             Assert.Equal(_defaultGuestSession.UserId, result.UserId);
             Assert.Equal(_defaultGuestSession.ProjectId, result.ProjectId);
             Assert.Equal(_defaultGuestSession.ProjectAccessCode, result.ProjectAccessCode);
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionsForProjectAsyncPublishesGuestSessionsForProjectDeleted()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>());
+
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+
+            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.GuestSessionsForProjectDeleted)));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionsForProjectAsyncKillsAllActiveSessions()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>()
+                {
+                    new GuestSession() {GuestSessionState = GuestState.InLobby},
+                    new GuestSession() {GuestSessionState = GuestState.InProject},
+                    new GuestSession() {GuestSessionState = GuestState.Ended}
+                });
+
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionsForProjectAsyncKillsInProjectSessions()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>()
+                {
+                    new GuestSession() {GuestSessionState = GuestState.InLobby},
+                    new GuestSession() {GuestSessionState = GuestState.InProject},
+                    new GuestSession() {GuestSessionState = GuestState.Ended}
+                });
+
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, true);
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateGuestSessionVerifyCalled()
+        {
+            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            _guestSessionRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestSession>()));
         }
 
         [Fact]
