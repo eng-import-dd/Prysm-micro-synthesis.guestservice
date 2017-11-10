@@ -22,7 +22,7 @@ namespace Synthesis.GuestService.Events
         {
             try
             {
-                await _guestSessionController.DeleteGuestSessionsForProject(projectId.Value, false);
+                await _guestSessionController.DeleteGuestSessionsForProjectAsync(projectId.Value, false);
             }
             catch (Exception ex)
             {

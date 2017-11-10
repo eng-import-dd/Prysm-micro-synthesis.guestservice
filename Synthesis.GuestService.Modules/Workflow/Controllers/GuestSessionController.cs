@@ -401,7 +401,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             return errors;
         }
 
-        public async Task DeleteGuestSessionsForProject(Guid projectId, bool onlyKickGuestsInProject)
+        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 

@@ -24,13 +24,13 @@ namespace Synthesis.GuestService.Modules.Test.Events
         }
 
         [Fact]
-        public void HandleEventCallsSetFollowMeStateAsync()
+        public void HandleEventCallsDeleteGuestSessionsForProjectAsync()
         {
             var projectId = Guid.NewGuid();
             _target.HandleEvent(new GuidEvent(projectId));
 
             _controllerMock
-                .Verify(x => x.DeleteGuestSessionsForProject(projectId, false));
+                .Verify(x => x.DeleteGuestSessionsForProjectAsync(projectId, false));
         }
     }
 }
