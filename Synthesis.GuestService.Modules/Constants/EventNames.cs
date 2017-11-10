@@ -1,6 +1,6 @@
 namespace Synthesis.GuestService.Constants
 {
-    internal static class EventNames
+    public static class EventNames
     {
         public const string GuestInviteCreated = "GuestInviteCreated";
         public const string GuestInviteUpdated = "GuestInviteUpdated";
@@ -8,6 +8,7 @@ namespace Synthesis.GuestService.Constants
         public const string GuestSessionUpdated = "GuestSessionUpdated";
         public const string GuestAccessCodeUpdated = "GuestAccessCodeUpdated";
         public const string AllUsersHaveDepartedProject = "AllUsersHaveDepartedProject";
+
         public const string GuestSessionsForProjectDeleted = "GuestSessionsForProjectDeleted";
     }
 }

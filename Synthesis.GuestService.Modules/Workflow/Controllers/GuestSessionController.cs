@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
@@ -8,6 +9,7 @@ using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Dao.Models;
+using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
 using Synthesis.GuestService.Validators;
@@ -224,8 +226,30 @@ namespace Synthesis.GuestService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var isGuestLimitReached = await GetProjectActiveGuestSessionCountAsync(projectId) >= MaxGuestsAllowedInProject;
-            var isHostPresent = await IsHostCurrentlyPresentInProjectAsync(projectId);
+            var participantTask = _participantApi.GetParticipantsByProjectIdAsync(projectId);
+            var projectTask = _projectApi.GetProjectByIdAsync(projectId);
+            var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
+
+            await Task.WhenAll(participantTask, projectTask, projectGuestsTask);
+
+            var participantResult = participantTask.Result;
+            var projectResult = projectTask.Result;
+            var projectGuestsResult = projectGuestsTask.Result;
+
+            if (projectResult.ResponseCode == HttpStatusCode.NotFound)
+            {
+                _logger.Error($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
+                throw new NotFoundException($"Project {projectId} does not exist");
+            }
+
+            projectResult.VerifySuccess($"Failed to retrieve project {projectId} when verifying if host is present.");
+            participantResult.VerifySuccess($"Failed to retrieve participants for project {projectId} when verifying if host is present.");
+
+            var project = projectResult.Payload;
+            var participants = participantResult.Payload.ToList();
+
+            var isHostPresent = participants.Any(p => p.UserId == project.OwnerId);
+            var isGuestLimitReached = projectGuestsResult.Count(g => g.GuestSessionState == GuestState.InProject) >= MaxGuestsAllowedInProject;
 
             var lobbyStatus = ProjectStatus.CalculateLobbyStatus(isGuestLimitReached, isHostPresent);
             return new ProjectStatus(lobbyStatus);
@@ -377,42 +401,6 @@ namespace Synthesis.GuestService.Workflow.Controllers
             return errors;
         }
 
-        private async Task<int> GetProjectActiveGuestSessionCountAsync(Guid projectId)
-        {
-            var projectGuests = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
-            return projectGuests.Count(g => g.GuestSessionState == GuestState.InProject);
-        }
-
-        private async Task<bool> IsHostCurrentlyPresentInProjectAsync(Guid projectId)
-        {
-            var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
-            if (projectResponse == null)
-            {
-                _logger.Error($"Failed to retrieve the project with id {projectId} when verifying if host is present.");
-                throw new NotFoundException($"Error retrieving project with id {projectId} while verifying if host is present.");
-            }
-
-            var project = projectResponse.Payload;
-
-            var participantResponse = await _participantApi.GetParticipantsByProjectIdAsync(projectId);
-            if (participantResponse == null)
-            {
-                _logger.Error($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
-                throw new NotFoundException($"Error retrieving participants for project {projectId} while verifying if host is present.");
-            }
-
-            var participants = participantResponse.Payload;
-
-            var participantResponses = participants as ParticipantResponse[] ?? participants.ToArray();
-            if (participantResponses.Any())
-            {
-                return participantResponses.Any(p => p.UserId == project.OwnerId);
-            }
-
-            _logger.Error($"There are no current participants for projectId {projectId} when verifying if host is present.");
-            throw new NotFoundException($"There are no participants for project {projectId} while verifying if host is present.");
-        }
-
         public async Task DeleteGuestSessionsForProject(Guid projectId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
@@ -427,7 +415,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
                     await _guestSessionRepository.UpdateItemAsync(session.Id, session);
                 });
 
-            _eventService.Publish(new ServiceBusEvent<Guid>() {Name = EventNames.GuestSessionsForProjectDeleted, Payload = projectId });
+            _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
         }
     }
 }
