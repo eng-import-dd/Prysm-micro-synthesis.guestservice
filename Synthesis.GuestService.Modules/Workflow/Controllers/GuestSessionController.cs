@@ -45,7 +45,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
-        /// <param name="logger">The logger.</param>
+        /// <param name="loggerFactory">The logger.</param>
         /// <param name="projectApi"></param>
         /// <param name="settingsApi"></param>
         /// <param name="userApi"></param>
@@ -56,7 +56,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
-            ILogger logger,
+            ILoggerFactory loggerFactory,
             IEmailUtility emailUtility,
             IPasswordUtility passwordUtility,
             IProjectApiWrapper projectApi,
@@ -75,7 +75,7 @@ namespace Synthesis.GuestService.Workflow.Controllers
 
             _validatorLocator = validatorLocator;
             _eventService = eventService;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
 
             _emailUtility = emailUtility;
             _passwordUtility = passwordUtility;

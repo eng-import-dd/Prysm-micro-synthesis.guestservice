@@ -32,12 +32,12 @@ namespace Synthesis.GuestService
         /// <returns>The collection of listeners.</returns>
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            var logger = GuestServiceBootstrapper.RootContainer.Resolve<ILogger>();
+            var loggerFactory = GuestServiceBootstrapper.RootContainer.Resolve<ILoggerFactory>();
             return Context.CodePackageActivationContext.GetEndpoints()
                 .Where(ep => ep.Protocol == EndpointProtocol.Http || ep.Protocol == EndpointProtocol.Https)
                 .Select(ep =>
                     new ServiceInstanceListener(
-                        sc => new OwinCommunicationListener(Startup.ConfigureApp, sc, logger, ep.Name, AppRoot),
+                        sc => new OwinCommunicationListener(Startup.ConfigureApp, sc, loggerFactory, ep.Name, AppRoot),
                         ep.Protocol.ToString().ToUpper()));
         }
 
