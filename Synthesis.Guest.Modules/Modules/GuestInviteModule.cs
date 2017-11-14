@@ -2,89 +2,66 @@ using Nancy;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Newtonsoft.Json;
+using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PolicyEvaluator;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Modules
 {
-    public sealed class GuestInviteModule : NancyModule
+    public sealed class GuestInviteModule : SynthesisModule
     {
         private readonly IGuestInviteController _guestInviteController;
-        private readonly ILogger _logger;
-        private readonly IMetadataRegistry _metadataRegistry;
 
         public GuestInviteModule(
             IMetadataRegistry metadataRegistry,
+            ITokenValidator tokenValidator,
+            IPolicyEvaluator policyEvaluator,
             IGuestInviteController guestInviteController,
             ILoggerFactory loggerFactory)
+            : base(GuestServiceBootstrapper.ServiceName, metadataRegistry, tokenValidator, policyEvaluator, loggerFactory)
         {
             // Init DI
-            _metadataRegistry = metadataRegistry;
             _guestInviteController = guestInviteController;
-            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 
-            // Initialize documentation
-            SetupRouteMetadata();
+            // initialize routes
+            CreateRoute("CreateGuestInvite", HttpMethod.Post, Routing.GuestInvitesRoute, CreateGuestInviteAsync)
+                .Description("Create a specific GuestInvite resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestInvite()));
 
-            // Initialize Routes
-            Post(BaseRoutes.GuestInvite, CreateGuestInviteAsync, null, "CreateGuestInvite");
-            Post(BaseRoutes.GuestInviteLegacy, CreateGuestInviteAsync, null, "CreateGuestInviteLegacy");
+            CreateRoute("GetGuestInvite", HttpMethod.Get, $"{Routing.GuestInvitesRoute}/{{id:guid}}", GetGuestInviteAsync)
+                .Description("Retrieves a specific GuestInvite resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestInvite()));
 
-            Get(BaseRoutes.GuestInvite + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInvite");
-            Get(BaseRoutes.GuestInviteLegacy + "/{id:guid}", GetGuestInviteAsync, null, "GetGuestInviteLegacy");
+            CreateRoute("GetGuestInvites", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestInvitesPath}", GetGuestInvitesByProjectIdAsync)
+                .Description("Gets All GuestInvites for a specific Project.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
-            Put(BaseRoutes.GuestInvite + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInvite");
-            Put(BaseRoutes.GuestInviteLegacy + "/{id:guid}", UpdateGuestInviteAsync, null, "UpdateGuestInviteLegacy");
-
-            Get(BaseRoutes.GuestInvite + "/project/{projectId:guid}", GetGuestInvitesByProjectIdAsync, null, "GetGuestInvites");
-            Get(BaseRoutes.GuestInviteLegacy + "/project/{projectId:guid}", GetGuestInvitesByProjectIdAsync, null, "GetGuestInvitesLegacy");
+            CreateRoute("UpdateGuestInvite", HttpMethod.Put, $"{Routing.GuestInvitesRoute}/{{id:guid}}", UpdateGuestInviteAsync)
+                .Description("Update a specific GuestInvite resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestInvite()));
 
             OnError += (ctx, ex) =>
-                       {
-                           _logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
-                           return Response.InternalServerError(ex.Message);
-                       };
-        }
-
-        private void SetupRouteMetadata()
-        {
-            _metadataRegistry.SetRouteMetadata("CreateGuestInvite", new SynthesisRouteMetadata
             {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestInvite()),
-                Description = "Create a specific GuestInvite resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("GetGuestInvite", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestInvite()),
-                Description = "Retrieve a specific GuestInvite resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("GetGuestInvites", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }),
-                Description = "Gets All GuestInvites for a specific Project"
-            });
-
-            _metadataRegistry.SetRouteMetadata("UpdateGuestInvite", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestInvite()),
-                Description = "Update a specific GuestInvite resource."
-            });
+                Logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
+                return Response.InternalServerError(ex.Message);
+            };
         }
 
         private async Task<object> CreateGuestInviteAsync(dynamic input)
@@ -96,7 +73,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to create a GuestInvite resource", ex);
+                Logger.Error("Binding failed while attempting to create a GuestInvite resource", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -110,7 +87,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to create guestInvite resource due to an error", ex);
+                Logger.Error("Failed to create guestInvite resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestInvite);
             }
         }
@@ -131,7 +108,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to get guestInvite with id {input.id} due to an error", ex);
+                Logger.Error($"Failed to get guestInvite with id {input.id} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
@@ -152,7 +129,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error($"GuestInvites could not be retrieved for projectId {input.projectId}", ex);
+                Logger.Error($"GuestInvites could not be retrieved for projectId {input.projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
@@ -167,7 +144,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to update a GuestInvite resource.", ex);
+                Logger.Error("Binding failed while attempting to update a GuestInvite resource.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -177,7 +154,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Unhandled exception encountered while attempting to update a GuestInvite resource", ex);
+                Logger.Error("Unhandled exception encountered while attempting to update a GuestInvite resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestInvite);
             }
         }

@@ -10,6 +10,7 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Testing;
 using Nancy.TinyIoc;
+using Synthesis.Authentication;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
@@ -19,6 +20,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PolicyEvaluator;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules
@@ -95,6 +97,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 with.EnableAutoRegistration();
                 with.RequestStartup(requestStartup);
                 with.Dependency(new Mock<IMetadataRegistry>().Object);
+                with.Dependency(new Mock<ITokenValidator>().Object);
+                with.Dependency(new Mock<IPolicyEvaluator>().Object);
                 with.Dependency(loggerFactory);
                 with.Dependency(logger);
                 with.Dependency(_guestSessionControllerMock.Object);
@@ -121,8 +125,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task GetGuestSessionReturnsUnauthorizedRequest(string route)
         {
             _guestSessionControllerMock
@@ -135,8 +138,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task CreateGuestSessionReturnsUnauthorizedRequest(string route)
         {
             var response = await _browserNoAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestSession));
@@ -145,8 +147,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task UpdateGuestSessionReturnsUnauthorizedRequest(string route)
         {
             _guestSessionControllerMock
@@ -158,8 +159,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task GetGuestSessionByIdReturnsOk(string route)
         {
             _guestSessionControllerMock
@@ -172,8 +172,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task GetGuestSessionByIdReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestSessionControllerMock
@@ -186,8 +185,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task GetGuestSessionByIdReturnsBadRequestValidationFailedException(string route)
         {
             _guestSessionControllerMock
@@ -210,8 +208,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task CreateGuestSessionReturnsOk(string route)
         {
             var response = await _browserAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestSession));
@@ -220,8 +217,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task CreateGuestSessionReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestSessionControllerMock
@@ -234,8 +230,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task CreateGuestSessionReturnsBadRequestValidationFailedException(string route)
         {
             _guestSessionControllerMock
@@ -258,8 +253,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task UpdateGuestSessionReturnsOk(string route)
         {
             _guestSessionControllerMock
@@ -272,8 +266,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestSession)]
-        [InlineData(BaseRoutes.GuestSessionLegacy)]
+        [InlineData(Routing.GuestSessionsRoute)]
         public async Task UpdateGuestSessionReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestSessionControllerMock

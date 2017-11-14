@@ -2,6 +2,7 @@ using Nancy;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Newtonsoft.Json;
+using Synthesis.Authentication;
 using Synthesis.GuestService.ApiWrappers.Requests;
 using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.GuestService.Constants;
@@ -12,123 +13,79 @@ using Synthesis.GuestService.Responses;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PolicyEvaluator;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Modules
 {
-    public sealed class GuestSessionModule : NancyModule
+    public sealed class GuestSessionModule : SynthesisModule
     {
         private readonly IGuestSessionController _guestSessionController;
-        private readonly ILogger _logger;
-        private readonly IMetadataRegistry _metadataRegistry;
 
         public GuestSessionModule(
             IMetadataRegistry metadataRegistry,
+            ITokenValidator tokenValidator,
+            IPolicyEvaluator policyEvaluator,
             IGuestSessionController guestSessionController,
             ILoggerFactory loggerFactory)
+            : base(GuestServiceBootstrapper.ServiceName, metadataRegistry, tokenValidator, policyEvaluator, loggerFactory)
         {
             // Init DI
-            _metadataRegistry = metadataRegistry;
             _guestSessionController = guestSessionController;
-            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 
-            // Initialize documentation
-            SetupRouteMetadata();
-
             // Initialize Routes
-            Post(BaseRoutes.GuestSession, CreateGuestSessionAsync, null, "CreateGuestSession");
-            Post(BaseRoutes.GuestSessionLegacy, CreateGuestSessionAsync, null, "CreateGuestSessionLegacy");
+            CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
+                .Description("Create a specific GuestSession resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
 
-            Post(BaseRoutes.GuestSession + "/createguest", CreateGuestAsync, null, "CreateGuest");
-            Post(BaseRoutes.GuestSessionLegacy + "/createguest", CreateGuestAsync, null, "CreateGuestLegacy");
+            CreateRoute("CreateGuest", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/createguest", CreateGuestAsync)
+                .Description("Creates a Guest user from a guest session.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestCreationResponse()));
 
-            Get(BaseRoutes.GuestSession + "/{id:guid}", GetGuestSessionAsync, null, "GetGuestSession");
-            Get(BaseRoutes.GuestSessionLegacy + "/{id:guid}", GetGuestSessionAsync, null, "GetGuestSessionLegacy");
+            CreateRoute("GetGuestSession", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{{id:guid}}", GetGuestSessionAsync)
+                .Description("Retrieve a specific GuestSession resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized,HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
 
-            Put(BaseRoutes.GuestSession + "/{id:guid}", UpdateGuestSessionAsync, null, "UpdateGuestSession");
-            Put(BaseRoutes.GuestSessionLegacy + "/{id:guid}", UpdateGuestSessionAsync, null, "UpdateGuestSessionLegacy");
+            CreateRoute("UpdateGuestSession", HttpMethod.Put, $"{Routing.GuestSessionsRoute}/{{id:guid}}", UpdateGuestSessionAsync)
+                .Description("Update a specific GuestSession resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
 
-            Get(BaseRoutes.GuestSession + "/project/{projectId:guid}", GetGuestSessionsByProjectIdAsync, null, "GetGuestSessions");
-            Get(BaseRoutes.GuestSessionLegacy + "/project/{projectId:guid}", GetGuestSessionsByProjectIdAsync, null, "GetGuestSessionsLegacy");
+            CreateRoute("GetGuestSessions", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestSessionsPath}", GetGuestSessionsByProjectIdAsync)
+                .Description("Gets All GuestSessions for a specific Project")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
-            Get(BaseRoutes.GuestSession + "/projectstatus/{projectId:guid}", GetProjectStatusAsync, null, "GetProjectStatus");
-            Get(BaseRoutes.GuestSessionLegacy + "/projectstatus/{projectId:guid}", GetProjectStatusAsync, null, "GetProjectStatusLegacy");
+            CreateRoute("GetProjectStatus", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.ProjectStatusPath}", GetProjectStatusAsync)
+                .Description("Retrieve the status of a specific Project resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new ProjectStatus()));
 
-            Post(BaseRoutes.GuestSession + "/verificationemail", SendVerificationEmailAsync, null, "SendVerificationEmail");
-            Post(BaseRoutes.GuestSessionLegacy + "/verificationemail", SendVerificationEmailAsync, null, "SendVerificationEmailLegacy");
+            CreateRoute("SendVerificationEmail", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/{Routing.VerificationEmailPath}", SendVerificationEmailAsync)
+                .Description("Sends a verification email to a specific Guest User resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationEmailResponse()));
 
-            Post(BaseRoutes.GuestSession + "/verify", async _ => await VerifyGuestAsync(), null, "VerifyGuest");
-            Post(BaseRoutes.GuestSessionLegacy + "/verify", async _ => await VerifyGuestAsync(), null, "VerifyGuestLegacy");
+            CreateRoute("VerifyGuest", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/{Routing.VerifyGuestPath}", async _ => await VerifyGuestAsync())
+                .Description("Verify guest resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
 
             OnError += (ctx, ex) =>
-                       {
-                           _logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
-                           return Response.InternalServerError(ex.Message);
-                       };
-        }
-
-        private void SetupRouteMetadata()
-        {
-            _metadataRegistry.SetRouteMetadata("CreateGuestSession", new SynthesisRouteMetadata
             {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestSession()),
-                Description = "Create a specific GuestSession resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("CreateGuest", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestCreationResponse()),
-                Description = "Create a specific GuestSession resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("GetGuestSession", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestSession()),
-                Description = "Retrieve a specific GuestSession resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("UpdateGuestSession", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestSession()),
-                Description = "Update a specific GuestSession resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("GetGuestSessions", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }),
-                Description = "Gets All GuestSessions for a specific Project"
-            });
-
-            _metadataRegistry.SetRouteMetadata("GetProjectStatus", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new ProjectStatus()),
-                Description = "Retrieve the status of a specific Project resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("SendVerificationEmail", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestVerificationEmailResponse()),
-                Description = "Sends a verification email to a specific Guest User resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("VerifyGuest", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = JsonConvert.SerializeObject(new GuestVerificationResponse()),
-                Description = "Verify guest resource."
-            });
+                Logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
+                return Response.InternalServerError(ex.Message);
+            };
         }
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)
@@ -140,7 +97,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to create a GuestSession resource", ex);
+                Logger.Error("Binding failed while attempting to create a GuestSession resource", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -154,7 +111,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to create guestSession resource due to an error", ex);
+                Logger.Error("Failed to create guestSession resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestSession);
             }
         }
@@ -169,7 +126,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to create a guest.", ex);
+                Logger.Error("Binding failed while attempting to create a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -179,7 +136,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Unhandled exception encountered while attempting to create a guest", ex);
+                Logger.Error("Unhandled exception encountered while attempting to create a guest", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
             }
         }
@@ -200,7 +157,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to get guestSession with id {input.id} due to an error", ex);
+                Logger.Error($"Failed to get guestSession with id {input.id} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
@@ -221,7 +178,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error($"GuestSessions could not be retrieved for projectId {input.projectId}", ex);
+                Logger.Error($"GuestSessions could not be retrieved for projectId {input.projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
@@ -236,7 +193,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to update a GuestSession resource.", ex);
+                Logger.Error("Binding failed while attempting to update a GuestSession resource.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -246,7 +203,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Unhandled exception encountered while attempting to update a GuestSession resource", ex);
+                Logger.Error("Unhandled exception encountered while attempting to update a GuestSession resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
             }
         }
@@ -267,7 +224,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to get guestSessions for project with projectId {input.projectId} due to an error", ex);
+                Logger.Error($"Failed to get guestSessions for project with projectId {input.projectId} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
@@ -282,7 +239,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to send a verification email.", ex);
+                Logger.Error("Binding failed while attempting to send a verification email.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -292,7 +249,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Unhandled exception encountered while attempting to send a guest verificaiton email", ex);
+                Logger.Error("Unhandled exception encountered while attempting to send a guest verificaiton email", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
             }
         }
@@ -307,7 +264,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Binding failed while attempting to verify a guest.", ex);
+                Logger.Error("Binding failed while attempting to verify a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -325,7 +282,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to verify guest with username {request.Username} due to an error", ex);
+                Logger.Error($"Failed to verify guest with username {request.Username} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }

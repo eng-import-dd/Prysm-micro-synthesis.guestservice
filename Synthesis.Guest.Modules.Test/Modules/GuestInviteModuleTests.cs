@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Nancy;
@@ -20,6 +15,13 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using Synthesis.Authentication;
+using Synthesis.PolicyEvaluator;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules
@@ -98,6 +100,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 with.EnableAutoRegistration();
                 with.RequestStartup(requestStartup);
                 with.Dependency(new Mock<IMetadataRegistry>().Object);
+                with.Dependency(new Mock<ITokenValidator>().Object);
+                with.Dependency(new Mock<IPolicyEvaluator>().Object);
                 with.Dependency(loggerFactory);
                 with.Dependency(logger);
                 with.Dependency(_guestInviteControllerMock.Object);
@@ -124,8 +128,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task GetGuestInviteReturnsUnauthorizedRequest(string route)
         {
             _guestInviteControllerMock
@@ -138,8 +141,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task CreateGuestInviteReturnsUnauthorizedRequest(string route)
         {
             var response = await _browserNoAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
@@ -148,8 +150,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task UpdateGuestInviteReturnsUnauthorizedRequest(string route)
         {
             _guestInviteControllerMock
@@ -162,8 +163,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task GetGuestInviteByIdReturnsOk(string route)
         {
             _guestInviteControllerMock
@@ -176,8 +176,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task GetGuestInviteByIdReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestInviteControllerMock
@@ -190,8 +189,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task GetGuestInviteByIdReturnsBadRequestValidationFailedException(string route)
         {
             _guestInviteControllerMock
@@ -214,8 +212,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task GetGuestInviteByIdReturnsNotFoundException(string route)
         {
             _guestInviteControllerMock
@@ -228,8 +225,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task CreateGuestInviteReturnsOk(string route)
         {
             var response = await _browserAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
@@ -238,8 +234,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task CreateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestInviteControllerMock
@@ -252,8 +247,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task CreateGuestInviteReturnsBadRequestValidationFailedException(string route)
         {
             _guestInviteControllerMock
@@ -276,8 +270,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task UpdateGuestInviteReturnsOk(string route)
         {
             _guestInviteControllerMock
@@ -290,8 +283,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Theory]
-        [InlineData(BaseRoutes.GuestInvite)]
-        [InlineData(BaseRoutes.GuestInviteLegacy)]
+        [InlineData(Routing.GuestInvitesRoute)]
         public async Task UpdateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
         {
             _guestInviteControllerMock

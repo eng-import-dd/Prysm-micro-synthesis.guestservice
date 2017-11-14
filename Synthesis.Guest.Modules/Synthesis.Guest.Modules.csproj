@@ -302,7 +302,7 @@
     <Compile Include="ApiWrappers\Responses\SettingsResponse.cs" />
     <Compile Include="ApiWrappers\Responses\UserResponse.cs" />
     <Compile Include="ApiWrappers\SettingsApiWrapper.cs" />
-    <Compile Include="Constants\BaseRoutes.cs" />
+    <Compile Include="Constants\Routing.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\EventNamespaces.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
