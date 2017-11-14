@@ -68,7 +68,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
                                                  loggerFactoryMock.Object, _emailUtility.Object, _passwordUtility.Object, _projectApiMock.Object,
-                                                 _participantApiMock.Object, _userApiMock.Object, _settingsApiMock.Object);
+                                                 _userApiMock.Object, _settingsApiMock.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -79,7 +79,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectApiWrapper> _projectApiMock = new Mock<IProjectApiWrapper>();
         private readonly Mock<ISettingsApiWrapper> _settingsApiMock = new Mock<ISettingsApiWrapper>();
         private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
-        private readonly Mock<IParticipantApiWrapper> _participantApiMock = new Mock<IParticipantApiWrapper>();
         private readonly GuestSession _defaultGuestSession = new GuestSession();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();

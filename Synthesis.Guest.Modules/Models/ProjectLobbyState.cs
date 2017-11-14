@@ -1,23 +1,16 @@
-﻿using System;
+﻿using Newtonsoft.Json;
 using Synthesis.GuestService.Enums;
+using System;
 
-namespace Synthesis.GuestService.Responses
+namespace Synthesis.GuestService.Models
 {
-    public class ProjectStatus
+    public class ProjectLobbyState
     {
-        public ProjectStatus()
-        {
-        }
-
-        public ProjectStatus(LobbyState lobbyStatus)
-        {
-            LobbyStatus = lobbyStatus;
-        }
-
-        public LobbyState LobbyStatus { get; set; }
+        [JsonProperty("id")]
         public Guid ProjectId { get; set; }
+        public LobbyState LobbyState { get; set; }
 
-        public static LobbyState CalculateLobbyStatus(bool isGuestLimitReached, bool isHostPresent)
+        public static LobbyState CalculateLobbyState(bool isGuestLimitReached, bool isHostPresent)
         {
             LobbyState status;
 

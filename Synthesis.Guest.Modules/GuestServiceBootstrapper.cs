@@ -333,7 +333,6 @@ namespace Synthesis.GuestService
             builder.RegisterType<EventHandlerLocator>().As<IEventHandlerLocator>().SingleInstance();
             builder.RegisterType<EventSubscriber>().SingleInstance();
 
-
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             RegisterValidators(builder);
@@ -341,6 +340,11 @@ namespace Synthesis.GuestService
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>();
+            builder.RegisterType<ProjectLobbyStateController>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "maxGuestsAllowedInProject",
+                    (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("MaxGuestsAllowedInProject")))
+                .As<IProjectLobbyStateController>();
 
             // Utilities
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
