@@ -336,7 +336,7 @@
     <Compile Include="Responses\GuestVerificationResponse.cs" />
     <Compile Include="Responses\ProjectStatus.cs" />
     <Compile Include="Responses\SendHostEmailResponse.cs" />
-    <Compile Include="Responses\VerifyGuestResponseCode.cs" />
+    <Compile Include="Enums\VerifyGuestResponseCode.cs" />
     <Compile Include="Utilities\EmailUtiltiy.cs" />
     <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IPasswordUtility.cs" />

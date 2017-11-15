@@ -1,5 +1,6 @@
 ﻿using Synthesis.GuestService.ApiWrappers.Responses;
 using System;
+using Synthesis.GuestService.Enums;
 
 namespace Synthesis.GuestService.Responses
 {
