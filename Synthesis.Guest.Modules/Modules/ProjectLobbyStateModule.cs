@@ -3,10 +3,11 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
-using Nancy.Security;
+using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -29,9 +30,10 @@ namespace Synthesis.GuestService.Modules
         {
             _projectLobbyStateController = projectLobbyStateController;
 
-            this.RequiresAuthentication();
-
-            CreateRoute("GetProjectLobbyStatus", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.ProjectLobbyStatePath}", GetProjectLobbyStateAsync);
+            CreateRoute("GetProjectLobbyState", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.ProjectLobbyStatePath}", GetProjectLobbyStateAsync)
+                .Description("Retrieves lobby state for a project.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new ProjectLobbyState()));
         }
 
         private async Task<object> GetProjectLobbyStateAsync(dynamic input)
