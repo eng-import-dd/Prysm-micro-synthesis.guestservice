@@ -116,7 +116,7 @@ namespace Synthesis.GuestService.Modules
         public async Task<object> CreateGuestAsync(dynamic input)
         {
             // This route is being deleted. No reason to add auth.
-            // TODO - remove once CU-XXX is complete
+            // TODO - remove once CU-420 is complete
             GuestCreationRequest request;
 
             try
