@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
@@ -172,15 +171,17 @@ namespace Synthesis.GuestService.Controllers
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
-            guestSessions
+            var guestSessionTasks = guestSessions
                 .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
                     !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
                 .ToList()
-                .ForEach(async session =>
+                .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
-                    await _guestSessionRepository.UpdateItemAsync(session.Id, session);
+                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                 });
+
+            await Task.WhenAll(guestSessionTasks);
 
             _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
         }
@@ -260,12 +261,16 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
         {
-            var errors = GetFailures(Tuple.Create<Type, object>(typeof(GuestSessionIdValidator), guestSessionModel.Id),
-                Tuple.Create<Type, object>(typeof(GuestSessionValidator), guestSessionModel));
-            if (errors.Any())
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(GuestSessionIdValidator), guestSessionModel.Id },
+                { typeof(GuestSessionValidator), guestSessionModel }
+            });
+
+            if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
-                throw new ValidationFailedException(errors);
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
@@ -277,13 +282,16 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
         {
-            var errors = GetFailures(Tuple.Create<Type, object>(typeof(EmailValidator), username),
-                Tuple.Create<Type, object>(typeof(ProjectAccessCodeValidator), projectAccessCode));
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(EmailValidator), username },
+                { typeof(ProjectAccessCodeValidator), projectAccessCode }
+            });
 
-            if (errors.Any())
+            if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the guest verification request.");
-                throw new ValidationFailedException(errors);
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             var response = new GuestVerificationResponse();
@@ -349,23 +357,6 @@ namespace Synthesis.GuestService.Controllers
 
             response.ResultCode = VerifyGuestResponseCode.Success;
             return response;
-        }
-
-        private List<ValidationFailure> GetFailures(params Tuple<Type, object>[] validations)
-        {
-            var errors = new List<ValidationFailure>();
-
-            foreach (var v in validations)
-            {
-                var validator = _validatorLocator.GetValidator(v.Item1);
-                var result = validator?.Validate(v.Item2);
-                if (result?.IsValid == false)
-                {
-                    errors.AddRange(result.Errors);
-                }
-            }
-
-            return errors;
         }
     }
 }
