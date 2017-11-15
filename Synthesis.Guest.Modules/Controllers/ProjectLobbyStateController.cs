@@ -78,12 +78,14 @@ namespace Synthesis.GuestService.Controllers
             {
                 await SetProjectLobbyStateToError(projectId);
                 _logger.Error($"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}");
+                return;
             }
 
             if(!participantResult.IsSuccess())
             {
                 await SetProjectLobbyStateToError(projectId);
                 _logger.Error($"Failed to retrieve participants for project: {projectId}. Message: {participantResult.ReasonPhrase}");
+                return;
             }
 
             var project = projectResult.Payload;
