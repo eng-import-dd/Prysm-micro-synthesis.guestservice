@@ -249,7 +249,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await _browserAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await AuthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -262,7 +262,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await _browserNoAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await AuthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -275,7 +275,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await _browserAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
+            var response = await AuthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
