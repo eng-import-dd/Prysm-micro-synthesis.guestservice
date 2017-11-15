@@ -18,5 +18,6 @@ namespace Synthesis.GuestService.Constants
         public const string GuestInvitesPath = "guestinvites";
         public const string VerifyGuestPath = "verify";
         public const string VerificationEmailPath = "verificationemail";
+        public const string EmailHostPath = "emailhost";
     }
 }
