@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
@@ -34,8 +33,6 @@ namespace Synthesis.GuestService.Modules
         {
             // Init DI
             _guestInviteController = guestInviteController;
-
-            this.RequiresAuthentication();
 
             // initialize routes
             CreateRoute("CreateGuestInvite", HttpMethod.Post, Routing.GuestInvitesRoute, CreateGuestInviteAsync)

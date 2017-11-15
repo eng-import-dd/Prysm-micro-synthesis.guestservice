@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.ApiWrappers.Requests;
@@ -38,8 +37,6 @@ namespace Synthesis.GuestService.Modules
         {
             // Init DI
             _guestSessionController = guestSessionController;
-
-            this.RequiresAuthentication();
 
             // Initialize Routes
             CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
