@@ -113,6 +113,9 @@ namespace Synthesis.GuestService
                 });
             });
 
+            // Resolve event subscribers
+            container.Resolve<ProjectEventSubscriber>();
+
             container
                 .Resolve<ILoggerFactory>()
                 .GetLogger(this)
@@ -328,10 +331,9 @@ namespace Synthesis.GuestService
                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
 
             // Event Subscription
-            builder.RegisterType<AllUsersHaveDepartedProjectHandler>().As<IEventHandler>().SingleInstance();
-            builder.RegisterType<ResetGuestAccessCodeHandler>().As<IEventHandler>().SingleInstance();
-            builder.RegisterType<EventHandlerLocator>().As<IEventHandlerLocator>().SingleInstance();
-            builder.RegisterType<EventSubscriber>().SingleInstance();
+            builder.RegisterType<ProjectEventSubscriber>().SingleInstance();
+            builder.RegisterType<ProjectEventHandler>().As<IProjectEventHandler>();
+            
 
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();

@@ -1,12 +1,13 @@
 ﻿using Synthesis.GuestService.ApiWrappers.Responses;
 using System;
+using Synthesis.GuestService.Models;
 
 namespace Synthesis.GuestService.Responses
 {
     public class GuestVerificationResponse
     {
         public Guid? AccountId { get; set; }
-        public ProjectResponse AssociatedProject { get; set; }
+        public Project AssociatedProject { get; set; }
         public string ProjectAccessCode { get; set; }
         public string ProjectName { get; set; }
         public VerifyGuestResponseCode ResultCode { get; set; }

@@ -4,14 +4,16 @@ using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Events;
 using Synthesis.Logging;
 using System;
+using Synthesis.GuestService.Models;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events
 {
     public class ResetGuestAccessCodeSubscriberTests
     {
-        private readonly ResetGuestAccessCodeHandler _target;
-        private readonly Mock<IGuestSessionController> _controllerMock = new Mock<IGuestSessionController>();
+        private readonly ProjectEventHandler _target;
+        private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
+        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
 
         public ResetGuestAccessCodeSubscriberTests()
         {
@@ -20,17 +22,30 @@ namespace Synthesis.GuestService.Modules.Test.Events
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new ResetGuestAccessCodeHandler(loggerFactoryMock.Object, _controllerMock.Object);
+            _target = new ProjectEventHandler(loggerFactoryMock.Object,
+                _guestSessionControllerMock.Object,
+                _projectLobbyStateControllerMock.Object);
         }
 
         [Fact]
-        public void HandleEventCallsDeleteGuestSessionsForProjectAsync()
+        public void HandleGuestAccessCodeChangedEventCallsDeleteGuestSessionsForProjectAsync()
         {
-            var projectId = Guid.NewGuid();
-            _target.HandleEvent(new GuidEvent(projectId));
+            _target.HandleGuestAccessCodeChangedEvent(new GuidEvent(Guid.NewGuid()));
+            _guestSessionControllerMock.Verify(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true));
+        }
 
-            _controllerMock
-                .Verify(x => x.DeleteGuestSessionsForProjectAsync(projectId, true));
+        [Fact]
+        public void HandleProjectCreatedEventCreatesProjectLobbyState()
+        {
+            _target.HandleProjectCreatedEvent(new Project());
+            _projectLobbyStateControllerMock.Verify(m => m.CreateProjectLobbyStateAsync(It.IsAny<Guid>()));
+        }
+
+        [Fact]
+        public void HandleProjectDeletedEventDeletesProjectLobbyState()
+        {
+            _target.HandleProjectDeletedEvent(new GuidEvent(Guid.NewGuid()));
+            _projectLobbyStateControllerMock.Verify(m => m.DeleteProjectLobbyStateAsync(It.IsAny<Guid>()));
         }
     }
 }
