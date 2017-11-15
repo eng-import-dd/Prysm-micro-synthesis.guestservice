@@ -64,11 +64,6 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
-            CreateRoute("GetProjectStatus", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.ProjectStatusPath}", GetProjectStatusAsync)
-                .Description("Retrieve the status of a specific Project resource.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
-                .ResponseFormat(JsonConvert.SerializeObject(new ProjectStatus()));
-
             CreateRoute("SendVerificationEmail", HttpMethod.Post, Routing.VerificationEmailRoute, async _ => await SendVerificationEmailAsync())
                 .Description("Sends a verification email to a specific Guest User resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
@@ -211,33 +206,6 @@ namespace Synthesis.GuestService.Modules
             {
                 Logger.Error("Unhandled exception encountered while attempting to update a GuestSession resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
-            }
-        }
-
-        public async Task<object> GetProjectStatusAsync(dynamic input)
-        {
-            var projectId = input.projectId;
-
-            await RequiresAccess()
-                .WithProjectIdExpansion(ctx => projectId)
-                .ExecuteAsync(CancellationToken.None);
-
-            try
-            {
-                return await _guestSessionController.GetProjectStatusAsync(projectId);
-            }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to get guestSessions for project with projectId {projectId} due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
 

@@ -16,13 +16,5 @@ namespace Synthesis.GuestService.Extensions
             return (int)code >= 200
                    && (int)code <= 299;
         }
-
-        public static void VerifySuccess(this MicroserviceResponse response, string message)
-        {
-            if (!response.IsSuccess())
-            {
-                throw new Exception(message);
-            }
-        }
     }
 }

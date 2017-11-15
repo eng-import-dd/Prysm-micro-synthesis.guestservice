@@ -311,6 +311,8 @@
     <Compile Include="Controllers\GuestSessionController.cs" />
     <Compile Include="Controllers\IGuestInviteController.cs" />
     <Compile Include="Controllers\IGuestSessionController.cs" />
+    <Compile Include="Controllers\IProjectLobbyStateController.cs" />
+    <Compile Include="Controllers\ProjectLobbyStateController.cs" />
     <Compile Include="Enums\ClientType.cs" />
     <Compile Include="Enums\LicenseType.cs" />
     <Compile Include="Enums\LobbyState.cs" />
@@ -323,9 +325,11 @@
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Models\GuestInvite.cs" />
     <Compile Include="Models\GuestSession.cs" />
+    <Compile Include="Models\ProjectLobbyState.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
+    <Compile Include="Modules\ProjectLobbyStateModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -334,7 +338,6 @@
     <Compile Include="Responses\CreateGuestResponseCode.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\GuestVerificationResponse.cs" />
-    <Compile Include="Responses\ProjectStatus.cs" />
     <Compile Include="Responses\VerifyGuestResponseCode.cs" />
     <Compile Include="Utilities\EmailUtiltiy.cs" />
     <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />

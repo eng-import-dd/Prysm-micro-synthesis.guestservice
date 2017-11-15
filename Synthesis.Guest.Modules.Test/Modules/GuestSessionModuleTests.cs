@@ -267,12 +267,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
-        [Fact]
-        public async Task GetProjectStatusAsyncWithoutAccessReturnsForbidden()
-        {
-            var response = await ForbiddenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.ProjectStatusPath}", BuildRequest);
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }
 
         [Fact]
         public async Task SendVerificationEmailAsyncWithoutAccessReturnsForbidden()
