@@ -415,39 +415,5 @@ namespace Synthesis.GuestService.Controllers
                 SentBy = sendingUser.Email
             };
         }
-
-        private List<ValidationFailure> GetFailures(params Tuple<Type, object>[] validations)
-        {
-            var errors = new List<ValidationFailure>();
-
-            foreach (var v in validations)
-            {
-                var validator = _validatorLocator.GetValidator(v.Item1);
-                var result = validator?.Validate(v.Item2);
-                if (result?.IsValid == false)
-                {
-                    errors.AddRange(result.Errors);
-                }
-            }
-
-            return errors;
-        }
-
-        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject)
-        {
-            var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
-
-            guestSessions
-                .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
-                            !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
-                .ToList()
-                .ForEach(async session =>
-                {
-                    session.GuestSessionState = GuestState.Ended;
-                    await _guestSessionRepository.UpdateItemAsync(session.Id, session);
-                });
-
-            _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
-        }
     }
 }
