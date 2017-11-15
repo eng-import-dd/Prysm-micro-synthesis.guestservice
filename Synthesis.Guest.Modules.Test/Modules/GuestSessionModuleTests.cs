@@ -241,41 +241,38 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestSessionsRoute)]
-        public async Task EmailHostReturnsOk(string route)
+        [Fact]
+        public async Task EmailHostReturnsOk()
         {
             _guestSessionControllerMock
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await AuthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestSessionsRoute)]
-        public async Task EmailHostReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task EmailHostReturnsUnauthorizedRequest()
         {
             _guestSessionControllerMock
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await UnauthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestSessionsRoute)]
-        public async Task EmailHostReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task EmailHostReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestSessionControllerMock
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await AuthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
