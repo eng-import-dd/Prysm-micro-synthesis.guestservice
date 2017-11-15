@@ -231,6 +231,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
     <Compile Include="Controllers\GuestInviteControllerTests.cs" />
     <Compile Include="Controllers\GuestSessionControllerTests.cs" />
     <Compile Include="Events\AllUsersHaveDepartedProjectHandlerTests.cs" />
