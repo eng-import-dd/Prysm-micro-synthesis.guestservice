@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.Security;
 using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
@@ -27,7 +29,7 @@ namespace Synthesis.GuestService.Modules
         {
             _projectLobbyStateController = projectLobbyStateController;
 
-            //this.RequiresAuthentication();
+            this.RequiresAuthentication();
 
             CreateRoute("GetProjectLobbyStatus", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.ProjectLobbyStatePath}", GetProjectLobbyStateAsync);
         }
@@ -36,9 +38,9 @@ namespace Synthesis.GuestService.Modules
         {
             var projectId = input.projectId;
 
-            //await RequiresAccess()
-            //    .WithPrincipalIdExpansion(ctx => projectId)
-            //    .ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {

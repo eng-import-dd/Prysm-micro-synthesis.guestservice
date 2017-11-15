@@ -237,6 +237,7 @@
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />
     <Compile Include="Modules\GuestSessionModuleTests.cs" />
+    <Compile Include="Modules\ProjectLobbyStateModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

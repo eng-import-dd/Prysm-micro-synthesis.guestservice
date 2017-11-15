@@ -9,7 +9,6 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Synthesis.Configuration;
 using Synthesis.GuestService.Extensions;
 
 namespace Synthesis.GuestService.Controllers
@@ -27,7 +26,6 @@ namespace Synthesis.GuestService.Controllers
             IValidatorLocator validatorLocator, 
             IParticipantApiWrapper participantApi,
             IProjectApiWrapper projectApi,
-            IAppSettingsReader appSettingsReader,
             int maxGuestsAllowedInProject)
         {
             _validatorLocator = validatorLocator;
