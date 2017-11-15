@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
@@ -33,8 +33,6 @@ namespace Synthesis.GuestService.Modules
         {
             // Init DI
             _guestInviteController = guestInviteController;
-
-            this.RequiresAuthentication();
 
             // initialize routes
             CreateRoute("CreateGuestInvite", HttpMethod.Post, Routing.GuestInvitesRoute, CreateGuestInviteAsync)
@@ -71,6 +69,10 @@ namespace Synthesis.GuestService.Modules
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => newGuestInvite.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
                 return await _guestInviteController.CreateGuestInviteAsync(newGuestInvite);
@@ -88,9 +90,10 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestInviteAsync(dynamic input)
         {
+            GuestInvite result;
             try
             {
-                return await _guestInviteController.GetGuestInviteAsync(input.id);
+                result = await _guestInviteController.GetGuestInviteAsync(input.id);
             }
             catch (NotFoundException)
             {
@@ -105,13 +108,25 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error($"Failed to get guestInvite with id {input.id} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => result.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
+
+            return result;
         }
 
         private async Task<object> GetGuestInvitesByProjectIdAsync(dynamic input)
         {
+            var projectId = input.projectId;
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                return await _guestInviteController.GetGuestInvitesByProjectIdAsync(input.projectId);
+                return await _guestInviteController.GetGuestInvitesByProjectIdAsync(projectId);
             }
             catch (NotFoundException)
             {
@@ -123,7 +138,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error($"GuestInvites could not be retrieved for projectId {input.projectId}", ex);
+                Logger.Error($"GuestInvites could not be retrieved for projectId {projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
@@ -141,6 +156,10 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error("Binding failed while attempting to update a GuestInvite resource.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => guestInviteModel.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {

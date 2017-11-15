@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using Nancy;
-
-namespace Synthesis.GuestService.Constants
+﻿namespace Synthesis.GuestService.Constants
 {
     public class Routing
     {
@@ -11,12 +8,13 @@ namespace Synthesis.GuestService.Constants
         public const string GuestInvitesRoute = "/v1/" + GuestInvitesPath;
         public const string GuestSessionsRoute = "/v1/" + GuestSessionsPath;
         public const string ProjectsRoute = "/v1/projects";
+        public const string VerifyGuestRoute = "/v1/verify";
+        public const string VerificationEmailRoute = "/v1/verificationemail";
 
         // Paths
         public const string ProjectStatusPath = "status";
         public const string GuestSessionsPath = "guestsessions";
         public const string GuestInvitesPath = "guestinvites";
-        public const string VerifyGuestPath = "verify";
-        public const string VerificationEmailPath = "verificationemail";
+
     }
 }
