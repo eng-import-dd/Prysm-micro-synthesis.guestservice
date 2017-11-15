@@ -81,9 +81,9 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
 
-            CreateRoute("EmailHost", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
+            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
                 .Description("Send email to project host.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
 
             OnError += (ctx, ex) =>

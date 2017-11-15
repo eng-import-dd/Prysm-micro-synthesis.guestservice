@@ -16,12 +16,14 @@ using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Models;
+using Synthesis.GuestService.Responses;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Xunit;
+// ReSharper disable ExplicitCallerInfoArgument
 
 namespace Synthesis.GuestService.Modules.Test.Modules
 {
@@ -30,7 +32,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         private readonly Browser _browserAuth;
         private readonly Browser _browserNoAuth;
         private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
-        private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "12345" };
+        private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "0123456789" };
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
 
         public GuestSessionModuleTests()
@@ -276,6 +278,68 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             var response = await _browserAuth.Put($"{route}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(Routing.GuestSessionsRoute)]
+        public async Task EmailHostReturnsOk(string route)
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new SendHostEmailResponse());
+
+            var response = await _browserAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(Routing.GuestSessionsRoute)]
+        public async Task EmailHostReturnsUnauthorizedRequest(string route)
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new SendHostEmailResponse());
+
+            var response = await _browserNoAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(Routing.GuestSessionsRoute)]
+        public async Task EmailHostReturnsInternalServerErrorOnUnexpectedException(string route)
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .Throws<Exception>();
+
+            var response = await _browserAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(Routing.GuestSessionsRoute)]
+        public async Task EmailHostReturnsBadRequestValidationFailedException(string route)
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
+
+            var response = await _browserAuth.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
+
+            var failedResponse = response.Body.DeserializeJson<FailedResponse>();
+            Assert.NotNull(failedResponse?.Errors);
+
+            Assert.Collection(failedResponse.Errors,
+                              item =>
+                              {
+                                  Assert.Equal(_expectedValidationFailure.PropertyName, item.PropertyName);
+                                  Assert.Equal(_expectedValidationFailure.ErrorMessage, item.Message);
+                              });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
     }
 }
