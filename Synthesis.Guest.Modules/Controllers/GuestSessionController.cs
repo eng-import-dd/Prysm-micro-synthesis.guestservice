@@ -174,7 +174,6 @@ namespace Synthesis.GuestService.Controllers
             var guestSessionTasks = guestSessions
                 .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
                     !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
-                .ToList()
                 .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
