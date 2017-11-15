@@ -78,12 +78,6 @@ namespace Synthesis.GuestService.Modules
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
-
-            OnError += (ctx, ex) =>
-            {
-                Logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
-                return Response.InternalServerError(ex.Message);
-            };
         }
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)

@@ -365,7 +365,7 @@ namespace Synthesis.GuestService.Controllers
             var codeValidationResult = _validatorLocator.Validate<ProjectAccessCodeValidator>(accessCode);
             if (!codeValidationResult.IsValid)
             {
-                _logger.Error("Failed to validate the project access code while attempting to email the host");
+                _logger.Error($"Failed to validate the project access code {accessCode} while attempting to email the host");
                 throw new ValidationFailedException(codeValidationResult.Errors);
             }
 
@@ -395,7 +395,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (userSession.EmailedHostDateTime != null)
             {
-                throw new Exception("You have already emailed the host once for this session");
+                throw new Exception($"User {sendingUser.Email} has already emailed the host {projectOwner.Email} once for this guest session {userSession.Id}");
             }
 
             var invite = (await _guestInviteRepository.GetItemsAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode)).FirstOrDefault();
@@ -403,7 +403,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (!_emailUtility.SendHostEmail(sendTo, sendingUser.FullName, sendingUser.FirstName, sendingUser.Email, project.Name))
             {
-                throw new Exception("Email could not be sent");
+                throw new Exception($"Email from user {sendingUser.Email} to host {projectOwner.Email} could not be sent");
             }
 
             userSession.EmailedHostDateTime = DateTime.UtcNow;
