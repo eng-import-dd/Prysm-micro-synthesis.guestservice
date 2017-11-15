@@ -262,7 +262,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await AuthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get($"{route}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }

@@ -316,10 +316,11 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> EmailHostAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             try
             {
-                // TODO: Replace the Guid parameter with the sendingUserId from the NancyModule
-                return await _guestSessionController.EmailHostAsync(input.accessCode, new Guid());
+                return await _guestSessionController.EmailHostAsync(input.accessCode, PrincipalId);
             }
             catch (NotFoundException)
             {
