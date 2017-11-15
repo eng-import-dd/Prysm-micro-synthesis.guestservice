@@ -1,4 +1,9 @@
-﻿using FluentValidation.Results;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentValidation.Results;
 using Moq;
 using Nancy;
 using Nancy.Testing;
@@ -13,11 +18,6 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PolicyEvaluator.Models;
-using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules
@@ -97,76 +97,70 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             context.JsonBody(body);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task GetGuestInviteReturnsUnauthorizedRequest()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await UnauthenticatedBrowser.Get($"{route}/{Guid.NewGuid()}", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsUnauthorizedRequest()
         {
-            var response = await UnauthenticatedBrowser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await UnauthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task UpdateGuestInviteReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task UpdateGuestInviteReturnsUnauthorizedRequest()
         {
             _guestInviteControllerMock
                 .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await UnauthenticatedBrowser.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await UnauthenticatedBrowser.Put($"{Routing.GuestInvitesRoute}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsOk(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsOk()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await AuthenticatedBrowser.Get($"{route}/{Guid.NewGuid()}", BuildRequest);
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await AuthenticatedBrowser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsBadRequestValidationFailedException(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsBadRequestValidationFailedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await AuthenticatedBrowser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -181,50 +175,46 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsNotFoundException(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsNotFoundException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws(new NotFoundException("GuestInvite not found"));
 
-            var response = await AuthenticatedBrowser.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsOk(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsOk()
         {
-            var response = await AuthenticatedBrowser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await AuthenticatedBrowser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsBadRequestValidationFailedException(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsBadRequestValidationFailedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await AuthenticatedBrowser.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -239,28 +229,26 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task UpdateGuestInviteReturnsOk(string route)
+        [Fact]
+        public async Task UpdateGuestInviteReturnsOk()
         {
             _guestInviteControllerMock
                 .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await AuthenticatedBrowser.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Put($"{Routing.GuestInvitesRoute}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task UpdateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task UpdateGuestInviteReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await AuthenticatedBrowser.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Put($"{Routing.GuestInvitesRoute}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }

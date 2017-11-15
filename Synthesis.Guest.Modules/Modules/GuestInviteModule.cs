@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
@@ -12,11 +16,6 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -34,8 +33,6 @@ namespace Synthesis.GuestService.Modules
         {
             // Init DI
             _guestInviteController = guestInviteController;
-
-            this.RequiresAuthentication();
 
             // initialize routes
             CreateRoute("CreateGuestInvite", HttpMethod.Post, Routing.GuestInvitesRoute, CreateGuestInviteAsync)
@@ -57,12 +54,6 @@ namespace Synthesis.GuestService.Modules
                 .Description("Update a specific GuestInvite resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestInvite()));
-
-            OnError += (ctx, ex) =>
-            {
-                Logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
-                return Response.InternalServerError(ex.Message);
-            };
         }
 
         private async Task<object> CreateGuestInviteAsync(dynamic input)

@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.ApiWrappers.Requests;
@@ -16,11 +20,6 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -38,8 +37,6 @@ namespace Synthesis.GuestService.Modules
         {
             // Init DI
             _guestSessionController = guestSessionController;
-
-            this.RequiresAuthentication();
 
             // Initialize Routes
             CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
@@ -76,12 +73,6 @@ namespace Synthesis.GuestService.Modules
                 .Description("Verify guest resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
-
-            OnError += (ctx, ex) =>
-            {
-                Logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
-                return Response.InternalServerError(ex.Message);
-            };
         }
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)
@@ -117,7 +108,7 @@ namespace Synthesis.GuestService.Modules
         public async Task<object> CreateGuestAsync(dynamic input)
         {
             // This route is being deleted. No reason to add auth.
-            // TODO - remove once CU-XXX is complete
+            // TODO - remove once CU-420 is complete
             GuestCreationRequest request;
 
             try
