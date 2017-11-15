@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
@@ -12,7 +10,6 @@ using Synthesis.GuestService.ApiWrappers.Requests;
 using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Enums;
-using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.Models;
 using Synthesis.GuestService.Requests;
 using Synthesis.GuestService.Responses;
@@ -30,13 +27,11 @@ namespace Synthesis.GuestService.Controllers
     /// <seealso cref="IGuestSessionController" />
     public class GuestSessionController : IGuestSessionController
     {
-        private const int MaxGuestsAllowedInProject = 10;
         private readonly IEmailUtility _emailUtility;
         private readonly IEventService _eventService;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
-        private readonly IParticipantApiWrapper _participantApi;
         private readonly IPasswordUtility _passwordUtility;
         private readonly IProjectApiWrapper _projectApi;
         private readonly ISettingsApiWrapper _settingsApi;
@@ -53,7 +48,6 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="projectApi"></param>
         /// <param name="settingsApi"></param>
         /// <param name="userApi"></param>
-        /// <param name="participantApi"></param>
         /// <param name="emailUtility"></param>
         /// <param name="passwordUtility"></param>
         public GuestSessionController(
@@ -64,19 +58,11 @@ namespace Synthesis.GuestService.Controllers
             IEmailUtility emailUtility,
             IPasswordUtility passwordUtility,
             IProjectApiWrapper projectApi,
-            IParticipantApiWrapper participantApi,
             IPrincipalApiWrapper userApi,
             ISettingsApiWrapper settingsApi)
         {
-            try
-            {
-                _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
-                _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
-            }
-            catch (Exception)
-            {
-                // supressing the repository exceptions for initial testing
-            }
+            _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
 
             _validatorLocator = validatorLocator;
             _eventService = eventService;
@@ -86,7 +72,6 @@ namespace Synthesis.GuestService.Controllers
             _passwordUtility = passwordUtility;
 
             _projectApi = projectApi;
-            _participantApi = participantApi;
             _userApi = userApi;
             _settingsApi = settingsApi;
         }
@@ -184,6 +169,24 @@ namespace Synthesis.GuestService.Controllers
             return result;
         }
 
+        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject)
+        {
+            var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
+
+            var guestSessionTasks = guestSessions
+                .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
+                    !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
+                .Select(session =>
+                {
+                    session.GuestSessionState = GuestState.Ended;
+                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
+                });
+
+            await Task.WhenAll(guestSessionTasks);
+
+            _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
+        }
+
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
         {
             var validationResult = _validatorLocator.Validate<GuestSessionIdValidator>(id);
@@ -222,44 +225,6 @@ namespace Synthesis.GuestService.Controllers
             throw new NotFoundException("GuestSessions could not be found");
         }
 
-        public async Task<ProjectStatus> GetProjectStatusAsync(Guid projectId)
-        {
-            var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
-            if (!validationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the projectId while attempting to reset the project access code.");
-                throw new ValidationFailedException(validationResult.Errors);
-            }
-
-            var participantTask = _participantApi.GetParticipantsByProjectIdAsync(projectId);
-            var projectTask = _projectApi.GetProjectByIdAsync(projectId);
-            var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
-
-            await Task.WhenAll(participantTask, projectTask, projectGuestsTask);
-
-            var participantResult = participantTask.Result;
-            var projectResult = projectTask.Result;
-            var projectGuestsResult = projectGuestsTask.Result;
-
-            if (projectResult.ResponseCode == HttpStatusCode.NotFound)
-            {
-                _logger.Error($"Failed to retrieve the participants for projectId {projectId} when verifying if host is present.");
-                throw new NotFoundException($"Project {projectId} does not exist");
-            }
-
-            projectResult.VerifySuccess($"Failed to retrieve project {projectId} when verifying if host is present.");
-            participantResult.VerifySuccess($"Failed to retrieve participants for project {projectId} when verifying if host is present.");
-
-            var project = projectResult.Payload;
-            var participants = participantResult.Payload.ToList();
-
-            var isHostPresent = participants.Any(p => p.UserId == project.OwnerId);
-            var isGuestLimitReached = projectGuestsResult.Count(g => g.GuestSessionState == GuestState.InProject) >= MaxGuestsAllowedInProject;
-
-            var lobbyStatus = ProjectStatus.CalculateLobbyStatus(isGuestLimitReached, isHostPresent);
-            return new ProjectStatus(lobbyStatus);
-        }
-
         public async Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest guestVerificationEmailRequest)
         {
             var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmailRequest.Email);
@@ -280,7 +245,6 @@ namespace Synthesis.GuestService.Controllers
             var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
             if (user.Payload.IsEmailVerified == true)
             {
-
                 guestVerificationEmailResponse.IsEmailVerified = true;
                 return guestVerificationEmailResponse;
             }
@@ -292,18 +256,22 @@ namespace Synthesis.GuestService.Controllers
             }
 
             _emailUtility.SendVerifyAccountEmail(guestVerificationEmailRequest.FirstName, guestVerificationEmailRequest.Email,
-                                                 guestVerificationEmailRequest.ProjectAccessCode, user.Payload.EmailVerificationId.ToString());
+                guestVerificationEmailRequest.ProjectAccessCode, user.Payload.EmailVerificationId.ToString());
             return guestVerificationEmailResponse;
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
         {
-            var errors = GetFailures(Tuple.Create<Type, object>(typeof(GuestSessionIdValidator), guestSessionModel.Id),
-                                     Tuple.Create<Type, object>(typeof(GuestSessionValidator), guestSessionModel));
-            if (errors.Any())
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(GuestSessionIdValidator), guestSessionModel.Id },
+                { typeof(GuestSessionValidator), guestSessionModel }
+            });
+
+            if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
-                throw new ValidationFailedException(errors);
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
@@ -315,13 +283,16 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
         {
-            var errors = GetFailures(Tuple.Create<Type, object>(typeof(EmailValidator), username),
-                                     Tuple.Create<Type, object>(typeof(ProjectAccessCodeValidator), projectAccessCode));
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(EmailValidator), username },
+                { typeof(ProjectAccessCodeValidator), projectAccessCode }
+            });
 
-            if (errors.Any())
+            if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the guest verification request.");
-                throw new ValidationFailedException(errors);
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             var response = new GuestVerificationResponse();

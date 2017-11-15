@@ -231,12 +231,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
     <Compile Include="Controllers\GuestInviteControllerTests.cs" />
     <Compile Include="Controllers\GuestSessionControllerTests.cs" />
     <Compile Include="Events\AllUsersHaveDepartedProjectHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />
     <Compile Include="Modules\GuestSessionModuleTests.cs" />
+    <Compile Include="Modules\ProjectLobbyStateModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

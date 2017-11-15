@@ -12,7 +12,7 @@
         public const string VerificationEmailRoute = "/v1/verificationemail";
 
         // Paths
-        public const string ProjectStatusPath = "status";
+        public const string ProjectLobbyStatePath = "lobbystate";
         public const string GuestSessionsPath = "guestsessions";
         public const string GuestInvitesPath = "guestinvites";
         public const string VerifyGuestPath = "verify";
