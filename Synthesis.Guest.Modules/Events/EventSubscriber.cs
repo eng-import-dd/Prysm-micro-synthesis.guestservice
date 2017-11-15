@@ -5,14 +5,19 @@ using Synthesis.GuestService.Models;
 
 namespace Synthesis.GuestService.Events
 {
-    public class ProjectEventSubscriber
+    public class EventSubscriber
     {
-        public ProjectEventSubscriber(IEventService eventService,
-            IProjectEventHandler projectEventHandler)
+        public EventSubscriber(IEventService eventService,
+            IProjectEventHandler projectEventHandler,
+            IMessageHubEventHandler messageHubEventHandler)
         {
+            // project events
             eventService.Subscribe<GuidEvent>(EventNamespaces.ProjectService, EventNames.GuestAccessCodeChanged, projectEventHandler.HandleGuestAccessCodeChangedEvent);
             eventService.Subscribe<Project>(EventNamespaces.ProjectService, EventNames.ProjectCreated, projectEventHandler.HandleProjectCreatedEvent);
             eventService.Subscribe<GuidEvent>(EventNamespaces.ProjectService, EventNames.ProjectDeleted, projectEventHandler.HandleProjectDeletedEvent);
+
+            // message hub events
+            eventService.Subscribe<GuidEvent>(EventNamespaces.MessageHubService, EventNames.TriggerRecalculateProjectLobbyState, messageHubEventHandler.HandleTriggerRecalculateProjectLobbyStateEvent);
         }
     }
 }

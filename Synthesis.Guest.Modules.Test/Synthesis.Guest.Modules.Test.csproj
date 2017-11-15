@@ -235,6 +235,7 @@
     <Compile Include="Controllers\GuestInviteControllerTests.cs" />
     <Compile Include="Controllers\GuestSessionControllerTests.cs" />
     <Compile Include="Events\AllUsersHaveDepartedProjectHandlerTests.cs" />
+    <Compile Include="Events\MessageHubEventHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />
     <Compile Include="Modules\GuestSessionModuleTests.cs" />

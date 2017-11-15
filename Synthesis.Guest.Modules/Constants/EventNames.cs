@@ -11,5 +11,6 @@ namespace Synthesis.GuestService.Constants
         public const string GuestSessionsForProjectDeleted = "GuestSessionsForProjectDeleted";
         public const string ProjectCreated = "ProjectCreated";
         public const string ProjectDeleted = "ProjectDeleted";
+        public const string TriggerRecalculateProjectLobbyState = "TriggerRecalculateProjectLobbyState ";
     }
 }
