@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.GuestService.ApiWrappers.Requests;
@@ -16,10 +20,6 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -37,8 +37,6 @@ namespace Synthesis.GuestService.Modules
         {
             // Init DI
             _guestSessionController = guestSessionController;
-
-            this.RequiresAuthentication();
 
             // Initialize Routes
             CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
@@ -71,12 +69,12 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new ProjectStatus()));
 
-            CreateRoute("SendVerificationEmail", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/{Routing.VerificationEmailPath}", SendVerificationEmailAsync)
+            CreateRoute("SendVerificationEmail", HttpMethod.Post, Routing.VerificationEmailRoute, async _ => await SendVerificationEmailAsync())
                 .Description("Sends a verification email to a specific Guest User resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationEmailResponse()));
 
-            CreateRoute("VerifyGuest", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/{Routing.VerifyGuestPath}", async _ => await VerifyGuestAsync())
+            CreateRoute("VerifyGuest", HttpMethod.Post, Routing.VerifyGuestRoute, async _ => await VerifyGuestAsync())
                 .Description("Verify guest resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
@@ -95,6 +93,8 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             GuestSession newGuestSession;
             try
             {
@@ -123,6 +123,8 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> CreateGuestAsync(dynamic input)
         {
+            // This route is being deleted. No reason to add auth.
+            // TODO - remove once CU-420 is complete
             GuestCreationRequest request;
 
             try
@@ -148,6 +150,8 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestSessionAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             try
             {
                 return await _guestSessionController.GetGuestSessionAsync(input.id);
@@ -169,9 +173,15 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input)
         {
+            var projectId = input.projectId;
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                return await _guestSessionController.GetGuestSessionsByProjectIdAsync(input.projectId);
+                return await _guestSessionController.GetGuestSessionsByProjectIdAsync(projectId);
             }
             catch (NotFoundException)
             {
@@ -183,13 +193,15 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error($"GuestSessions could not be retrieved for projectId {input.projectId}", ex);
+                Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
 
         private async Task<object> UpdateGuestSessionAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             GuestSession guestSessionModel;
 
             try
@@ -215,9 +227,15 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> GetProjectStatusAsync(dynamic input)
         {
+            var projectId = input.projectId;
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                return await _guestSessionController.GetProjectStatusAsync(input.projectId);
+                return await _guestSessionController.GetProjectStatusAsync(projectId);
             }
             catch (NotFoundException)
             {
@@ -229,13 +247,15 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to get guestSessions for project with projectId {input.projectId} due to an error", ex);
+                Logger.Error($"Failed to get guestSessions for project with projectId {projectId} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
 
-        public async Task<object> SendVerificationEmailAsync(dynamic input)
+        public async Task<object> SendVerificationEmailAsync()
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             GuestVerificationEmailRequest guestVerificationEmailRequest;
 
             try
@@ -261,6 +281,8 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> VerifyGuestAsync()
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             GuestVerificationRequest request;
 
             try

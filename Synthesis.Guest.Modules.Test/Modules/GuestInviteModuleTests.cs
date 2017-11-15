@@ -1,12 +1,13 @@
-﻿using FluentValidation;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentValidation.Results;
 using Moq;
 using Nancy;
-using Nancy.Bootstrapper;
 using Nancy.Testing;
-using Nancy.TinyIoc;
-using Synthesis.DocumentStorage;
-using Synthesis.EventBus;
+using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Models;
@@ -15,102 +16,71 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
-using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
-using Synthesis.Authentication;
 using Synthesis.PolicyEvaluator;
+using Synthesis.PolicyEvaluator.Models;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules
 {
     public class GuestInviteModuleTests
     {
-        private readonly Browser _browserAuth;
-        private readonly Browser _browserNoAuth;
         private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
         private readonly GuestInvite _guestInvite = new GuestInvite { Id = Guid.NewGuid(), InvitedBy = Guid.NewGuid(), ProjectId = Guid.NewGuid(), CreatedDateTime = DateTime.UtcNow };
         private readonly Mock<IGuestInviteController> _guestInviteControllerMock = new Mock<IGuestInviteController>();
+        private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
+        private readonly Mock<IPolicyEvaluator> _policyEvaluatorForbiddenMock = new Mock<IPolicyEvaluator>();
+        private readonly Mock<ITokenValidator> _tokenValidatorMock = new Mock<ITokenValidator>();
+        private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
+        private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
 
         public GuestInviteModuleTests()
         {
-            var loggerFactoryMock = new Mock<ILoggerFactory>();
-            loggerFactoryMock
-                .Setup(x => x.Get(It.IsAny<LogTopic>()))
+            _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _browserAuth = BrowserWithRequestStartup((container, pipelines, context) =>
-            {
-                context.CurrentUser = new ClaimsPrincipal(
-                    new ClaimsIdentity(new[]
-                        {
-                            new Claim(ClaimTypes.Name, "TestUser"),
-                            new Claim(ClaimTypes.Email, "test@user.com")
-                        },
-                        AuthenticationTypes.Basic));
-            });
+            _policyEvaluatorForbiddenMock
+                .Setup(x => x.EvaluateAsync(It.IsAny<PolicyEvaluationContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(PermissionScope.Deny);
 
-            _browserNoAuth = BrowserWithRequestStartup((container, pipelines, context) => { });
+            _metadataRegistryMock
+                .Setup(x => x.GetRouteMetadata(It.IsAny<string>()))
+                .Returns<string>(name => new SynthesisRouteMetadata(null, null, name));
         }
 
-        private Browser BrowserWithRequestStartup(Action<TinyIoCContainer, IPipelines, NancyContext> requestStartup)
+        private Browser GetBrowser(bool isAuthenticated = true, bool hasAccess = true)
         {
             return new Browser(with =>
             {
-                var mockLogger = new Mock<ILogger>();
-
-                mockLogger.Setup(l => l.LogMessage(It.IsAny<LogLevel>(), It.IsAny<string>(), It.IsAny<Exception>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>())).Callback(() => Console.Write(""));
-                var logger = mockLogger.Object;
-                var loggerFactoryMock = new Mock<ILoggerFactory>();
-                loggerFactoryMock.Setup(f => f.Get(It.IsAny<LogTopic>())).Returns(logger);
-
-                var loggerFactory = loggerFactoryMock.Object;
-                var resource = new GuestInvite
+                if (isAuthenticated)
                 {
-                    Id = Guid.Parse("2c1156fa-5902-4978-9c3d-ebcb77ae0d55"),
-                    CreatedDateTime = DateTime.UtcNow,
-                    LastAccessDate = DateTime.UtcNow
-                };
+                    with.RequestStartup((container, pipelines, context) =>
+                    {
+                        var identity = new ClaimsIdentity(new[]
+                            {
+                                new Claim(ClaimTypes.Name, "Test User"),
+                                new Claim(ClaimTypes.Email, "test@user.com")
+                            },
+                            AuthenticationTypes.Basic);
+                        context.CurrentUser = new ClaimsPrincipal(identity);
+                    });
+                }
 
-                var repositoryMock = new Mock<IRepository<GuestInvite>>();
-                repositoryMock
-                    .Setup(r => r.GetItemAsync(It.IsAny<Guid>()))
-                    .ReturnsAsync(resource);
-
-                var repositoryFactoryMock = new Mock<IRepositoryFactory>();
-                repositoryFactoryMock
-                    .Setup(f => f.CreateRepository<GuestInvite>())
-                    .Returns(repositoryMock.Object);
-
-                var eventServiceMock = new Mock<IEventService>();
-                eventServiceMock.Setup(s => s.PublishAsync(It.IsAny<string>()));
-
-                var validatorMock = new Mock<IValidator>();
-                validatorMock
-                    .Setup(v => v.ValidateAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new ValidationResult());
-
-                var validatorLocatorMock = new Mock<IValidatorLocator>();
-                validatorLocatorMock
-                    .Setup(l => l.GetValidator(It.IsAny<Type>()))
-                    .Returns(validatorMock.Object);
-
-                with.EnableAutoRegistration();
-                with.RequestStartup(requestStartup);
-                with.Dependency(new Mock<IMetadataRegistry>().Object);
-                with.Dependency(new Mock<ITokenValidator>().Object);
-                with.Dependency(new Mock<IPolicyEvaluator>().Object);
-                with.Dependency(loggerFactory);
-                with.Dependency(logger);
                 with.Dependency(_guestInviteControllerMock.Object);
-                with.Dependency(validatorLocatorMock.Object);
-                with.Dependency(repositoryFactoryMock.Object);
-                with.Dependency(eventServiceMock.Object);
+                with.Dependency(_metadataRegistryMock.Object);
+                with.Dependency(_tokenValidatorMock.Object);
+                with.Dependency(hasAccess ? _policyEvaluatorMock.Object : _policyEvaluatorForbiddenMock.Object);
+                with.Dependency(_loggerFactoryMock.Object);
+
                 with.Module<GuestInviteModule>();
+                with.EnableAutoRegistration();
             });
         }
+
+        private Browser AuthenticatedBrowser => GetBrowser();
+
+        private Browser UnauthenticatedBrowser => GetBrowser(false);
+
+        private Browser ForbiddenBrowser => GetBrowser(true, false);
 
         private static void BuildRequest(BrowserContext context)
         {
@@ -127,76 +97,70 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             context.JsonBody(body);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task GetGuestInviteReturnsUnauthorizedRequest()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await _browserNoAuth.Get($"{route}/{Guid.NewGuid()}", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsUnauthorizedRequest()
         {
-            var response = await _browserNoAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await UnauthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task UpdateGuestInviteReturnsUnauthorizedRequest(string route)
+        [Fact]
+        public async Task UpdateGuestInviteReturnsUnauthorizedRequest()
         {
             _guestInviteControllerMock
                 .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await _browserNoAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await UnauthenticatedBrowser.Put($"{Routing.GuestInvitesRoute}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsOk(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsOk()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await _browserAuth.Get($"{route}/{Guid.NewGuid()}", BuildRequest);
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await _browserAuth.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsBadRequestValidationFailedException(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsBadRequestValidationFailedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await _browserAuth.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -211,50 +175,46 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task GetGuestInviteByIdReturnsNotFoundException(string route)
+        [Fact]
+        public async Task GetGuestInviteByIdReturnsNotFoundException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.GetGuestInviteAsync(It.IsAny<Guid>()))
                 .Throws(new NotFoundException("GuestInvite not found"));
 
-            var response = await _browserAuth.Get($"{route}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsOk(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsOk()
         {
-            var response = await _browserAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await _browserAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task CreateGuestInviteReturnsBadRequestValidationFailedException(string route)
+        [Fact]
+        public async Task CreateGuestInviteReturnsBadRequestValidationFailedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await _browserAuth.Post($"{route}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -269,30 +229,56 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task UpdateGuestInviteReturnsOk(string route)
+        [Fact]
+        public async Task UpdateGuestInviteReturnsOk()
         {
             _guestInviteControllerMock
                 .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync(new GuestInvite());
 
-            var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Put($"{Routing.GuestInvitesRoute}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [Theory]
-        [InlineData(Routing.GuestInvitesRoute)]
-        public async Task UpdateGuestInviteReturnsInternalServerErrorOnUnexpectedException(string route)
+        [Fact]
+        public async Task UpdateGuestInviteReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
                 .Setup(x => x.UpdateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
 
-            var response = await _browserAuth.Put($"{route}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
+            var response = await AuthenticatedBrowser.Put($"{Routing.GuestInvitesRoute}/{_guestInvite.Id}", ctx => BuildRequest(ctx, _guestInvite));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestInviteAsyncWithoutAccessReturnsForbidden()
+        {
+            var response = await ForbiddenBrowser.Post(Routing.GuestInvitesRoute, BuildRequest);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestInviteAsyncWithoutAccessReturnsForbidden()
+        {
+            var response = await ForbiddenBrowser.Get($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByProjectIdAsyncWithoutAccessReturnsForbidden()
+        {
+            var response = await ForbiddenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateGuestInviteAsyncWithoutAccessReturnsForbidden()
+        {
+            var response = await ForbiddenBrowser.Put($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
     }
 }
