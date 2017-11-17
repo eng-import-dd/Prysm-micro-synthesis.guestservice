@@ -198,7 +198,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _projectApi
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(MicroserviceResponse.Create(projectStatusCode, default(ProjectResponse))));
+                .Returns(Task.FromResult(MicroserviceResponse.Create(projectStatusCode, default(Project))));
         }
     }
 }

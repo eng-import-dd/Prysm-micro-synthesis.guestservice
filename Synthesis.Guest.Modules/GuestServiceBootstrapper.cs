@@ -28,6 +28,9 @@ using Synthesis.GuestService.ApiWrappers.Interfaces;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Events;
 using Synthesis.GuestService.Modules;
+using Synthesis.GuestService.Owin;
+using Synthesis.GuestService.Utilities;
+using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http;
 using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
@@ -40,9 +43,6 @@ using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.Serialization.Json;
-using Synthesis.GuestService.Owin;
-using Synthesis.GuestService.Utilities;
-using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
@@ -112,6 +112,9 @@ namespace Synthesis.GuestService
                     return serializer;
                 });
             });
+
+            // Resolve event subscribers
+            container.Resolve<EventSubscriber>();
 
             container
                 .Resolve<ILoggerFactory>()
@@ -233,9 +236,10 @@ namespace Synthesis.GuestService
                 .As<ICertificateProvider>();
 
             // Microservice HTTP Clients
+            builder.RegisterType<MicroserviceHttpClientResolver>().As<IMicroserviceHttpClientResolver>();
+
             builder.RegisterType<AuthorizationPassThroughClient>()
-                .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey)
-                .As<IMicroserviceHttpClient>();
+                .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey);
 
             builder.RegisterType<ServiceToServiceClient>()
                 .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey);
@@ -328,11 +332,10 @@ namespace Synthesis.GuestService
                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
 
             // Event Subscription
-            builder.RegisterType<AllUsersHaveDepartedProjectHandler>().As<IEventHandler>().SingleInstance();
-            builder.RegisterType<ResetGuestAccessCodeHandler>().As<IEventHandler>().SingleInstance();
-            builder.RegisterType<EventHandlerLocator>().As<IEventHandlerLocator>().SingleInstance();
             builder.RegisterType<EventSubscriber>().SingleInstance();
-
+            builder.RegisterType<ProjectEventHandler>().As<IProjectEventHandler>();
+            builder.RegisterType<MessageHubEventHandler>().As<IMessageHubEventHandler>();
+            
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             RegisterValidators(builder);
