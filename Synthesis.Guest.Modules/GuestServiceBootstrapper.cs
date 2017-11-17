@@ -236,12 +236,13 @@ namespace Synthesis.GuestService
                 .As<ICertificateProvider>();
 
             // Microservice HTTP Clients
+            builder.RegisterType<MicroserviceHttpClientResolver>().As<IMicroserviceHttpClientResolver>();
+
             builder.RegisterType<AuthorizationPassThroughClient>()
                 .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey);
 
             builder.RegisterType<ServiceToServiceClient>()
-                .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey)
-                .As<IMicroserviceHttpClient>();
+                .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey);
 
             builder.Register(c =>
             {

@@ -1,5 +1,4 @@
 ﻿using Synthesis.Http.Microservice;
-using Synthesis.Logging;
 
 namespace Synthesis.GuestService.ApiWrappers
 {
@@ -8,9 +7,9 @@ namespace Synthesis.GuestService.ApiWrappers
         protected readonly IMicroserviceHttpClient HttpClient;
         protected readonly string ServiceUrl;
 
-        protected BaseApiWrapper(IMicroserviceHttpClient httpClient, string serviceUrl)
+        protected BaseApiWrapper(IMicroserviceHttpClientResolver httpClientResolver, string serviceUrl)
         {
-            HttpClient = httpClient;
+            HttpClient = httpClientResolver.Resolve();
             ServiceUrl = serviceUrl;
         }
 

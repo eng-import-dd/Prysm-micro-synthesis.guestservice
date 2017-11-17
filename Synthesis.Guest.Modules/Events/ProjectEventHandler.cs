@@ -17,7 +17,7 @@ namespace Synthesis.GuestService.Events
             IGuestSessionController guestSessionController,
             IProjectLobbyStateController projectLobbyStateController)
         {
-            _logger = loggerFactory.Get(new LogTopic(GetType().FullName));
+            _logger = loggerFactory.GetLogger(this);
             _guestSessionController = guestSessionController;
             _projectLobbyStateController = projectLobbyStateController;
         }
