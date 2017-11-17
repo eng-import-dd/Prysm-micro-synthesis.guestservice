@@ -2,6 +2,7 @@ namespace Synthesis.GuestService.Constants
 {
     internal static class EventNamespaces
     {
-        public const string GuestService = "Synthesis.GuestService";
+        public const string ProjectService = "Synthesis.ProjectService";
+        public const string MessageHubService = "Synthesis.MessageHubService";
     }
 }

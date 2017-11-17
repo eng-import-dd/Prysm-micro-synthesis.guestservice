@@ -195,7 +195,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta005\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta008\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -298,7 +298,6 @@
     <Compile Include="ApiWrappers\Requests\UserRequest.cs" />
     <Compile Include="ApiWrappers\Responses\GuestVerificationEmailResponse.cs" />
     <Compile Include="ApiWrappers\Responses\ParticipantResponse.cs" />
-    <Compile Include="ApiWrappers\Responses\ProjectResponse.cs" />
     <Compile Include="ApiWrappers\Responses\SettingsResponse.cs" />
     <Compile Include="ApiWrappers\Responses\UserResponse.cs" />
     <Compile Include="ApiWrappers\SettingsApiWrapper.cs" />
@@ -318,15 +317,19 @@
     <Compile Include="Enums\LobbyState.cs" />
     <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Enums\SendVerificationResult.cs" />
-    <Compile Include="Events\AllUsersHaveDepartedProjectHandler.cs" />
+    <Compile Include="Events\IMessageHubEventHandler.cs" />
+    <Compile Include="Events\MessageHubEventHandler.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
-    <Compile Include="Events\ResetGuestAccessCodeHandler.cs" />
+    <Compile Include="Events\IProjectEventHandler.cs" />
+    <Compile Include="Events\ProjectEventHandler.cs" />
     <Compile Include="Extensions\MicroserviceExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
+    <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Models\GuestInvite.cs" />
     <Compile Include="Models\GuestSession.cs" />
     <Compile Include="Models\GuestState.cs" />
     <Compile Include="Models\ProjectLobbyState.cs" />
+    <Compile Include="Models\Project.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />

@@ -8,7 +8,7 @@ namespace Synthesis.GuestService.ApiWrappers
 {
     public class PrincipalApiWrapper : BaseApiWrapper, IPrincipalApiWrapper
     {
-        public PrincipalApiWrapper(IMicroserviceHttpClient httpClient, string serviceUrl) : base(httpClient, serviceUrl)
+        public PrincipalApiWrapper(IMicroserviceHttpClientResolver httpClient, string serviceUrl) : base(httpClient, serviceUrl)
         {
         }
 

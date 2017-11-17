@@ -153,7 +153,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta005\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta008\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -234,7 +234,7 @@
     <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
     <Compile Include="Controllers\GuestInviteControllerTests.cs" />
     <Compile Include="Controllers\GuestSessionControllerTests.cs" />
-    <Compile Include="Events\AllUsersHaveDepartedProjectHandlerTests.cs" />
+    <Compile Include="Events\MessageHubEventHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />
     <Compile Include="Modules\GuestSessionModuleTests.cs" />

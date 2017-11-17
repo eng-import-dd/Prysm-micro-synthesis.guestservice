@@ -9,14 +9,16 @@ namespace Synthesis.GuestService.ApiWrappers
 {
     public class ParticipantApiWrapper : BaseApiWrapper, IParticipantApiWrapper
     {
-        public ParticipantApiWrapper(IMicroserviceHttpClient microserviceHttpClient, string serviceUrl)
+        private const string ProjectGroup = "Group:Project:{0}";
+
+        public ParticipantApiWrapper(IMicroserviceHttpClientResolver microserviceHttpClient, string serviceUrl)
             : base(microserviceHttpClient, serviceUrl)
         {
         }
 
         public async Task<MicroserviceResponse<IEnumerable<ParticipantResponse>>> GetParticipantsByProjectIdAsync(Guid projectId)
         {
-            return await HttpClient.GetManyAsync<ParticipantResponse>($"{ServiceUrl}/v1/projects/{projectId}/participants");
+            return await HttpClient.GetManyAsync<ParticipantResponse>($"{ServiceUrl}/v1/participants?group={string.Format(ProjectGroup, projectId)}");
         }
     }
 }
