@@ -11,6 +11,7 @@ using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Models;
+using Synthesis.GuestService.Responses;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -18,13 +19,14 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PolicyEvaluator.Models;
 using Xunit;
+// ReSharper disable ExplicitCallerInfoArgument
 
 namespace Synthesis.GuestService.Modules.Test.Modules
 {
     public class GuestSessionModuleTests
     {
         private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
-        private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "12345" };
+        private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "0123456789" };
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorForbiddenMock = new Mock<IPolicyEvaluator>();
@@ -235,6 +237,42 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Throws<Exception>();
 
             var response = await AuthenticatedBrowser.Put($"{Routing.GuestSessionsRoute}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task EmailHostReturnsOk()
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new SendHostEmailResponse());
+
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task EmailHostReturnsUnauthorizedRequest()
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new SendHostEmailResponse());
+
+            var response = await UnauthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task EmailHostReturnsInternalServerErrorOnUnexpectedException()
+        {
+            _guestSessionControllerMock
+                .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
+                .Throws<Exception>();
+
+            var response = await AuthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/accesscode/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }

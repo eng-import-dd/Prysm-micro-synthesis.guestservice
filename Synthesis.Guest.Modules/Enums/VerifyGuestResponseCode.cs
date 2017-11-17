@@ -1,4 +1,4 @@
-﻿namespace Synthesis.GuestService.Responses
+﻿namespace Synthesis.GuestService.Enums
 {
     public enum VerifyGuestResponseCode
     {

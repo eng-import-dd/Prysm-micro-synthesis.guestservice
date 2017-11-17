@@ -15,6 +15,8 @@
         public const string ProjectLobbyStatePath = "lobbystate";
         public const string GuestSessionsPath = "guestsessions";
         public const string GuestInvitesPath = "guestinvites";
-
+        public const string VerifyGuestPath = "verify";
+        public const string VerificationEmailPath = "verificationemail";
+        public const string EmailHostPath = "emailhost";
     }
 }

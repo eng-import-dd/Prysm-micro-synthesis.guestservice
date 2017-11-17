@@ -1,22 +1,26 @@
-﻿using FluentValidation;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
+using Synthesis.GuestService.ApiWrappers.Requests;
+using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Models;
 using Synthesis.GuestService.Utilities.Interfaces;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
@@ -28,10 +32,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();
             _defaultGuestSession.ProjectId = Guid.NewGuid();
-            _defaultGuestSession.ProjectAccessCode = "123123123123";
+            _defaultGuestSession.ProjectAccessCode = "0123456789";
 
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
+            _guestInviteRepositoryMock = new Mock<IRepository<GuestInvite>>();
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
@@ -44,6 +49,18 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _guestSessionRepositoryMock
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()))
                 .ReturnsAsync((Guid id, GuestSession participant) => participant);
+
+            _guestInviteRepositoryMock
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(_defaultGuestInvite);
+
+            _guestInviteRepositoryMock
+                .Setup(x => x.CreateItemAsync(It.IsAny<GuestInvite>()))
+                .ReturnsAsync((GuestInvite session) => session);
+
+            _guestInviteRepositoryMock
+                .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestInvite>()))
+                .ReturnsAsync((Guid id, GuestInvite session) => session);
 
             repositoryFactoryMock
                 .Setup(x => x.CreateRepository<GuestSession>())
@@ -73,6 +90,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         private readonly GuestSessionController _target;
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
+        private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
         private readonly Mock<IPasswordUtility> _passwordUtility = new Mock<IPasswordUtility>();
@@ -80,6 +98,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<ISettingsApiWrapper> _settingsApiMock = new Mock<ISettingsApiWrapper>();
         private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
         private readonly GuestSession _defaultGuestSession = new GuestSession();
+        private readonly GuestInvite _defaultGuestInvite = new GuestInvite();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
 
@@ -99,50 +118,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             Assert.Equal(_defaultGuestSession.UserId, result.UserId);
             Assert.Equal(_defaultGuestSession.ProjectId, result.ProjectId);
             Assert.Equal(_defaultGuestSession.ProjectAccessCode, result.ProjectAccessCode);
-        }
-
-        [Fact]
-        public async Task DeleteGuestSessionsForProjectAsyncPublishesGuestSessionsForProjectDeleted()
-        {
-            _guestSessionRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
-                .ReturnsAsync(new List<GuestSession>());
-
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
-
-            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.GuestSessionsForProjectDeleted)));
-        }
-
-        [Fact]
-        public async Task DeleteGuestSessionsForProjectAsyncKillsAllActiveSessions()
-        {
-            _guestSessionRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
-                .ReturnsAsync(new List<GuestSession>()
-                {
-                    new GuestSession() {GuestSessionState = GuestState.InLobby},
-                    new GuestSession() {GuestSessionState = GuestState.InProject},
-                    new GuestSession() {GuestSessionState = GuestState.Ended}
-                });
-
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
-            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Exactly(2));
-        }
-
-        [Fact]
-        public async Task DeleteGuestSessionsForProjectAsyncKillsInProjectSessions()
-        {
-            _guestSessionRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
-                .ReturnsAsync(new List<GuestSession>()
-                {
-                    new GuestSession() {GuestSessionState = GuestState.InLobby},
-                    new GuestSession() {GuestSessionState = GuestState.InProject},
-                    new GuestSession() {GuestSessionState = GuestState.Ended}
-                });
-
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, true);
-            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Once);
         }
 
         [Fact]
@@ -175,6 +150,88 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             Assert.NotNull(result);
             Assert.NotEqual(Guid.Empty, result.ProjectId);
             Assert.Equal(_defaultGuestSession.ProjectId, result.ProjectId);
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionsForProjectAsyncKillsAllActiveSessions()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>
+                {
+                    new GuestSession { GuestSessionState = GuestState.InLobby },
+                    new GuestSession { GuestSessionState = GuestState.InProject },
+                    new GuestSession { GuestSessionState = GuestState.Ended }
+                });
+
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionsForProjectAsyncKillsInProjectSessions()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>
+                {
+                    new GuestSession { GuestSessionState = GuestState.InLobby },
+                    new GuestSession { GuestSessionState = GuestState.InProject },
+                    new GuestSession { GuestSessionState = GuestState.Ended }
+                });
+
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, true);
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionsForProjectAsyncPublishesGuestSessionsForProjectDeleted()
+        {
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(new List<GuestSession>());
+
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+
+            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.GuestSessionsForProjectDeleted)));
+        }
+
+        [Fact]
+        public async Task EmailHostThrowsNotFoundExceptionForGuestSession()
+        {
+            _userApiMock
+                .Setup(x => x.GetUserAsync(It.IsAny<UserRequest>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserResponse()));
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
+                .ThrowsAsync(new NotFoundException("GuestSession could not be found."));
+
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task EmailHostThrowsNotFoundExceptionForProject()
+        {
+            _userApiMock
+                .Setup(x => x.GetUserAsync(It.IsAny<UserRequest>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserResponse()));
+
+            _projectApiMock
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>()))
+                .ThrowsAsync(new NotFoundException("Project could not be found"));
+
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task EmailHostThrowsNotFoundExceptionForUser()
+        {
+            _userApiMock
+                .Setup(x => x.GetUserAsync(It.IsAny<UserRequest>()))
+                .ThrowsAsync(new NotFoundException("The sending user could not be found"));
+
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
         }
 
         [Fact]

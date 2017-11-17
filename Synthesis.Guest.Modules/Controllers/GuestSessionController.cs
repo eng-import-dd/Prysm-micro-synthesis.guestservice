@@ -30,6 +30,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IEmailUtility _emailUtility;
         private readonly IEventService _eventService;
         private readonly IRepository<GuestSession> _guestSessionRepository;
+        private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
         private readonly IPasswordUtility _passwordUtility;
         private readonly IProjectApiWrapper _projectApi;
@@ -61,6 +62,7 @@ namespace Synthesis.GuestService.Controllers
             ISettingsApiWrapper settingsApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
 
             _validatorLocator = validatorLocator;
             _eventService = eventService;
@@ -356,6 +358,62 @@ namespace Synthesis.GuestService.Controllers
 
             response.ResultCode = VerifyGuestResponseCode.Success;
             return response;
+        }
+
+        public async Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId)
+        {
+            var codeValidationResult = _validatorLocator.Validate<ProjectAccessCodeValidator>(accessCode);
+            if (!codeValidationResult.IsValid)
+            {
+                _logger.Error($"Failed to validate the project access code {accessCode} while attempting to email the host");
+                throw new ValidationFailedException(codeValidationResult.Errors);
+            }
+
+            var sendingUser = (await _userApi.GetUserAsync(new UserRequest { Id = sendingUserId })).Payload;
+            if (sendingUser == null)
+            {
+                throw new NotFoundException($"User with id {sendingUserId} could not be found");
+            }
+
+            var userSession = (await _guestSessionRepository.GetItemsAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode)).FirstOrDefault();
+            if (userSession == null)
+            {
+                throw new NotFoundException($"User guest session with userId {sendingUserId} and project access code {accessCode} could not be found");
+            }
+
+            var project = (await _projectApi.GetProjectByAccessCodeAsync(accessCode)).Payload;
+            if (project == null)
+            {
+                throw new NotFoundException($"Project with access code {accessCode} could not be found");
+            }
+
+            var projectOwner = (await _userApi.GetUserAsync(new UserRequest { Id = project.OwnerId })).Payload;
+            if (projectOwner == null)
+            {
+                throw new NotFoundException($"User for project owner {project.OwnerId} could not be found");
+            }
+
+            if (userSession.EmailedHostDateTime != null)
+            {
+                throw new Exception($"User {sendingUser.Email} has already emailed the host {projectOwner.Email} once for this guest session {userSession.Id}");
+            }
+
+            var invite = (await _guestInviteRepository.GetItemsAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode)).FirstOrDefault();
+            var sendTo = invite == null ? projectOwner.Email : invite.GuestEmail;
+
+            if (!_emailUtility.SendHostEmail(sendTo, sendingUser.FullName, sendingUser.FirstName, sendingUser.Email, project.Name))
+            {
+                throw new Exception($"Email from user {sendingUser.Email} to host {projectOwner.Email} could not be sent");
+            }
+
+            userSession.EmailedHostDateTime = DateTime.UtcNow;
+            await _guestSessionRepository.UpdateItemAsync(userSession.Id, userSession);
+
+            return new SendHostEmailResponse()
+            {
+                EmailSentDateTime = DateTime.UtcNow,
+                SentBy = sendingUser.Email
+            };
         }
     }
 }

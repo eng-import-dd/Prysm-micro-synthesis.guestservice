@@ -73,6 +73,11 @@ namespace Synthesis.GuestService.Modules
                 .Description("Verify guest resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
+
+            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
+                .Description("Send email to project host.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
         }
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)
@@ -267,6 +272,29 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 Logger.Error($"Failed to verify guest with username {request.Username} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
+            }
+        }
+
+        public async Task<object> EmailHostAsync(dynamic input)
+        {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _guestSessionController.EmailHostAsync(input.accessCode, PrincipalId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to send email to host for project with access code {input.accessCode} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
