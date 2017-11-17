@@ -1,5 +1,5 @@
-﻿using Synthesis.GuestService.ApiWrappers.Responses;
-using System;
+﻿using System;
+using Synthesis.GuestService.Enums;
 using Synthesis.GuestService.Models;
 
 namespace Synthesis.GuestService.Responses
