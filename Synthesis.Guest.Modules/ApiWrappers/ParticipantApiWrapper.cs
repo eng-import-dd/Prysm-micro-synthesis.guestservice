@@ -11,7 +11,7 @@ namespace Synthesis.GuestService.ApiWrappers
     {
         private const string ProjectGroup = "Group:Project:{0}";
 
-        public ParticipantApiWrapper(IMicroserviceHttpClientResolver microserviceHttpClient, string serviceUrl)
+        public ParticipantApiWrapper(IMicroserviceHttpClient microserviceHttpClient, string serviceUrl)
             : base(microserviceHttpClient, serviceUrl)
         {
         }

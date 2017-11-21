@@ -324,9 +324,16 @@ namespace Synthesis.GuestService
 
             builder.RegisterType<ParticipantApiWrapper>()
                 .As<IParticipantApiWrapper>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
+                .WithParameters(new[]
+                {
+                    new ResolvedParameter(
+                        (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
+                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")),
+
+                    new ResolvedParameter(
+                        (p, c) => p.ParameterType == typeof(IMicroserviceHttpClient),
+                        (p, c) => c.ResolveKeyed<IMicroserviceHttpClient>(ServiceToServiceKey))
+                });
 
             // Event Subscription
             builder.RegisterType<EventSubscriber>().SingleInstance();

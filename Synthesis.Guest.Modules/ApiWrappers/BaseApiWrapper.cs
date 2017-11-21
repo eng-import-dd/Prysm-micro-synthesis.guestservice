@@ -13,6 +13,12 @@ namespace Synthesis.GuestService.ApiWrappers
             ServiceUrl = serviceUrl;
         }
 
+        protected BaseApiWrapper(IMicroserviceHttpClient httpClient, string serviceUrl)
+        {
+            HttpClient = httpClient;
+            ServiceUrl = serviceUrl;
+        }
+
         protected static bool IsSuccess(MicroserviceResponse response)
         {
             var code = response.ResponseCode;
