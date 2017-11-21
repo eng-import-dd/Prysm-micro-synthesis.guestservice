@@ -41,7 +41,7 @@ using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PolicyEvaluator;
+using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
@@ -113,7 +113,7 @@ namespace Synthesis.GuestService
                 });
             });
 
-            // Resolve event subscribers
+           // Resolve event subscribers
             container.Resolve<EventSubscriber>();
 
             container
@@ -198,7 +198,7 @@ namespace Synthesis.GuestService
                 {
                     AuthKey = settings.GetValue<string>("DocumentDB.AuthKey"),
                     Endpoint = settings.GetValue<string>("DocumentDB.Endpoint"),
-                    DatabaseName = settings.GetValue<string>("Guest.DocumentDB.DatabaseName"),
+                    DatabaseName = settings.GetValue<string>("Guest.DocumentDB.DatabaseName")
                 };
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
@@ -210,7 +210,7 @@ namespace Synthesis.GuestService
                 {
                     AuthenticationRoute = reader.GetValue<string>("ServiceAuthenticationRoute"),
                     ClientId = reader.GetValue<string>("Guest.ClientId"),
-                    ClientSecret = reader.GetValue<string>("Guest.ClientSecret"),
+                    ClientSecret = reader.GetValue<string>("Guest.ClientSecret")
                 };
             });
 
@@ -236,24 +236,11 @@ namespace Synthesis.GuestService
                 .As<ICertificateProvider>();
 
             // Microservice HTTP Clients
-            builder.RegisterType<MicroserviceHttpClientResolver>().As<IMicroserviceHttpClientResolver>();
-
             builder.RegisterType<AuthorizationPassThroughClient>()
                 .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey);
 
             builder.RegisterType<ServiceToServiceClient>()
                 .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey);
-
-            builder.Register(c =>
-            {
-                var reader = c.Resolve<IAppSettingsReader>();
-                return new ServiceToServiceClientConfiguration
-                {
-                    AuthenticationRoute = reader.GetValue<string>("ServiceAuthenticationRoute"),
-                    ClientId = reader.GetValue<string>("Guest.ClientId"),
-                    ClientSecret = reader.GetValue<string>("Guest.ClientSecret")
-                };
-            });
 
             builder.RegisterType<SynthesisHttpClient>()
                 .As<IHttpClient>();
@@ -279,11 +266,17 @@ namespace Synthesis.GuestService
                 .SingleInstance();
 
             // Policy Evaluator (make sure to use AuthorizationPassThroughClient)
-            builder.RegisterType<PolicyEvaluator.Workflow.PolicyEvaluator>()
+            builder.RegisterType<ServiceToServiceClient>().AsSelf();
+            builder.RegisterType<MicroserviceHttpClientResolver>()
+                .As<IMicroserviceHttpClientResolver>()
                 .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClient),
-                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey)))
-                .As<IPolicyEvaluator>();
+                    (p, c) => p.Name == "passThroughKey",
+                    (p, c) => AuthorizationPassThroughKey))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceKey",
+                    (p, c) => ServiceToServiceKey));
+
+            builder.RegisterPolicyEvaluatorComponents();
 
             // Redis cache
             builder.RegisterType<RedisCache>()
@@ -305,6 +298,10 @@ namespace Synthesis.GuestService
                     }))
                 .As<ICache>()
                 .SingleInstance();
+
+            // Validation
+            builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
+            RegisterValidators(builder);
 
             // Api Wrappers
             builder.RegisterType<ProjectApiWrapper>()
@@ -335,10 +332,6 @@ namespace Synthesis.GuestService
             builder.RegisterType<EventSubscriber>().SingleInstance();
             builder.RegisterType<ProjectEventHandler>().As<IProjectEventHandler>();
             builder.RegisterType<MessageHubEventHandler>().As<IMessageHubEventHandler>();
-            
-            // Validation
-            builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
-            RegisterValidators(builder);
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
