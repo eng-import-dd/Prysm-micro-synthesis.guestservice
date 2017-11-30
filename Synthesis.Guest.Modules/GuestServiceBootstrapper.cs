@@ -335,6 +335,7 @@ namespace Synthesis.GuestService
             builder.RegisterType<EventSubscriber>().SingleInstance();
             builder.RegisterType<ProjectEventHandler>().As<IProjectEventHandler>();
             builder.RegisterType<MessageHubEventHandler>().As<IMessageHubEventHandler>();
+            builder.RegisterType<ExpirationNotifierEventHandler>().As<IExpirationNotifierEventHandler>();
             
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();

@@ -317,6 +317,8 @@
     <Compile Include="Enums\LobbyState.cs" />
     <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Enums\SendVerificationResult.cs" />
+    <Compile Include="Events\ExpirationNotifierEventHandler.cs" />
+    <Compile Include="Events\IExpirationNotifierEventHandler.cs" />
     <Compile Include="Events\IMessageHubEventHandler.cs" />
     <Compile Include="Events\MessageHubEventHandler.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
