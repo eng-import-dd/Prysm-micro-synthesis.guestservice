@@ -9,7 +9,8 @@ namespace Synthesis.GuestService.Events
     {
         public EventSubscriber(IEventService eventService,
             IProjectEventHandler projectEventHandler,
-            IMessageHubEventHandler messageHubEventHandler)
+            IMessageHubEventHandler messageHubEventHandler,
+            IExpirationNotifierEventHandler expirationNotifierEventHandler)
         {
             // project events
             eventService.Subscribe<GuidEvent>(EventNamespaces.ProjectService, EventNames.GuestAccessCodeChanged, projectEventHandler.HandleGuestAccessCodeChangedEvent);
@@ -19,8 +20,8 @@ namespace Synthesis.GuestService.Events
             // message hub events
             eventService.Subscribe<GuidEvent>(EventNamespaces.MessageHubService, EventNames.TriggerRecalculateProjectLobbyState, messageHubEventHandler.HandleTriggerRecalculateProjectLobbyStateEvent);
 
-            // TODO - CU-403 - Subscribe to new KEN to kick guests out of project after last non guest leaves
-            // https://prysminc.atlassian.net/browse/CU-403
+            // expiration notifier events
+            eventService.Subscribe<GuidEvent>(EventNamespaces.ExpirationNotifier, EventNames.TriggerKickGuestsFromProject, expirationNotifierEventHandler.HandleTriggerKickGuestsFromProjectEvent);
         }
     }
 }

@@ -234,6 +234,7 @@
     <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
     <Compile Include="Controllers\GuestInviteControllerTests.cs" />
     <Compile Include="Controllers\GuestSessionControllerTests.cs" />
+    <Compile Include="Events\ExpirationNotifierEventHandlerTests.cs" />
     <Compile Include="Events\MessageHubEventHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />

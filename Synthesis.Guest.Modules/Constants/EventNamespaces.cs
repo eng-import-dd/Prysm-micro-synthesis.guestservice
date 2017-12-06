@@ -4,5 +4,6 @@ namespace Synthesis.GuestService.Constants
     {
         public const string ProjectService = "Synthesis.ProjectService";
         public const string MessageHubService = "Synthesis.MessageHubService";
+        public const string ExpirationNotifier = "Synthesis.ExpirationNotifier";
     }
 }
