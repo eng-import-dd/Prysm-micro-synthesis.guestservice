@@ -28,7 +28,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         private readonly GuestInvite _guestInvite = new GuestInvite { Id = Guid.NewGuid(), InvitedBy = Guid.NewGuid(), ProjectId = Guid.NewGuid(), CreatedDateTime = DateTime.UtcNow };
         private readonly Mock<IGuestInviteController> _guestInviteControllerMock = new Mock<IGuestInviteController>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
-        private readonly Mock<IPolicyEvaluator> _policyEvaluatorForbiddenMock = new Mock<IPolicyEvaluator>();
         private readonly Mock<ITokenValidator> _tokenValidatorMock = new Mock<ITokenValidator>();
         private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -38,10 +37,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _policyEvaluatorForbiddenMock
-                .Setup(x => x.EvaluateAsync(It.IsAny<PolicyEvaluationContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(PermissionScope.Deny);
-
             _metadataRegistryMock
                 .Setup(x => x.GetRouteMetadata(It.IsAny<string>()))
                 .Returns<string>(name => new SynthesisRouteMetadata(null, null, name));
@@ -49,18 +44,27 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
         private Browser GetBrowser(bool isAuthenticated = true, bool hasAccess = true)
         {
+            _policyEvaluatorMock
+                .Setup(x => x.EvaluateAsync(It.IsAny<PolicyEvaluationContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(hasAccess ? PermissionScope.Allow : PermissionScope.Deny);
+
             return new Browser(with =>
             {
                 if (isAuthenticated)
                 {
-                    with.RequestStartup((container, pipelines, context) =>
-                    {
-                        var identity = new ClaimsIdentity(new[]
-                            {
+                    var identity = new ClaimsIdentity(new[]
+                           {
                                 new Claim(ClaimTypes.Name, "Test User"),
                                 new Claim(ClaimTypes.Email, "test@user.com")
                             },
-                            AuthenticationTypes.Basic);
+                           AuthenticationTypes.Basic);
+
+                    _tokenValidatorMock
+                        .Setup(x => x.ValidateAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()))
+                        .ReturnsAsync(new ClaimsPrincipal(identity));
+
+                    with.RequestStartup((container, pipelines, context) =>
+                    {
                         context.CurrentUser = new ClaimsPrincipal(identity);
                     });
                 }
@@ -68,7 +72,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 with.Dependency(_guestInviteControllerMock.Object);
                 with.Dependency(_metadataRegistryMock.Object);
                 with.Dependency(_tokenValidatorMock.Object);
-                with.Dependency(hasAccess ? _policyEvaluatorMock.Object : _policyEvaluatorForbiddenMock.Object);
+                with.Dependency(_policyEvaluatorMock.Object);
                 with.Dependency(_loggerFactoryMock.Object);
 
                 with.Module<GuestInviteModule>();

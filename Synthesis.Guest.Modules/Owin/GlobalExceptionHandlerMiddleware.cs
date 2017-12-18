@@ -6,7 +6,7 @@ using Synthesis.Tracking;
 
 namespace Synthesis.GuestService.Owin
 {
-    internal class GlobalExceptionHandlerMiddleware : OwinMiddleware
+    public class GlobalExceptionHandlerMiddleware : OwinMiddleware
     {
         private const string ServiceName = "GuestService";
         private readonly ILogger _logger;
