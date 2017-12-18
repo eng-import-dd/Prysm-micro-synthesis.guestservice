@@ -115,6 +115,9 @@ namespace Synthesis.GuestService
                 });
             });
 
+            // Resolve event subscribers
+            container.Resolve<EventSubscriber>();
+
             container
                 .Resolve<ILoggerFactory>()
                 .GetLogger(this)
