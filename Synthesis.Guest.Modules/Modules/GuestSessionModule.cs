@@ -33,7 +33,7 @@ namespace Synthesis.GuestService.Modules
             IPolicyEvaluator policyEvaluator,
             IGuestSessionController guestSessionController,
             ILoggerFactory loggerFactory)
-            : base(GuestServiceBootstrapper.ServiceName, metadataRegistry, tokenValidator, policyEvaluator, loggerFactory)
+            : base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             // Init DI
             _guestSessionController = guestSessionController;

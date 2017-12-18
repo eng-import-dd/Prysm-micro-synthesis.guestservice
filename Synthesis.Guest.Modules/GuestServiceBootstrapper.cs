@@ -1,8 +1,3 @@
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Lifetime;
@@ -41,17 +36,24 @@ using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PolicyEvaluator;
+using Synthesis.Owin.Security;
+using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 
 namespace Synthesis.GuestService
 {
     public class GuestServiceBootstrapper : AutofacNancyBootstrapper
     {
         public const string ServiceName = "Synthesis.GuestService";
+        public const string ServiceNameShort = "guest";
         public const string AuthorizationPassThroughKey = "AuthorizationPassThrough";
         public const string ServiceToServiceKey = "ServiceToService";
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
@@ -113,9 +115,6 @@ namespace Synthesis.GuestService
                 });
             });
 
-            // Resolve event subscribers
-            container.Resolve<EventSubscriber>();
-
             container
                 .Resolve<ILoggerFactory>()
                 .GetLogger(this)
@@ -170,6 +169,7 @@ namespace Synthesis.GuestService
             builder.RegisterType<ApplicationInsightsTrackingService>().As<ITrackingService>();
 
             // Register our custom OWIN Middleware
+            builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
             builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
             builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
 
@@ -198,7 +198,7 @@ namespace Synthesis.GuestService
                 {
                     AuthKey = settings.GetValue<string>("DocumentDB.AuthKey"),
                     Endpoint = settings.GetValue<string>("DocumentDB.Endpoint"),
-                    DatabaseName = settings.GetValue<string>("Guest.DocumentDB.DatabaseName"),
+                    DatabaseName = settings.GetValue<string>("Guest.DocumentDB.DatabaseName")
                 };
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
@@ -210,7 +210,7 @@ namespace Synthesis.GuestService
                 {
                     AuthenticationRoute = reader.GetValue<string>("ServiceAuthenticationRoute"),
                     ClientId = reader.GetValue<string>("Guest.ClientId"),
-                    ClientSecret = reader.GetValue<string>("Guest.ClientSecret"),
+                    ClientSecret = reader.GetValue<string>("Guest.ClientSecret")
                 };
             });
 
@@ -236,24 +236,11 @@ namespace Synthesis.GuestService
                 .As<ICertificateProvider>();
 
             // Microservice HTTP Clients
-            builder.RegisterType<MicroserviceHttpClientResolver>().As<IMicroserviceHttpClientResolver>();
-
             builder.RegisterType<AuthorizationPassThroughClient>()
                 .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey);
 
             builder.RegisterType<ServiceToServiceClient>()
                 .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey);
-
-            builder.Register(c =>
-            {
-                var reader = c.Resolve<IAppSettingsReader>();
-                return new ServiceToServiceClientConfiguration
-                {
-                    AuthenticationRoute = reader.GetValue<string>("ServiceAuthenticationRoute"),
-                    ClientId = reader.GetValue<string>("Guest.ClientId"),
-                    ClientSecret = reader.GetValue<string>("Guest.ClientSecret")
-                };
-            });
 
             builder.RegisterType<SynthesisHttpClient>()
                 .As<IHttpClient>();
@@ -279,11 +266,17 @@ namespace Synthesis.GuestService
                 .SingleInstance();
 
             // Policy Evaluator (make sure to use AuthorizationPassThroughClient)
-            builder.RegisterType<PolicyEvaluator.Workflow.PolicyEvaluator>()
+            builder.RegisterType<ServiceToServiceClient>().AsSelf();
+            builder.RegisterType<MicroserviceHttpClientResolver>()
+                .As<IMicroserviceHttpClientResolver>()
                 .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClient),
-                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey)))
-                .As<IPolicyEvaluator>();
+                    (p, c) => p.Name == "passThroughKey",
+                    (p, c) => AuthorizationPassThroughKey))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceKey",
+                    (p, c) => ServiceToServiceKey));
+
+            builder.RegisterPolicyEvaluatorComponents();
 
             // Redis cache
             builder.RegisterType<RedisCache>()
@@ -336,7 +329,7 @@ namespace Synthesis.GuestService
             builder.RegisterType<ProjectEventHandler>().As<IProjectEventHandler>();
             builder.RegisterType<MessageHubEventHandler>().As<IMessageHubEventHandler>();
             builder.RegisterType<ExpirationNotifierEventHandler>().As<IExpirationNotifierEventHandler>();
-            
+
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             RegisterValidators(builder);

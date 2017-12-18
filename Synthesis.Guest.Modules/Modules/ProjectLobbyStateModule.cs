@@ -26,7 +26,7 @@ namespace Synthesis.GuestService.Modules
             ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory, IProjectLobbyStateController projectLobbyStateController) :
-            base(GuestServiceBootstrapper.ServiceName, metadataRegistry, tokenValidator, policyEvaluator, loggerFactory)
+            base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _projectLobbyStateController = projectLobbyStateController;
 
