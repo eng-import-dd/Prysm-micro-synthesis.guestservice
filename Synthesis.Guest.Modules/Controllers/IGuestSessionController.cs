@@ -12,7 +12,6 @@ namespace Synthesis.GuestService.Controllers
     public interface IGuestSessionController
     {
         Task<GuestSession> CreateGuestSessionAsync(GuestSession model);
-        Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest model);
         Task<GuestSession> GetGuestSessionAsync(Guid guestSessionId);
         Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdAsync(Guid projectId);
         Task<GuestSession> UpdateGuestSessionAsync(GuestSession model);

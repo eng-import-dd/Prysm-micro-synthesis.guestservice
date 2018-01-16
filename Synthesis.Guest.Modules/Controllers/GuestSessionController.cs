@@ -35,7 +35,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IPasswordUtility _passwordUtility;
         private readonly IProjectApiWrapper _projectApi;
         private readonly ISettingsApiWrapper _settingsApi;
-        private readonly IPrincipalApiWrapper _userApi;
+        private readonly IPrincipalApiWrapper _principleApi;
         private readonly IValidatorLocator _validatorLocator;
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="loggerFactory">The logger.</param>
         /// <param name="projectApi"></param>
         /// <param name="settingsApi"></param>
-        /// <param name="userApi"></param>
+        /// <param name="principleApi"></param>
         /// <param name="emailUtility"></param>
         /// <param name="passwordUtility"></param>
         public GuestSessionController(
@@ -58,7 +58,7 @@ namespace Synthesis.GuestService.Controllers
             IEmailUtility emailUtility,
             IPasswordUtility passwordUtility,
             IProjectApiWrapper projectApi,
-            IPrincipalApiWrapper userApi,
+            IPrincipalApiWrapper principleApi,
             ISettingsApiWrapper settingsApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
@@ -72,83 +72,8 @@ namespace Synthesis.GuestService.Controllers
             _passwordUtility = passwordUtility;
 
             _projectApi = projectApi;
-            _userApi = userApi;
+            _principleApi = principleApi;
             _settingsApi = settingsApi;
-        }
-
-        public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request)
-        {
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(request.Email);
-            if (!emailValidationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the email address while attempting to create a new guest.");
-                throw new ValidationFailedException(emailValidationResult.Errors);
-            }
-
-            var response = new GuestCreationResponse
-            {
-                SynthesisUser = null,
-                ResultCode = CreateGuestResponseCode.Failed
-            };
-
-            var guestVerificationResponse = await VerifyGuestAsync(request.Email, request.ProjectAccessCode);
-            if (!(guestVerificationResponse.ResultCode == VerifyGuestResponseCode.Success || guestVerificationResponse.ResultCode == VerifyGuestResponseCode.SuccessNoUser))
-            {
-                response.ResultCode = guestVerificationResponse.ResultCode == VerifyGuestResponseCode.EmailVerificationNeeded ? CreateGuestResponseCode.UserExists : CreateGuestResponseCode.Unauthorized;
-                return response;
-            }
-
-            request.FirstName = request.FirstName?.Trim();
-            request.LastName = request.LastName?.Trim();
-            if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
-            {
-                response.ResultCode = CreateGuestResponseCode.FirstOrLastNameIsNull;
-                return response;
-            }
-
-            if (!EmailValidator.IsValid(request.Email))
-            {
-                response.ResultCode = CreateGuestResponseCode.InvalidEmail;
-                return response;
-            }
-
-            if (request.IsIdpUser)
-            {
-                var throwAwayPassword = _passwordUtility.GenerateRandomPassword(64);
-                request.Password = throwAwayPassword;
-                request.PasswordConfirmation = throwAwayPassword;
-            }
-
-            var userRequest = new UserRequest
-            {
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Email = request.Email,
-                Password = request.Password,
-                IsIdpUser = request.IsIdpUser
-            };
-
-            var provisionGuestUserResult = await _userApi.ProvisionGuestUserAsync(userRequest);
-            if (provisionGuestUserResult.Payload.ProvisionReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
-            {
-                response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
-
-                var sendVerificationEmailResponse = await SendVerificationEmailAsync(new GuestVerificationEmailRequest
-                {
-                    FirstName = request.FirstName,
-                    Email = request.Email,
-                    ProjectAccessCode = request.ProjectAccessCode,
-                    LastName = request.LastName
-                });
-
-                if (!sendVerificationEmailResponse.IsEmailVerified || sendVerificationEmailResponse.MessageSentRecently)
-                {
-                    response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
-                }
-            }
-
-            response.ResultCode = CreateGuestResponseCode.Success;
-            return response;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
@@ -242,7 +167,7 @@ namespace Synthesis.GuestService.Controllers
                 ProjectAccessCode = guestVerificationEmailRequest.ProjectAccessCode
             };
 
-            var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
+            var user = await _principleApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
             if (user.Payload.IsEmailVerified == true)
             {
                 guestVerificationEmailResponse.IsEmailVerified = true;
@@ -280,7 +205,7 @@ namespace Synthesis.GuestService.Controllers
 
             return result;
         }
-
+        
         public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
@@ -318,7 +243,7 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            var userResponse = await _userApi.GetUserAsync(new UserRequest { UserName = username });
+            var userResponse = await _principleApi.GetUserAsync(new UserRequest { UserName = username });
             if (userResponse == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
@@ -359,6 +284,7 @@ namespace Synthesis.GuestService.Controllers
             response.ResultCode = VerifyGuestResponseCode.Success;
             return response;
         }
+        
 
         public async Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId)
         {
@@ -369,7 +295,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(codeValidationResult.Errors);
             }
 
-            var sendingUser = (await _userApi.GetUserAsync(new UserRequest { Id = sendingUserId })).Payload;
+            var sendingUser = (await _principleApi.GetUserAsync(new UserRequest { Id = sendingUserId })).Payload;
             if (sendingUser == null)
             {
                 throw new NotFoundException($"User with id {sendingUserId} could not be found");
@@ -387,7 +313,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException($"Project with access code {accessCode} could not be found");
             }
 
-            var projectOwner = (await _userApi.GetUserAsync(new UserRequest { Id = project.OwnerId })).Payload;
+            var projectOwner = (await _principleApi.GetUserAsync(new UserRequest { Id = project.OwnerId })).Payload;
             if (projectOwner == null)
             {
                 throw new NotFoundException($"User for project owner {project.OwnerId} could not be found");

@@ -44,11 +44,6 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
 
-            CreateRoute("CreateGuest", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/createguest", CreateGuestAsync)
-                .Description("Creates a Guest user from a guest session.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .ResponseFormat(JsonConvert.SerializeObject(new GuestCreationResponse()));
-
             CreateRoute("GetGuestSession", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{{id:guid}}", GetGuestSessionAsync)
                 .Description("Retrieve a specific GuestSession resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized,HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
@@ -107,33 +102,6 @@ namespace Synthesis.GuestService.Modules
             {
                 Logger.Error("Failed to create guestSession resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestSession);
-            }
-        }
-
-        public async Task<object> CreateGuestAsync(dynamic input)
-        {
-            // This route is being deleted. No reason to add auth.
-            // TODO - remove once CU-420 is complete
-            GuestCreationRequest request;
-
-            try
-            {
-                request = this.Bind<GuestCreationRequest>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to create a guest.", ex);
-                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
-            }
-
-            try
-            {
-                return await _guestSessionController.CreateGuestAsync(request);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Unhandled exception encountered while attempting to create a guest", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
             }
         }
 
