@@ -1,4 +1,4 @@
-﻿using Synthesis.GuestService.Utilities.Interfaces;
+using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Logging;
 using System;
 using System.Collections.Generic;

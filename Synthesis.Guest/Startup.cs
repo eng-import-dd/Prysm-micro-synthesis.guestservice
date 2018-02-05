@@ -1,8 +1,8 @@
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Owin;
-using Synthesis.GuestService.Owin;
 using Synthesis.Owin.Security;
+using Synthesis.GuestService.Owin;
 using Synthesis.Tracking.Web;
 
 namespace Synthesis.GuestService
@@ -24,6 +24,7 @@ namespace Synthesis.GuestService
 
             // This middleware performs our authentication and populates the user principal.
             app.UseMiddlewareFromContainer<SynthesisAuthenticationMiddleware>();
+            app.UseMiddlewareFromContainer<ImpersonateTenantMiddleware>();
             app.UseStageMarker(PipelineStage.Authenticate);
 
             app.UseNancy(options =>
