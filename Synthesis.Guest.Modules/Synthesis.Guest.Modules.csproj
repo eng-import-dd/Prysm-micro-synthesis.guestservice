@@ -389,16 +389,36 @@
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Utilities\EmailTemplates\EmailHost.html" />
-    <Content Include="Utilities\EmailTemplates\EmailTemplate.html" />
-    <Content Include="Utilities\EmailTemplates\GuestInvite.html" />
-    <Content Include="Utilities\EmailTemplates\Images\facebook-icon.png" />
-    <Content Include="Utilities\EmailTemplates\Images\google-plus-icon.png" />
-    <Content Include="Utilities\EmailTemplates\Images\linkedin-icon.png" />
-    <Content Include="Utilities\EmailTemplates\Images\Prysm-logo.png" />
-    <Content Include="Utilities\EmailTemplates\Images\twitter-icon.png" />
-    <Content Include="Utilities\EmailTemplates\Images\youtube-icon.png" />
-    <Content Include="Utilities\EmailTemplates\VerifyNewAccount.html" />
+    <Content Include="Utilities\EmailTemplates\EmailHost.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\EmailTemplate.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\GuestInvite.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\Images\facebook-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\Images\google-plus-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\Images\linkedin-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\Images\Prysm-logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\Images\twitter-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\Images\youtube-icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Utilities\EmailTemplates\VerifyNewAccount.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />
     <Content Include="x64\msvcr120.dll" />

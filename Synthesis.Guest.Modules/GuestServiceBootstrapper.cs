@@ -285,12 +285,14 @@ namespace Synthesis.GuestService
         /// <param name="builder"></param>
         private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
         {
+            // html files and png content files need to be set to copy to output directory
+
             // Api Wrappers
             builder.RegisterType<ProjectApiWrapper>()
                 .As<IProjectApiWrapper>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ProjectService.Url")));
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Project.Url")));
 
             builder.RegisterType<SettingsApiWrapper>()
                 .As<ISettingsApiWrapper>()
@@ -302,13 +304,13 @@ namespace Synthesis.GuestService
                 .As<IPrincipalApiWrapper>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("PrincipalService.Url")));
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.Url")));
 
             builder.RegisterType<ParticipantApiWrapper>()
                 .As<IParticipantApiWrapper>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ParticipantService.Url")));
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Participant.Url")));
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
@@ -316,7 +318,7 @@ namespace Synthesis.GuestService
             builder.RegisterType<ProjectLobbyStateController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "maxGuestsAllowedInProject",
-                    (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("MaxGuestsAllowedInProject")))
+                    (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("Guest.MaxGuestsAllowedInProject")))
                 .As<IProjectLobbyStateController>();
 
             // Utilities
