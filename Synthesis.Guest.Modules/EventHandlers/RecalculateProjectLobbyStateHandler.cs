@@ -1,16 +1,17 @@
 ﻿using System;
+using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
 using Synthesis.Logging;
 
-namespace Synthesis.GuestService.Events
+namespace Synthesis.GuestService.EventHandlers
 {
-    public class MessageHubEventHandler : IMessageHubEventHandler
+    public class RecalculateProjectLobbyStateHandler : IEventHandler<GuidEvent>
     {
         private readonly ILogger _logger;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
 
-        public MessageHubEventHandler(ILoggerFactory loggerFactory,
+        public RecalculateProjectLobbyStateHandler(ILoggerFactory loggerFactory,
             IProjectLobbyStateController projectLobbyStateController)
         {
             _logger = loggerFactory.GetLogger(this);
@@ -18,7 +19,7 @@ namespace Synthesis.GuestService.Events
         }
 
         /// <inheritdoc />
-        public void HandleTriggerRecalculateProjectLobbyStateEvent(GuidEvent args)
+        public void HandleEvent(GuidEvent args)
         {
             try
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
@@ -14,8 +14,8 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.Policy.Models;
 using Synthesis.PolicyEvaluator;
-using Synthesis.PolicyEvaluator.Models;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules

@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{824B0E21-C8A7-11E7-911C-C91CCBDD8294}</ProjectGuid>
+    <ProjectGuid>{4D402C51-0AC0-11E8-9A9F-5D7F4B792F52}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Synthesis.GuestService</RootNamespace>
@@ -167,7 +167,7 @@
       <HintPath>..\packages\Synthesis.ApplicationInsights.2.0.4\lib\net452\Synthesis.ApplicationInsights.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta009\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta010\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
@@ -179,17 +179,20 @@
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.Configuration.Shared, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Configuration.Shared.1.0.0-beta003\lib\net452\Synthesis.Configuration.Shared.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta007\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta008\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta007\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta008\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta006\lib\net452\Synthesis.EventBus.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta011\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.0.11, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.0.11-beta4\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
+    <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.1-beta011\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -207,7 +210,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta025\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta029\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -216,19 +219,22 @@
       <HintPath>..\packages\Synthesis.Owin.Host.2.0.0\lib\net452\Synthesis.Owin.Host.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Owin.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta001\lib\net452\Synthesis.Owin.Security.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta002\lib\net452\Synthesis.Owin.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Policy.1.0.0-beta004\lib\net452\Synthesis.Policy.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta008\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta006\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.3\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization.Json, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.Json.1.0.3\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
+    <Reference Include="Synthesis.Serialization.Json, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.Json.1.0.4\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Threading.1.1.0\lib\net452\Synthesis.Threading.dll</HintPath>
@@ -310,11 +316,11 @@
     <Compile Include="ApiWrappers\Responses\SettingsResponse.cs" />
     <Compile Include="ApiWrappers\Responses\UserResponse.cs" />
     <Compile Include="ApiWrappers\SettingsApiWrapper.cs" />
-    <Compile Include="Constants\Routing.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\EventNamespaces.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
+    <Compile Include="Constants\Routing.cs" />
     <Compile Include="Controllers\GuestInviteController.cs" />
     <Compile Include="Controllers\GuestSessionController.cs" />
     <Compile Include="Controllers\IGuestInviteController.cs" />
@@ -326,21 +332,21 @@
     <Compile Include="Enums\LobbyState.cs" />
     <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
     <Compile Include="Enums\SendVerificationResult.cs" />
-    <Compile Include="Events\ExpirationNotifierEventHandler.cs" />
-    <Compile Include="Events\IExpirationNotifierEventHandler.cs" />
-    <Compile Include="Events\IMessageHubEventHandler.cs" />
-    <Compile Include="Events\MessageHubEventHandler.cs" />
-    <Compile Include="Events\EventSubscriber.cs" />
-    <Compile Include="Events\IProjectEventHandler.cs" />
-    <Compile Include="Events\ProjectEventHandler.cs" />
+    <Compile Include="Enums\VerifyGuestResponseCode.cs" />
+    <Compile Include="EventHandlers\EventSubscriber.cs" />
+    <Compile Include="EventHandlers\GuestAccessCodeChangedEventHandler.cs" />
+    <Compile Include="EventHandlers\KickGuestsFromProjectHandler.cs" />
+    <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />
+    <Compile Include="EventHandlers\ProjectDeletedEventHandler.cs" />
+    <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
     <Compile Include="Extensions\MicroserviceExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Models\GuestInvite.cs" />
     <Compile Include="Models\GuestSession.cs" />
     <Compile Include="Models\GuestState.cs" />
-    <Compile Include="Models\ProjectLobbyState.cs" />
     <Compile Include="Models\Project.cs" />
+    <Compile Include="Models\ProjectLobbyState.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
@@ -354,7 +360,6 @@
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\GuestVerificationResponse.cs" />
     <Compile Include="Responses\SendHostEmailResponse.cs" />
-    <Compile Include="Enums\VerifyGuestResponseCode.cs" />
     <Compile Include="Utilities\EmailUtiltiy.cs" />
     <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IPasswordUtility.cs" />
@@ -382,9 +387,6 @@
     <None Include="x64\librdkafkacpp.lib" />
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Entity\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Utilities\EmailTemplates\EmailHost.html">
@@ -426,6 +428,7 @@
     <Content Include="x86\msvcr120.dll" />
     <Content Include="x86\zlib.dll" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
