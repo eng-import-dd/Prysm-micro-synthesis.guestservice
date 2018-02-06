@@ -1,24 +1,25 @@
 ﻿using System;
+using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
+using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.Logging;
 
-namespace Synthesis.GuestService.Events
+namespace Synthesis.GuestService.EventHandlers
 {
-    public class ExpirationNotifierEventHandler : IExpirationNotifierEventHandler
+    public class GuestAccessCodeChangedEventHandler : IEventHandler<GuidEvent>
     {
         private readonly ILogger _logger;
         private readonly IGuestSessionController _guestSessionController;
 
-        public ExpirationNotifierEventHandler(ILoggerFactory loggerFactory,
-            IGuestSessionController guestSessionController)
+        public GuestAccessCodeChangedEventHandler(ILoggerFactory loggerFactory, IGuestSessionController guestSessionController)
         {
             _logger = loggerFactory.GetLogger(this);
             _guestSessionController = guestSessionController;
         }
 
         /// <inheritdoc />
-        public async void HandleTriggerKickGuestsFromProjectEvent(GuidEvent args)
+        public async void HandleEvent(GuidEvent args)
         {
             try
             {
@@ -26,7 +27,7 @@ namespace Synthesis.GuestService.Events
             }
             catch (Exception ex)
             {
-                _logger.Error($"Could not kick guests for project {args.Value}", ex);
+                _logger.Error($"Guests could not be kicked from project upon {EventNames.GuestAccessCodeChanged} event for project: {args.Value}", ex);
             }
         }
     }

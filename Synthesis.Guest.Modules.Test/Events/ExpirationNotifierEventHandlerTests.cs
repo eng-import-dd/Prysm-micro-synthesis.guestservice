@@ -2,7 +2,7 @@
 using Moq;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Events;
+using Synthesis.GuestService.EventHandlers;
 using Synthesis.Logging;
 using Xunit;
 
@@ -19,7 +19,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
             loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new ExpirationNotifierEventHandler(loggerFactoryMock.Object, _guestSessionControllerMock.Object);
+            _target = new KickGuestsFromProjectHandler(loggerFactoryMock.Object, _guestSessionControllerMock.Object);
         }
 
         [Fact]

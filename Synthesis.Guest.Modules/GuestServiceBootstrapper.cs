@@ -39,7 +39,7 @@ using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.Serialization.Json;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Events;
+using Synthesis.GuestService.EventHandlers;
 using Synthesis.GuestService.Modules;
 using Synthesis.GuestService.Owin;
 using Synthesis.GuestService.Utilities;

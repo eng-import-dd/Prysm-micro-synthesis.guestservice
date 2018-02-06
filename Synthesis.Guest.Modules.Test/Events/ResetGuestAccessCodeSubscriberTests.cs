@@ -1,9 +1,9 @@
 using Moq;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Events;
 using Synthesis.Logging;
 using System;
+using Synthesis.GuestService.EventHandlers;
 using Synthesis.GuestService.Models;
 using Xunit;
 
@@ -11,7 +11,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
 {
     public class ResetGuestAccessCodeSubscriberTests
     {
-        private readonly ProjectEventHandler _target;
+        private readonly GuestAccessCodeChangedEventHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
 
@@ -22,7 +22,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new ProjectEventHandler(loggerFactoryMock.Object,
+            _target = new GuestAccessCodeChangedEventHandler(loggerFactoryMock.Object,
                 _guestSessionControllerMock.Object,
                 _projectLobbyStateControllerMock.Object);
         }

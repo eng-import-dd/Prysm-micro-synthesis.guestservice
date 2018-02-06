@@ -2,7 +2,7 @@
 using Moq;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Events;
+using Synthesis.GuestService.EventHandlers;
 using Synthesis.Logging;
 using Xunit;
 
