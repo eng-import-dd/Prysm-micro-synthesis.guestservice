@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events
 {
-    public class MessageHubEventHandlerTests
+    public class RecalculateProjectLobbyStateHandlerTests
     {
         private readonly RecalculateProjectLobbyStateHandler _target;
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
 
-        public MessageHubEventHandlerTests()
+        public RecalculateProjectLobbyStateHandlerTests()
         {
             var loggerFactoryMock = new Mock<ILoggerFactory>();
             loggerFactoryMock

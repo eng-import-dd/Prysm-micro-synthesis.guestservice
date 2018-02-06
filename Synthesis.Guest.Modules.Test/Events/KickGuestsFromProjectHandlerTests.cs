@@ -8,12 +8,12 @@ using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events
 {
-    public class ExpirationNotifierEventHandlerTests
+    public class KickGuestsFromProjectHandlerTests
     {
         private readonly KickGuestsFromProjectHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
 
-        public ExpirationNotifierEventHandlerTests()
+        public KickGuestsFromProjectHandlerTests()
         {
             var loggerFactoryMock = new Mock<ILoggerFactory>();
             loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))

@@ -8,13 +8,12 @@ using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events
 {
-    public class ResetGuestAccessCodeSubscriberTests
+    public class GuestAccessCodeChangedEventHandlerTests
     {
         private readonly GuestAccessCodeChangedEventHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
-        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
 
-        public ResetGuestAccessCodeSubscriberTests()
+        public GuestAccessCodeChangedEventHandlerTests()
         {
             var loggerFactoryMock = new Mock<ILoggerFactory>();
             loggerFactoryMock
