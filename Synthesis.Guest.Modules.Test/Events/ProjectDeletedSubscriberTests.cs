@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Moq;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
@@ -8,26 +8,26 @@ using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events
 {
-    public class MessageHubEventHandlerTests
+    public class ProjectDeletedSubscriberTests
     {
-        private readonly RecalculateProjectLobbyStateHandler _target;
+        private readonly ProjectDeletedEventHandler _target;
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
 
-        public MessageHubEventHandlerTests()
+        public ProjectDeletedSubscriberTests()
         {
             var loggerFactoryMock = new Mock<ILoggerFactory>();
             loggerFactoryMock
-                .Setup(m => m.Get(It.IsAny<LogTopic>()))
+                .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new RecalculateProjectLobbyStateHandler(loggerFactoryMock.Object, _projectLobbyStateControllerMock.Object);
+            _target = new ProjectDeletedEventHandler(loggerFactoryMock.Object, _projectLobbyStateControllerMock.Object);
         }
 
         [Fact]
-        public void HandleTriggerRecalculateProjectLobbyStateEventRecalculatesLobbyState()
+        public void HandleProjectDeletedEventDeletesProjectLobbyState()
         {
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
-            _projectLobbyStateControllerMock.Verify(m => m.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()));
+            _projectLobbyStateControllerMock.Verify(m => m.DeleteProjectLobbyStateAsync(It.IsAny<Guid>()));
         }
     }
 }

@@ -10,9 +10,9 @@ namespace Synthesis.GuestService.Modules.Test.Events
 {
     public class ExpirationNotifierEventHandlerTests
     {
-        private readonly IExpirationNotifierEventHandler _target;
+        private readonly KickGuestsFromProjectHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
-        
+
         public ExpirationNotifierEventHandlerTests()
         {
             var loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -25,7 +25,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
         [Fact]
         public void HandleTriggerKickGuestsFromProjectEventDeletesGuestSessionsForProject()
         {
-            _target.HandleTriggerKickGuestsFromProjectEvent(new GuidEvent(Guid.NewGuid()));
+            _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
             _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true));
         }
     }

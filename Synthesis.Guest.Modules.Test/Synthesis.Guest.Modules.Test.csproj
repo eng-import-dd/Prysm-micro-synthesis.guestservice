@@ -250,6 +250,8 @@
     <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
     <Compile Include="Events\ExpirationNotifierEventHandlerTests.cs" />
     <Compile Include="Events\MessageHubEventHandlerTests.cs" />
+    <Compile Include="Events\ProjectCreatedSubscriberTests.cs" />
+    <Compile Include="Events\ProjectDeletedSubscriberTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />
     <Compile Include="Modules\GuestSessionModuleTests.cs" />
