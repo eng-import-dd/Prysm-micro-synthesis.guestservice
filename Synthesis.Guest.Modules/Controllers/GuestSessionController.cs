@@ -6,18 +6,19 @@ using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
-using Synthesis.GuestService.ApiWrappers.Requests;
-using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.GuestService.Constants;
-using Synthesis.GuestService.Enums;
-using Synthesis.GuestService.Models;
-using Synthesis.GuestService.Requests;
-using Synthesis.GuestService.Responses;
+using Synthesis.GuestService.Extensions;
+using Synthesis.GuestService.InternalApi.Enums;
+using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Requests;
+using Synthesis.GuestService.InternalApi.Responses;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.GuestService.Validators;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -32,10 +33,9 @@ namespace Synthesis.GuestService.Controllers
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
-        private readonly IPasswordUtility _passwordUtility;
-        private readonly IProjectApiWrapper _projectApi;
+        private readonly IProjectApi _projectApi;
         private readonly ISettingsApiWrapper _settingsApi;
-        private readonly IPrincipalApiWrapper _principleApi;
+        private readonly IUserApi _userApi;
         private readonly IValidatorLocator _validatorLocator;
 
         /// <summary>
@@ -47,18 +47,16 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="loggerFactory">The logger.</param>
         /// <param name="projectApi"></param>
         /// <param name="settingsApi"></param>
-        /// <param name="principleApi"></param>
+        /// <param name="userApi"></param>
         /// <param name="emailUtility"></param>
-        /// <param name="passwordUtility"></param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
             ILoggerFactory loggerFactory,
             IEmailUtility emailUtility,
-            IPasswordUtility passwordUtility,
-            IProjectApiWrapper projectApi,
-            IPrincipalApiWrapper principleApi,
+            IProjectApi projectApi,
+            IUserApi userApi,
             ISettingsApiWrapper settingsApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
@@ -69,10 +67,9 @@ namespace Synthesis.GuestService.Controllers
             _logger = loggerFactory.GetLogger(this);
 
             _emailUtility = emailUtility;
-            _passwordUtility = passwordUtility;
 
             _projectApi = projectApi;
-            _principleApi = principleApi;
+            _userApi = userApi;
             _settingsApi = settingsApi;
         }
 
@@ -167,21 +164,30 @@ namespace Synthesis.GuestService.Controllers
                 ProjectAccessCode = guestVerificationEmailRequest.ProjectAccessCode
             };
 
-            var user = await _principleApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
-            if (user.Payload.IsEmailVerified == true)
-            {
-                guestVerificationEmailResponse.IsEmailVerified = true;
-                return guestVerificationEmailResponse;
-            }
+            // TODO: IsEmailVerified & VerificationEmailSentDateTime are no longer in the payload coming from the microservice. They are stored in the policy_db.users table
+            //var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
+            //if (user.Payload.IsEmailVerified == true)
+            //{
+            //    guestVerificationEmailResponse.IsEmailVerified = true;
+            //    return guestVerificationEmailResponse;
+            //}
 
-            if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
-            {
-                guestVerificationEmailResponse.MessageSentRecently = true;
-                return guestVerificationEmailResponse;
-            }
+            //if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
+            //{
+            //    guestVerificationEmailResponse.MessageSentRecently = true;
+            //    return guestVerificationEmailResponse;
+            //}
 
-            _emailUtility.SendVerifyAccountEmail(guestVerificationEmailRequest.FirstName, guestVerificationEmailRequest.Email,
-                guestVerificationEmailRequest.ProjectAccessCode, user.Payload.EmailVerificationId.ToString());
+            // TODO: EmailVerificationId is no longer in the payload coming from the microservice. It is stored in the policy_db.users table. Also need to know where or add where the EmailVerificationId is generated.
+            //_emailUtility.SendVerifyAccountEmail(
+            //    guestVerificationEmailRequest.FirstName,
+            //    guestVerificationEmailRequest.Email,
+            //    guestVerificationEmailRequest.ProjectAccessCode,
+            //    user.Payload.EmailVerificationId.ToString());
+
+            // TODO: Remove me once the above logic is back in place- this is just here so the async function has an await
+            await Task.Delay(0);
+
             return guestVerificationEmailResponse;
         }
 
@@ -231,7 +237,7 @@ namespace Synthesis.GuestService.Controllers
             var project = projectResponse.Payload;
 
             response.AccountId = project.TenantId;
-            response.AssociatedProject = project;
+            response.AssociatedProjectId = project.Id;
             response.ProjectAccessCode = projectAccessCode;
             response.ProjectName = project.Name;
             response.UserId = project.OwnerId;
@@ -243,7 +249,7 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            var userResponse = await _principleApi.GetUserAsync(new UserRequest { UserName = username });
+            var userResponse = await _userApi.GetUserByUsernameAsync(username);
             if (userResponse == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
@@ -258,19 +264,21 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            if (user.IsEmailVerified != true)
-            {
-                response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
-                return response;
-            }
+            // TODO: IsEmailVerified is no longer supplied in the user object returned by the microservice.  Needs to obtained form elsewhere
+            //if (user.IsEmailVerified != true)
+            //{
+            //    response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
+            //    return response;
+            //}
 
-            if (user.TenantId != null)
-            {
-                response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
-                return response;
-            }
+            // TODO: TenantId is no longer part of the User model.  This is in-flux due to try n buy and needs to eb thought thru
+            //if (user.TenantId != null)
+            //{
+            //    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
+            //    return response;
+            //}
 
-            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id);
+            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id.GetValueOrDefault());
             if (settingsResponse != null)
             {
                 var settings = settingsResponse.Payload;
@@ -295,7 +303,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(codeValidationResult.Errors);
             }
 
-            var sendingUser = (await _principleApi.GetUserAsync(new UserRequest { Id = sendingUserId })).Payload;
+            var sendingUser = (await _userApi.GetUserAsync(sendingUserId)).Payload;
             if (sendingUser == null)
             {
                 throw new NotFoundException($"User with id {sendingUserId} could not be found");
@@ -313,7 +321,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException($"Project with access code {accessCode} could not be found");
             }
 
-            var projectOwner = (await _principleApi.GetUserAsync(new UserRequest { Id = project.OwnerId })).Payload;
+            var projectOwner = (await _userApi.GetUserAsync(project.OwnerId.GetValueOrDefault())).Payload;
             if (projectOwner == null)
             {
                 throw new NotFoundException($"User for project owner {project.OwnerId} could not be found");
@@ -327,7 +335,7 @@ namespace Synthesis.GuestService.Controllers
             var invite = (await _guestInviteRepository.GetItemsAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode)).FirstOrDefault();
             var sendTo = invite == null ? projectOwner.Email : invite.GuestEmail;
 
-            if (!_emailUtility.SendHostEmail(sendTo, sendingUser.FullName, sendingUser.FirstName, sendingUser.Email, project.Name))
+            if (!_emailUtility.SendHostEmail(sendTo, sendingUser.GetFullName(), sendingUser.FirstName, sendingUser.Email, project.Name))
             {
                 throw new Exception($"Email from user {sendingUser.Email} to host {projectOwner.Email} could not be sent");
             }

@@ -2,14 +2,15 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
-using Synthesis.GuestService.ApiWrappers.Interfaces;
-using Synthesis.GuestService.Enums;
 using Synthesis.GuestService.Extensions;
-using Synthesis.GuestService.Models;
+using Synthesis.GuestService.InternalApi.Enums;
+using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.ParticipantService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -18,15 +19,15 @@ namespace Synthesis.GuestService.Controllers
         private readonly IRepository<ProjectLobbyState> _projectLobbyStateRepository;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IValidatorLocator _validatorLocator;
-        private readonly IParticipantApiWrapper _participantApi;
-        private readonly IProjectApiWrapper _projectApi;
+        private readonly IParticipantApi _participantApi;
+        private readonly IProjectApi _projectApi;
         private readonly ILogger _logger;
         private readonly int _maxGuestsAllowedInProject;
 
         public ProjectLobbyStateController(IRepositoryFactory repositoryFactory, 
             IValidatorLocator validatorLocator, 
-            IParticipantApiWrapper participantApi,
-            IProjectApiWrapper projectApi,
+            IParticipantApi participantApi,
+            IProjectApi projectApi,
             ILoggerFactory loggerFactory,
             int maxGuestsAllowedInProject)
         {
@@ -64,7 +65,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var participantTask = _participantApi.GetParticipantsByProjectIdAsync(projectId);
+            var participantTask = _participantApi.GetProjectParticipantsAsync(projectId);
             var projectTask = _projectApi.GetProjectByIdAsync(projectId);
             var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
 
@@ -99,13 +100,33 @@ namespace Synthesis.GuestService.Controllers
                 await _projectLobbyStateRepository.UpdateItemAsync(projectId, new ProjectLobbyState
                 {
                     ProjectId = projectId,
-                    LobbyState = ProjectLobbyState.CalculateLobbyState(isGuestLimitReached, isHostPresent)
+                    LobbyState = CalculateLobbyState(isGuestLimitReached, isHostPresent)
                 });
             }
             catch (DocumentNotFoundException e)
             {
                 throw new NotFoundException($"{nameof(ProjectLobbyState)} for {projectId} was not found.", e);
             }
+        }
+
+        public static LobbyState CalculateLobbyState(bool isGuestLimitReached, bool isHostPresent)
+        {
+            LobbyState status;
+
+            if (!isHostPresent)
+            {
+                status = LobbyState.HostNotPresent;
+            }
+            else if (!isGuestLimitReached)
+            {
+                status = LobbyState.Normal;
+            }
+            else
+            {
+                status = LobbyState.GuestLimitReached;
+            }
+
+            return status;
         }
 
         /// <inheritdoc />

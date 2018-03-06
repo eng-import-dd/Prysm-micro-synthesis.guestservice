@@ -4,10 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Newtonsoft.Json;
-using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Models;
+using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -23,7 +22,6 @@ namespace Synthesis.GuestService.Modules
 
         /// <inheritdoc />
         public ProjectLobbyStateModule(IMetadataRegistry metadataRegistry,
-            ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory, IProjectLobbyStateController projectLobbyStateController) :
             base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)

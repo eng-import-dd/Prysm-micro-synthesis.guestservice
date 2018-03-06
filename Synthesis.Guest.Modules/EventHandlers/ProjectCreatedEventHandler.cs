@@ -1,8 +1,8 @@
 using System;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Models;
 using Synthesis.Logging;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.EventHandlers
 {

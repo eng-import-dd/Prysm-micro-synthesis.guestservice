@@ -3,12 +3,15 @@ using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.Http.Microservice;
 using System;
 using System.Threading.Tasks;
+using Synthesis.Configuration;
+using Synthesis.Http.Microservice.Api;
 
 namespace Synthesis.GuestService.ApiWrappers
 {
-    public class SettingsApiWrapper : BaseApiWrapper, ISettingsApiWrapper
+    public class SettingsApiWrapper : MicroserviceApi, ISettingsApiWrapper
     {
-        public SettingsApiWrapper(IMicroserviceHttpClientResolver httpClient, string serviceUrl) : base(httpClient, serviceUrl)
+        public SettingsApiWrapper(IMicroserviceHttpClientResolver microserviceHttpClientResolver, IAppSettingsReader appSettingsReader)
+            : base(microserviceHttpClientResolver, appSettingsReader, "SynthesisCloud.Url")
         {
         }
 

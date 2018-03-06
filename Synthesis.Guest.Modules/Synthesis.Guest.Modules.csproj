@@ -197,11 +197,14 @@
     <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.1-beta017\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta002\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta008\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta010\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -213,7 +216,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta030\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta032\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -224,6 +227,9 @@
     <Reference Include="Synthesis.Owin.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta003\lib\net452\Synthesis.Owin.Security.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.ParticipantService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta002\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta004\lib\net452\Synthesis.Policy.dll</HintPath>
     </Reference>
@@ -233,8 +239,14 @@
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.1.0.4\lib\net452\Synthesis.Serialization.dll</HintPath>
+    <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta001\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta002\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Avro, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Avro.1.0.0-beta002\lib\net452\Synthesis.Serialization.Avro.dll</HintPath>
@@ -306,21 +318,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ApiWrappers\BaseApiWrapper.cs" />
-    <Compile Include="ApiWrappers\Interfaces\IParticipantApiWrapper.cs" />
-    <Compile Include="ApiWrappers\Interfaces\IPrincipalApiWrapper.cs" />
-    <Compile Include="ApiWrappers\Interfaces\IProjectApiWrapper.cs" />
-    <Compile Include="ApiWrappers\Interfaces\IServiceLocator.cs" />
     <Compile Include="ApiWrappers\Interfaces\ISettingsApiWrapper.cs" />
-    <Compile Include="ApiWrappers\ParticipantApiWrapper.cs" />
-    <Compile Include="ApiWrappers\PrincipalApiWrapper.cs" />
-    <Compile Include="ApiWrappers\ProjectApiWrapper.cs" />
-    <Compile Include="ApiWrappers\Requests\GuestVerificationEmailRequest.cs" />
-    <Compile Include="ApiWrappers\Requests\UserRequest.cs" />
-    <Compile Include="ApiWrappers\Responses\GuestVerificationEmailResponse.cs" />
-    <Compile Include="ApiWrappers\Responses\ParticipantResponse.cs" />
     <Compile Include="ApiWrappers\Responses\SettingsResponse.cs" />
-    <Compile Include="ApiWrappers\Responses\UserResponse.cs" />
     <Compile Include="ApiWrappers\SettingsApiWrapper.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\EventNamespaces.cs" />
@@ -333,12 +332,6 @@
     <Compile Include="Controllers\IGuestSessionController.cs" />
     <Compile Include="Controllers\IProjectLobbyStateController.cs" />
     <Compile Include="Controllers\ProjectLobbyStateController.cs" />
-    <Compile Include="Enums\ClientType.cs" />
-    <Compile Include="Enums\LicenseType.cs" />
-    <Compile Include="Enums\LobbyState.cs" />
-    <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
-    <Compile Include="Enums\SendVerificationResult.cs" />
-    <Compile Include="Enums\VerifyGuestResponseCode.cs" />
     <Compile Include="EventHandlers\EventSubscriber.cs" />
     <Compile Include="EventHandlers\GuestAccessCodeChangedEventHandler.cs" />
     <Compile Include="EventHandlers\KickGuestsFromProjectHandler.cs" />
@@ -346,13 +339,9 @@
     <Compile Include="EventHandlers\ProjectDeletedEventHandler.cs" />
     <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
     <Compile Include="Extensions\MicroserviceExtensions.cs" />
+    <Compile Include="Extensions\UserExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
-    <Compile Include="Models\GuestInvite.cs" />
-    <Compile Include="Models\GuestSession.cs" />
-    <Compile Include="Models\GuestState.cs" />
-    <Compile Include="Models\Project.cs" />
-    <Compile Include="Models\ProjectLobbyState.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Modules\GuestServiceHealthModule.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
@@ -360,12 +349,6 @@
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Requests\GuestCreationRequest.cs" />
-    <Compile Include="Requests\GuestVerificationRequest.cs" />
-    <Compile Include="Responses\CreateGuestResponseCode.cs" />
-    <Compile Include="Responses\GuestCreationResponse.cs" />
-    <Compile Include="Responses\GuestVerificationResponse.cs" />
-    <Compile Include="Responses\SendHostEmailResponse.cs" />
     <Compile Include="Utilities\EmailUtiltiy.cs" />
     <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IPasswordUtility.cs" />

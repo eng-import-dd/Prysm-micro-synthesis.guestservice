@@ -1,7 +1,7 @@
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Constants;
-using Synthesis.GuestService.Models;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.EventHandlers
 {
