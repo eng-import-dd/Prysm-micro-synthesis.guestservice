@@ -264,14 +264,14 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            // TODO: IsEmailVerified is no longer supplied in the user object returned by the microservice.  Needs to obtained form elsewhere
+            // TODO: IsEmailVerified is no longer supplied in the user object returned by the microservice.  Needs to be obtained from elsewhere
             //if (user.IsEmailVerified != true)
             //{
             //    response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
             //    return response;
             //}
 
-            // TODO: TenantId is no longer part of the User model.  This is in-flux due to try n buy and needs to eb thought thru
+            // TODO: TenantId is no longer part of the User model.  This is in-flux due to try-n-buy and needs to be thought thru
             //if (user.TenantId != null)
             //{
             //    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
