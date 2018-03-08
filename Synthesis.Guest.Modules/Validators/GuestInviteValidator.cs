@@ -1,6 +1,6 @@
 using System;
 using FluentValidation;
-using Synthesis.GuestService.Models;
+using Synthesis.GuestService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Validators
 {

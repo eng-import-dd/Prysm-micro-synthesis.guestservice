@@ -4,13 +4,13 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Synthesis.GuestService.InternalApi.Models;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers

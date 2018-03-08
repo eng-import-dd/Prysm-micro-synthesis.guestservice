@@ -6,14 +6,11 @@ using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
-using Synthesis.Authentication;
-using Synthesis.GuestService.ApiWrappers.Requests;
-using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Models;
-using Synthesis.GuestService.Requests;
-using Synthesis.GuestService.Responses;
+using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Requests;
+using Synthesis.GuestService.InternalApi.Responses;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -29,7 +26,6 @@ namespace Synthesis.GuestService.Modules
 
         public GuestSessionModule(
             IMetadataRegistry metadataRegistry,
-            ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             IGuestSessionController guestSessionController,
             ILoggerFactory loggerFactory)

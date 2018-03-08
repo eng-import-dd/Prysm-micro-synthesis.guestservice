@@ -11,16 +11,18 @@ using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
-using Synthesis.GuestService.ApiWrappers.Requests;
-using Synthesis.GuestService.ApiWrappers.Responses;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Models;
+using Synthesis.GuestService.InternalApi.Enums;
+using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.InternalApi.Api;
+using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.ProjectService.InternalApi.Api;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
@@ -84,7 +86,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Returns(new Mock<ILogger>().Object);
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
-                                                 loggerFactoryMock.Object, _emailUtility.Object, _passwordUtility.Object, _projectApiMock.Object,
+                                                 loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object,
                                                  _userApiMock.Object, _settingsApiMock.Object);
         }
 
@@ -93,10 +95,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
-        private readonly Mock<IPasswordUtility> _passwordUtility = new Mock<IPasswordUtility>();
-        private readonly Mock<IProjectApiWrapper> _projectApiMock = new Mock<IProjectApiWrapper>();
+        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
         private readonly Mock<ISettingsApiWrapper> _settingsApiMock = new Mock<ISettingsApiWrapper>();
-        private readonly Mock<IPrincipalApiWrapper> _userApiMock = new Mock<IPrincipalApiWrapper>();
+        private readonly Mock<IUserApi> _userApiMock = new Mock<IUserApi>();
         private readonly GuestSession _defaultGuestSession = new GuestSession();
         private readonly GuestInvite _defaultGuestInvite = new GuestInvite();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
@@ -200,8 +201,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task EmailHostThrowsNotFoundExceptionForGuestSession()
         {
             _userApiMock
-                .Setup(x => x.GetUserAsync(It.IsAny<UserRequest>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserResponse()));
+                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
@@ -214,8 +215,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task EmailHostThrowsNotFoundExceptionForProject()
         {
             _userApiMock
-                .Setup(x => x.GetUserAsync(It.IsAny<UserRequest>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserResponse()));
+                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
 
             _projectApiMock
                 .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>()))
@@ -228,7 +229,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task EmailHostThrowsNotFoundExceptionForUser()
         {
             _userApiMock
-                .Setup(x => x.GetUserAsync(It.IsAny<UserRequest>()))
+                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
                 .ThrowsAsync(new NotFoundException("The sending user could not be found"));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));

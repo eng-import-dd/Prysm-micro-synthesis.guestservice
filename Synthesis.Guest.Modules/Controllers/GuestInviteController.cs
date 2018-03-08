@@ -6,7 +6,7 @@ using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
-using Synthesis.GuestService.Models;
+using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;

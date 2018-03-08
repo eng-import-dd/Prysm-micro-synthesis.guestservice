@@ -10,7 +10,7 @@ using Nancy.Testing;
 using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Models;
+using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Entity;

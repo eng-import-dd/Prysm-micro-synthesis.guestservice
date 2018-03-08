@@ -2,8 +2,8 @@ using System;
 using Moq;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
-using Synthesis.GuestService.Models;
 using Synthesis.Logging;
+using Synthesis.ProjectService.InternalApi.Models;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events

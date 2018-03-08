@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Synthesis.GuestService.ApiWrappers.Requests;
-using Synthesis.GuestService.ApiWrappers.Responses;
-using Synthesis.GuestService.Models;
-using Synthesis.GuestService.Requests;
-using Synthesis.GuestService.Responses;
+using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Requests;
+using Synthesis.GuestService.InternalApi.Responses;
 
 namespace Synthesis.GuestService.Controllers
 {

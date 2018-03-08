@@ -1,6 +1,6 @@
-﻿using Synthesis.GuestService.Models;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Synthesis.GuestService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Controllers
 {

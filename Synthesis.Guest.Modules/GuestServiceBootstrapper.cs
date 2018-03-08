@@ -44,6 +44,8 @@ using Synthesis.GuestService.Modules;
 using Synthesis.GuestService.Owin;
 using Synthesis.GuestService.Utilities;
 using Synthesis.GuestService.Utilities.Interfaces;
+using Synthesis.ParticipantService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
@@ -100,7 +102,7 @@ namespace Synthesis.GuestService
                 {
                     var serializer = new JsonSerializer
                     {
-                        ContractResolver = new SynthesisModelContractResolver(),
+                        ContractResolver = new ApiModelContractResolver(),
                         Formatting = Formatting.None
                     };
                     return serializer;
@@ -287,30 +289,20 @@ namespace Synthesis.GuestService
         {
             // html files and png content files need to be set to copy to output directory
 
-            // Api Wrappers
-            builder.RegisterType<ProjectApiWrapper>()
-                .As<IProjectApiWrapper>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Project.Url")));
+            // Apis
+            builder.RegisterType<ProjectApi>().As<IProjectApi>();
+            builder.RegisterType<SettingsApiWrapper>().As<ISettingsApiWrapper>();
 
-            builder.RegisterType<SettingsApiWrapper>()
-                .As<ISettingsApiWrapper>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("SynthesisCloud.Url")));
-
-            builder.RegisterType<PrincipalApiWrapper>()
-                .As<IPrincipalApiWrapper>()
+            /*
+            // TODO: Register each individual API used from the principal API package
+            builder.RegisterType<PrincipalApi>()
+                .As<IPrincipalApi>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.Url")));
+                    */
 
-            builder.RegisterType<ParticipantApiWrapper>()
-                .As<IParticipantApiWrapper>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Participant.Url")));
+            builder.RegisterType<ParticipantApi>().As<IParticipantApi>();
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
