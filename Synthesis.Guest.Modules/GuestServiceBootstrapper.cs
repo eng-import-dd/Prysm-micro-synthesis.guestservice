@@ -1,8 +1,3 @@
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Lifetime;
@@ -26,6 +21,12 @@ using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka;
 using Synthesis.GuestService.ApiWrappers;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
+using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.EventHandlers;
+using Synthesis.GuestService.Modules;
+using Synthesis.GuestService.Owin;
+using Synthesis.GuestService.Utilities;
+using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http;
 using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
@@ -36,19 +37,19 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
-using Synthesis.PolicyEvaluator.Autofac;
-using Synthesis.Serialization.Json;
-using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.EventHandlers;
-using Synthesis.GuestService.Modules;
-using Synthesis.GuestService.Owin;
-using Synthesis.GuestService.Utilities;
-using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.ParticipantService.InternalApi.Api;
+using Synthesis.PolicyEvaluator.Autofac;
+using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 
@@ -292,17 +293,8 @@ namespace Synthesis.GuestService
             // Apis
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<SettingsApiWrapper>().As<ISettingsApiWrapper>();
-
-            /*
-            // TODO: Register each individual API used from the principal API package
-            builder.RegisterType<PrincipalApi>()
-                .As<IPrincipalApi>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.Url")));
-                    */
-
             builder.RegisterType<ParticipantApi>().As<IParticipantApi>();
+            builder.RegisterType<UserApi>().As<IUserApi>();
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
