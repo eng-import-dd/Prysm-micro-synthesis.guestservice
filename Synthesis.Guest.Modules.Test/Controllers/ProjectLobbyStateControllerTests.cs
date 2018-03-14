@@ -8,7 +8,6 @@ using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
@@ -19,6 +18,7 @@ using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Xunit;
+using LobbyState = Synthesis.GuestService.InternalApi.Enums.LobbyState;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
