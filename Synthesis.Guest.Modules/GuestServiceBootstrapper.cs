@@ -33,6 +33,7 @@ using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Logging.Log4Net;
+using Synthesis.Microservice.Health;
 using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -52,6 +53,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using Synthesis.GuestService.InternalApi.Models;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 
@@ -317,6 +319,20 @@ namespace Synthesis.GuestService
             // Utilities
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
+
+            builder.RegisterType<DocumentDbRepositoryHealthReport>()
+                .As<IRepositoryHealthReport>()
+                .SingleInstance();
+
+            builder.RegisterType<RepositoryHealthReporter<GuestInvite>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort);
+            builder.RegisterType<RepositoryHealthReporter<GuestSession>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort);
+            builder.RegisterType<RepositoryHealthReporter<ProjectLobbyState>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort);
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
