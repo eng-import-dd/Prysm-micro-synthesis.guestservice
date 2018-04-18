@@ -105,7 +105,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _participantApiMock.Verify(m => m.GetProjectParticipantsAsync(It.IsAny<Guid>()));
+            _participantApiMock.Verify(m => m.GetParticipantsInProjectAsync(It.IsAny<Guid>()));
         }
 
         [Fact]
@@ -195,11 +195,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             HttpStatusCode projectStatusCode = HttpStatusCode.OK)
         {
             _participantApiMock
-                .Setup(m => m.GetParticipantsByGroupAsync(It.IsAny<string>()))
-                .Returns(Task.FromResult(MicroserviceResponse.Create(participantsStatusCode, default(IEnumerable<Participant>))));
-
-            _participantApiMock
-                .Setup(m => m.GetProjectParticipantsAsync(It.IsAny<Guid>()))
+                .Setup(m => m.GetParticipantsInProjectAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(MicroserviceResponse.Create(participantsStatusCode, default(IEnumerable<Participant>))));
 
             _projectApi
