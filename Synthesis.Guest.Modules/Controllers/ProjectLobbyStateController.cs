@@ -65,7 +65,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var participantTask = _participantApi.GetProjectParticipantsAsync(projectId);
+            var participantTask = _participantApi.GetParticipantsInProjectAsync(projectId);
             var projectTask = _projectApi.GetProjectByIdAsync(projectId);
             var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
 
