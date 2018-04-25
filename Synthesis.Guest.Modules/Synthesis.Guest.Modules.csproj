@@ -237,7 +237,7 @@
       <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta005\lib\net452\Synthesis.Owin.Security.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ParticipantService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta028\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta033\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta005\lib\net452\Synthesis.Policy.dll</HintPath>
