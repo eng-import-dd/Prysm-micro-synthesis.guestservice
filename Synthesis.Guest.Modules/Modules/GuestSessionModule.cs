@@ -196,7 +196,9 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmailRequest);
+                await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmailRequest);
+
+                return Negotiate.WithStatusCode(HttpStatusCode.OK);
             }
             catch (Exception ex)
             {

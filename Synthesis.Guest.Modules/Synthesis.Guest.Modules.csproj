@@ -194,6 +194,9 @@
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta016\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta015\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
@@ -211,6 +214,9 @@
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta016\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.IdentityService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.IdentityService.InternalApi.1.0.0-beta004\lib\net452\Synthesis.IdentityService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -353,6 +359,9 @@
     <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />
     <Compile Include="EventHandlers\ProjectDeletedEventHandler.cs" />
     <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
+    <Compile Include="Exceptions\EmailAlreadyVerifiedException.cs" />
+    <Compile Include="Exceptions\EmailRecentlySentException.cs" />
+    <Compile Include="Exceptions\BuildEmailException.cs" />
     <Compile Include="Extensions\MicroserviceExtensions.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
@@ -371,6 +380,7 @@
     <Compile Include="Utilities\Objects\PagingMetaData.cs" />
     <Compile Include="Utilities\Objects\SynthesisUserBasicDTO.cs" />
     <Compile Include="Utilities\PasswordUtility.cs" />
+    <Compile Include="Utilities\VerifyGuestEmailBuilder.cs" />
     <Compile Include="Validators\EmailAddressValidator.cs" />
     <Compile Include="Validators\GuestInviteIdValidator.cs" />
     <Compile Include="Validators\GuestInviteValidator.cs" />

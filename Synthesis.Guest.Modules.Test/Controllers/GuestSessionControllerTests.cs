@@ -8,6 +8,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
+using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
@@ -85,9 +86,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
-                                                 loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object,
-                                                 _userApiMock.Object, _settingsApiMock.Object);
+            _target = new GuestSessionController(
+                repositoryFactoryMock.Object, 
+                _validatorLocator.Object, 
+                _eventServiceMock.Object,
+                loggerFactoryMock.Object, 
+                _emailUtility.Object, 
+                _projectApiMock.Object,
+                _userApiMock.Object, 
+                _settingsApiMock.Object,
+                _emailApiMock.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -102,6 +110,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly GuestInvite _defaultGuestInvite = new GuestInvite();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
+        private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
 
         [Fact]
         public async Task CreateGuestSessionCallsCreate()

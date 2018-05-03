@@ -99,30 +99,6 @@ namespace Synthesis.GuestService.Utilities
             return true;
         }
 
-        public bool SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId)
-        {
-            try
-            {
-                const string subject = "Almost there! Please verify your Prysm account.";
-
-                var link = $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/guest?" +
-                           $"{(string.IsNullOrWhiteSpace(email) ? string.Empty : "accesscode=" + accessCode + "&")}" +
-                           $"email={HttpUtility.UrlEncode(email)}&token={emailVerificationId}";
-
-                var replacedContent = _createGuestInviteEmail.Replace("{Link}", link);
-                replacedContent = replacedContent.Replace("{FirstName}", firstName);
-
-                SendEmail(email, "", "", subject, replacedContent, "");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex.Message, ex);
-                return false;
-            }
-
-            return true;
-        }
-
         private void SendEmail(string toEmail, string ccEmail, string bccEmail, string subject, string htmlBody,
                                string textBody)
         {

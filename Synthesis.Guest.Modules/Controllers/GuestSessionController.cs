@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
+using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
@@ -12,8 +14,10 @@ using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
+using Synthesis.GuestService.Utilities;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.GuestService.Validators;
+using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -28,6 +32,8 @@ namespace Synthesis.GuestService.Controllers
     /// <seealso cref="IGuestSessionController" />
     public class GuestSessionController : IGuestSessionController
     {
+        private readonly IEmailApi _emailApi;
+
         private readonly IEmailUtility _emailUtility;
         private readonly IEventService _eventService;
         private readonly IRepository<GuestSession> _guestSessionRepository;
@@ -37,6 +43,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly ISettingsApiWrapper _settingsApi;
         private readonly IUserApi _userApi;
         private readonly IValidatorLocator _validatorLocator;
+        private readonly IIdentityUserApi _identityApi;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -49,6 +56,8 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="settingsApi"></param>
         /// <param name="userApi"></param>
         /// <param name="emailUtility"></param>
+        /// <param name="emailApi"></param>
+        /// <param name="identityApi"></param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -57,8 +66,13 @@ namespace Synthesis.GuestService.Controllers
             IEmailUtility emailUtility,
             IProjectApi projectApi,
             IUserApi userApi,
-            ISettingsApiWrapper settingsApi)
+            ISettingsApiWrapper settingsApi,
+            IEmailApi emailApi,
+            IIdentityUserApi identityApi)
         {
+            _identityApi = identityApi;
+            _emailApi = emailApi;
+
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
 
@@ -147,7 +161,7 @@ namespace Synthesis.GuestService.Controllers
             throw new NotFoundException("GuestSessions could not be found");
         }
 
-        public async Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest guestVerificationEmailRequest)
+        public async Task SendVerificationEmailAsync(GuestVerificationEmailRequest guestVerificationEmailRequest)
         {
             var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmailRequest.Email);
             if (!emailValidationResult.IsValid)
@@ -156,39 +170,25 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(emailValidationResult.Errors);
             }
 
-            var guestVerificationEmailResponse = new GuestVerificationEmailResponse
+            // TODO: Get the user info that currently lives in the policy_db.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
+
+            // TODO: If the users email has already been verified, then throw an EmailAlreadyVerifiedException
+
+            // TODO: If a verification email was sent less than a minute ago, then throw a EmailRecentlySentException
+
+            var tempTokenData = await _identityApi.GetTempTokenDataAsync();
+            if (tempTokenData?.ResponseCode != HttpStatusCode.OK || tempTokenData?.Payload == null)
             {
-                Email = guestVerificationEmailRequest.Email,
-                FirstName = guestVerificationEmailRequest.FirstName,
-                LastName = guestVerificationEmailRequest.LastName,
-                ProjectAccessCode = guestVerificationEmailRequest.ProjectAccessCode
-            };
+                _logger.Error("Could not get the GetTempTokenData from the identity service");
+            }
 
-            // TODO: IsEmailVerified & VerificationEmailSentDateTime are no longer in the payload coming from the microservice. They are stored in the policy_db.users table
-            //var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
-            //if (user.Payload.IsEmailVerified == true)
-            //{
-            //    guestVerificationEmailResponse.IsEmailVerified = true;
-            //    return guestVerificationEmailResponse;
-            //}
+            var request = VerifyGuestEmailBuilder.BuildRequest(
+                guestVerificationEmailRequest.FirstName,
+                guestVerificationEmailRequest.Email,
+                guestVerificationEmailRequest.ProjectAccessCode,
+                tempTokenData?.Payload?.EmailVerificationId);
 
-            //if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
-            //{
-            //    guestVerificationEmailResponse.MessageSentRecently = true;
-            //    return guestVerificationEmailResponse;
-            //}
-
-            // TODO: EmailVerificationId is no longer in the payload coming from the microservice. It is stored in the policy_db.users table. Also need to know where or add where the EmailVerificationId is generated.
-            //_emailUtility.SendVerifyAccountEmail(
-            //    guestVerificationEmailRequest.FirstName,
-            //    guestVerificationEmailRequest.Email,
-            //    guestVerificationEmailRequest.ProjectAccessCode,
-            //    user.Payload.EmailVerificationId.ToString());
-
-            // TODO: Remove me once the above logic is back in place- this is just here so the async function has an await
-            await Task.Delay(0);
-
-            return guestVerificationEmailResponse;
+            await _emailApi.SendEmailAsync(request);
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
