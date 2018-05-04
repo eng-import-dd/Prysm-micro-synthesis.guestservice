@@ -1,6 +1,7 @@
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Owin;
+using Synthesis.ApplicationInsights.Owin;
 using Synthesis.Owin.Security;
 using Synthesis.GuestService.Owin;
 using Synthesis.Tracking.Web;
@@ -20,6 +21,7 @@ namespace Synthesis.GuestService
             app.UseAutofacLifetimeScopeInjector(GuestServiceBootstrapper.RootContainer);
 
             app.UseMiddlewareFromContainer<GlobalExceptionHandlerMiddleware>();
+            app.UseApplicationInsightsTracking();
             app.UseMiddlewareFromContainer<CorrelationScopeMiddleware>();
 
             // This middleware performs our authentication and populates the user principal.
