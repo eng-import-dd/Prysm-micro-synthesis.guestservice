@@ -55,6 +55,11 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
+            CreateRoute("VerifyGuest", HttpMethod.Post, Routing.VerifyGuestRoute, async _ => await VerifyGuestAsync())
+                .Description("Verify guest resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
+
             CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
@@ -168,30 +173,38 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        public async Task<object> SendVerificationEmailAsync()
+        public async Task<object> VerifyGuestAsync()
         {
             await RequiresAccess().ExecuteAsync(CancellationToken.None);
 
-            GuestVerificationEmailRequest guestVerificationEmailRequest;
+            GuestVerificationRequest request;
 
             try
             {
-                guestVerificationEmailRequest = this.Bind<GuestVerificationEmailRequest>();
+                request = this.Bind<GuestVerificationRequest>();
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to send a verification email.", ex);
+                Logger.Error("Binding failed while attempting to verify a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
             try
             {
-                return await _guestSessionController.SendVerificationEmailAsync(guestVerificationEmailRequest);
+                return await _guestSessionController.VerifyGuestAsync(request.Username, request.ProjectAccessCode);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.Error("Unhandled exception encountered while attempting to send a guest verificaiton email", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
+                Logger.Error($"Failed to verify guest with username {request.Username} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
 

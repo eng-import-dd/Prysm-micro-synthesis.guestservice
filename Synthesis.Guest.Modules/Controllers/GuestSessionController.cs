@@ -147,50 +147,6 @@ namespace Synthesis.GuestService.Controllers
             throw new NotFoundException("GuestSessions could not be found");
         }
 
-        public async Task<GuestVerificationEmailResponse> SendVerificationEmailAsync(GuestVerificationEmailRequest guestVerificationEmailRequest)
-        {
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(guestVerificationEmailRequest.Email);
-            if (!emailValidationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the email address while attempting to send a verification email.");
-                throw new ValidationFailedException(emailValidationResult.Errors);
-            }
-
-            var guestVerificationEmailResponse = new GuestVerificationEmailResponse
-            {
-                Email = guestVerificationEmailRequest.Email,
-                FirstName = guestVerificationEmailRequest.FirstName,
-                LastName = guestVerificationEmailRequest.LastName,
-                ProjectAccessCode = guestVerificationEmailRequest.ProjectAccessCode
-            };
-
-            // TODO: IsEmailVerified & VerificationEmailSentDateTime are no longer in the payload coming from the microservice. They are stored in the policy_db.users table
-            //var user = await _userApi.GetUserAsync(new UserRequest { Email = guestVerificationEmailRequest.Email });
-            //if (user.Payload.IsEmailVerified == true)
-            //{
-            //    guestVerificationEmailResponse.IsEmailVerified = true;
-            //    return guestVerificationEmailResponse;
-            //}
-
-            //if (user.Payload.VerificationEmailSentDateTime.HasValue && (DateTime.UtcNow - user.Payload.VerificationEmailSentDateTime.Value).TotalMinutes < 1)
-            //{
-            //    guestVerificationEmailResponse.MessageSentRecently = true;
-            //    return guestVerificationEmailResponse;
-            //}
-
-            // TODO: EmailVerificationId is no longer in the payload coming from the microservice. It is stored in the policy_db.users table. Also need to know where or add where the EmailVerificationId is generated.
-            //_emailUtility.SendVerifyAccountEmail(
-            //    guestVerificationEmailRequest.FirstName,
-            //    guestVerificationEmailRequest.Email,
-            //    guestVerificationEmailRequest.ProjectAccessCode,
-            //    user.Payload.EmailVerificationId.ToString());
-
-            // TODO: Remove me once the above logic is back in place- this is just here so the async function has an await
-            await Task.Delay(0);
-
-            return guestVerificationEmailResponse;
-        }
-
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
@@ -210,7 +166,88 @@ namespace Synthesis.GuestService.Controllers
             _eventService.Publish(EventNames.GuestSessionUpdated, result);
 
             return result;
-        } 
+        }
+
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
+        {
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(EmailValidator), username },
+                { typeof(ProjectAccessCodeValidator), projectAccessCode }
+            });
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the guest verification request.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var response = new GuestVerificationResponse();
+            var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
+            if (projectResponse == null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            var project = projectResponse.Payload;
+
+            response.AccountId = project.TenantId;
+            response.AssociatedProjectId = project.Id;
+            response.ProjectAccessCode = projectAccessCode;
+            response.ProjectName = project.Name;
+            response.UserId = project.OwnerId;
+            response.Username = username;
+
+            if (project.IsGuestModeEnabled != true)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            var userResponse = await _userApi.GetUserByUsernameAsync(username);
+            if (userResponse == null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            var user = userResponse.Payload;
+
+            if (user.IsLocked)
+            {
+                response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
+                return response;
+            }
+
+            // TODO: IsEmailVerified is no longer supplied in the user object returned by the microservice.  Needs to be obtained from elsewhere
+            //if (user.IsEmailVerified != true)
+            //{
+            //    response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
+            //    return response;
+            //}
+
+            // TODO: TenantId is no longer part of the User model.  This is in-flux due to try-n-buy and needs to be thought thru
+            //if (user.TenantId != null)
+            //{
+            //    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
+            //    return response;
+            //}
+
+            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id.GetValueOrDefault());
+            if (settingsResponse != null)
+            {
+                var settings = settingsResponse.Payload;
+                if (settings.IsGuestModeEnabled != true)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.Failed;
+                    return response;
+                }
+            }
+
+            response.ResultCode = VerifyGuestResponseCode.Success;
+            return response;
+        }
 
         public async Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId)
         {
