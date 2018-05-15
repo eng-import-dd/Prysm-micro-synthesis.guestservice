@@ -12,7 +12,6 @@ namespace Synthesis.GuestService.Utilities
 {
     public class EmailUtility : IEmailUtility
     {
-        private readonly string _createGuestInviteEmail;
         private readonly string _emailHostEmail;
         private readonly string _emailTemplate;
         private readonly LinkedResource _facebookIcon;
@@ -49,7 +48,6 @@ namespace Synthesis.GuestService.Utilities
             }
 
             _guestInviteEmail = GetContent("Utilities/EmailTemplates/GuestInvite.html");
-            _createGuestInviteEmail = GetContent("Utilities/EmailTemplates/VerifyNewAccount.html");
             _emailHostEmail = GetContent("Utilities/EmailTemplates/EmailHost.html");
         }
 
@@ -87,30 +85,6 @@ namespace Synthesis.GuestService.Utilities
                 replacedContent = replacedContent.Replace("{HostEmail}", userEmail);
                 replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
                 replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
-
-                SendEmail(email, "", "", subject, replacedContent, "");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex.Message, ex);
-                return false;
-            }
-
-            return true;
-        }
-
-        public bool SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId)
-        {
-            try
-            {
-                const string subject = "Almost there! Please verify your Prysm account.";
-
-                var link = $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/guest?" +
-                           $"{(string.IsNullOrWhiteSpace(email) ? string.Empty : "accesscode=" + accessCode + "&")}" +
-                           $"email={HttpUtility.UrlEncode(email)}&token={emailVerificationId}";
-
-                var replacedContent = _createGuestInviteEmail.Replace("{Link}", link);
-                replacedContent = replacedContent.Replace("{FirstName}", firstName);
 
                 SendEmail(email, "", "", subject, replacedContent, "");
             }

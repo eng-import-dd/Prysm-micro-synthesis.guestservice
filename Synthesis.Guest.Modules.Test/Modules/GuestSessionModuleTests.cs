@@ -308,20 +308,5 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             var response = await ForbiddenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestSessionsPath}", BuildRequest);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
-
-
-        [Fact]
-        public async Task SendVerificationEmailAsyncWithoutAccessReturnsForbidden()
-        {
-            var response = await ForbiddenBrowser.Post(Routing.VerificationEmailRoute, BuildRequest);
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task VerifyGuestAsyncWithoutAccessReturnsForbidden()
-        {
-            var response = await ForbiddenBrowser.Post(Routing.VerifyGuestRoute, BuildRequest);
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }
     }
 }

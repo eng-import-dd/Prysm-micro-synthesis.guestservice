@@ -55,16 +55,6 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
-            CreateRoute("SendVerificationEmail", HttpMethod.Post, Routing.VerificationEmailRoute, async _ => await SendVerificationEmailAsync())
-                .Description("Sends a verification email to a specific Guest User resource.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationEmailResponse()));
-
-            CreateRoute("VerifyGuest", HttpMethod.Post, Routing.VerifyGuestRoute, async _ => await VerifyGuestAsync())
-                .Description("Verify guest resource.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
-
             CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
@@ -202,41 +192,6 @@ namespace Synthesis.GuestService.Modules
             {
                 Logger.Error("Unhandled exception encountered while attempting to send a guest verificaiton email", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
-            }
-        }
-
-        public async Task<object> VerifyGuestAsync()
-        {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
-
-            GuestVerificationRequest request;
-
-            try
-            {
-                request = this.Bind<GuestVerificationRequest>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to verify a guest.", ex);
-                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
-            }
-
-            try
-            {
-                return await _guestSessionController.VerifyGuestAsync(request.Username, request.ProjectAccessCode);
-            }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to verify guest with username {request.Username} due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
 
