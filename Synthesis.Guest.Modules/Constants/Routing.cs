@@ -9,7 +9,6 @@
         public const string GuestSessionsRoute = "/v1/" + GuestSessionsPath;
         public const string ProjectsRoute = "/v1/projects";
         public const string VerifyGuestRoute = "/v1/verify";
-        public const string VerificationEmailRoute = "/v1/verificationemail";
 
         // Paths
         public const string ProjectLobbyStatePath = "lobbystate";
