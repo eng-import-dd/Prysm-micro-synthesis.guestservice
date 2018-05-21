@@ -1,15 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
+using Synthesis.EventBus;
 using Synthesis.GuestService.Extensions;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.ParticipantService.InternalApi.Api;
+using Synthesis.ParticipantService.InternalApi.Constants;
+using Synthesis.ParticipantService.InternalApi.Models;
+using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Controllers
@@ -18,24 +23,27 @@ namespace Synthesis.GuestService.Controllers
     {
         private readonly IRepository<ProjectLobbyState> _projectLobbyStateRepository;
         private readonly IRepository<GuestSession> _guestSessionRepository;
+        private readonly IEventService _eventService;
         private readonly IValidatorLocator _validatorLocator;
-        private readonly IParticipantApi _participantApi;
+        private readonly ISessionService _sessionService;
         private readonly IProjectApi _projectApi;
         private readonly ILogger _logger;
         private readonly int _maxGuestsAllowedInProject;
 
         public ProjectLobbyStateController(IRepositoryFactory repositoryFactory, 
-            IValidatorLocator validatorLocator, 
-            IParticipantApi participantApi,
+            IValidatorLocator validatorLocator,
+            ISessionService sessionService,
             IProjectApi projectApi,
+            IEventService eventService,
             ILoggerFactory loggerFactory,
             int maxGuestsAllowedInProject)
         {
             _validatorLocator = validatorLocator;
-            _participantApi = participantApi;
+            _sessionService = sessionService;
             _projectApi = projectApi;
             _projectLobbyStateRepository = repositoryFactory.CreateRepository<ProjectLobbyState>();
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
+            _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
             _maxGuestsAllowedInProject = maxGuestsAllowedInProject;
         }
@@ -65,13 +73,24 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var participantTask = _participantApi.GetParticipantsInProjectAsync(projectId);
+            var participantTask = _sessionService.GetParticipantsByGroupNameAsync($"{LegacyGroupPrefixes.Project}{projectId}");
             var projectTask = _projectApi.GetProjectByIdAsync(projectId);
             var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
 
-            await Task.WhenAll(participantTask, projectTask, projectGuestsTask);
+            await Task.WhenAll(projectTask, projectGuestsTask);
 
-            var participantResult = await participantTask;
+            IEnumerable<Participant> participantResult;
+            try
+            {
+                participantResult = await participantTask;
+            }
+            catch (Exception ex)
+            {
+                await SetProjectLobbyStateToError(projectId);
+                _logger.Error($"Failed to retrieve participants for project: {projectId}. Message: {ex.Message}", ex);
+                return;
+            }
+
             var projectResult = await projectTask;
             var projectGuestsResult = await projectGuestsTask;
 
@@ -82,15 +101,8 @@ namespace Synthesis.GuestService.Controllers
                 return;
             }
 
-            if(!participantResult.IsSuccess())
-            {
-                await SetProjectLobbyStateToError(projectId);
-                _logger.Error($"Failed to retrieve participants for project: {projectId}. Message: {participantResult.ReasonPhrase}");
-                return;
-            }
-
             var project = projectResult.Payload;
-            var participants = participantResult?.Payload?.ToList();
+            var participants = participantResult?.ToList();
 
             var isHostPresent = participants?.Any(p => p.UserId == project?.OwnerId) ?? false;
             var isGuestLimitReached = projectGuestsResult.Count(g => g.GuestSessionState == GuestState.InProject) >= _maxGuestsAllowedInProject;

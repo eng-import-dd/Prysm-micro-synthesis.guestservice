@@ -204,7 +204,7 @@
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta005\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta008\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta013\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -336,15 +336,16 @@
     <Compile Include="ApiWrappers\Interfaces\ISettingsApiWrapper.cs" />
     <Compile Include="ApiWrappers\Responses\SettingsResponse.cs" />
     <Compile Include="ApiWrappers\SettingsApiWrapper.cs" />
-    <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\EventNamespaces.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
-    <Compile Include="Constants\Routing.cs" />
+    <Compile Include="Controllers\CurrentProjectStateController.cs" />
     <Compile Include="Controllers\GuestInviteController.cs" />
     <Compile Include="Controllers\GuestSessionController.cs" />
+    <Compile Include="Controllers\GuestUserProjectSessionService.cs" />
     <Compile Include="Controllers\IGuestInviteController.cs" />
     <Compile Include="Controllers\IGuestSessionController.cs" />
+    <Compile Include="Controllers\IGuestUserProjectSessionService.cs" />
     <Compile Include="Controllers\IProjectLobbyStateController.cs" />
     <Compile Include="Controllers\ProjectLobbyStateController.cs" />
     <Compile Include="EventHandlers\EventSubscriber.cs" />
