@@ -11,7 +11,7 @@ using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
-using Synthesis.GuestService.Constants;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
@@ -38,7 +38,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
-            _guestInviteRepositoryMock = new Mock<IRepository<GuestInvite>>();
+            var guestInviteRepositoryMock = new Mock<IRepository<GuestInvite>>();
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
@@ -52,15 +52,15 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>()))
                 .ReturnsAsync((Guid id, GuestSession participant) => participant);
 
-            _guestInviteRepositoryMock
+            guestInviteRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(_defaultGuestInvite);
 
-            _guestInviteRepositoryMock
+            guestInviteRepositoryMock
                 .Setup(x => x.CreateItemAsync(It.IsAny<GuestInvite>()))
                 .ReturnsAsync((GuestInvite session) => session);
 
-            _guestInviteRepositoryMock
+            guestInviteRepositoryMock
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestInvite>()))
                 .ReturnsAsync((Guid id, GuestInvite session) => session);
 
@@ -92,7 +92,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         private readonly GuestSessionController _target;
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
-        private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
         private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();

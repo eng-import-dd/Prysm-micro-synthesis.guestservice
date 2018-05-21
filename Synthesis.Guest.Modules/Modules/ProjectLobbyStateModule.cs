@@ -6,6 +6,7 @@ using Nancy;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;

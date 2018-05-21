@@ -7,6 +7,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
+using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Http.Microservice;
@@ -15,6 +16,7 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.ParticipantService.InternalApi.Api;
 using Synthesis.ParticipantService.InternalApi.Models;
+using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Xunit;
@@ -28,7 +30,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IRepository<ProjectLobbyState>> _projectLobbyStateRepositoryMock = new Mock<IRepository<ProjectLobbyState>>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly Mock<IParticipantApi> _participantApiMock = new Mock<IParticipantApi>();
+        private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();
+        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IProjectApi> _projectApi = new Mock<IProjectApi>();
         private const int MaxNumberOfGuests = 0;
         private static ValidationResult SuccessfulValidationResult => new ValidationResult();
@@ -65,8 +68,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new ProjectLobbyStateController(repositoryFactoryMock.Object,
                 validatorLocatorMock.Object,
-                _participantApiMock.Object,
+                _sessionServiceMock.Object,
                 _projectApi.Object,
+                _eventServiceMock.Object,
                 loggerFactoryMock.Object,
                 MaxNumberOfGuests);
         }
@@ -105,7 +109,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _participantApiMock.Verify(m => m.GetParticipantsInProjectAsync(It.IsAny<Guid>()));
+            _sessionServiceMock.Verify(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()));
         }
 
         [Fact]
@@ -125,11 +129,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Theory]
-        [InlineData(HttpStatusCode.BadRequest, HttpStatusCode.OK)]
-        [InlineData(HttpStatusCode.OK, HttpStatusCode.BadRequest)]
-        public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode participantsStatusCode, HttpStatusCode projectStatusCode)
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.BadRequest)]
+        public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode)
         {
-            SetupApisForRecalculate(participantsStatusCode, projectStatusCode);
+            SetupApisForRecalculate(projectStatusCode);
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
             _projectLobbyStateRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.Error)));
         }
@@ -191,12 +195,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectLobbyStateRepositoryMock.Verify(m => m.DeleteItemAsync(It.IsAny<Guid>()));
         }
 
-        private void SetupApisForRecalculate(HttpStatusCode participantsStatusCode = HttpStatusCode.OK,
-            HttpStatusCode projectStatusCode = HttpStatusCode.OK)
+        private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK)
         {
-            _participantApiMock
-                .Setup(m => m.GetParticipantsInProjectAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(MicroserviceResponse.Create(participantsStatusCode, default(IEnumerable<Participant>))));
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(default(IEnumerable<Participant>));
 
             _projectApi
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))

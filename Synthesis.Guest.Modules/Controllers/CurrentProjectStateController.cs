@@ -12,7 +12,6 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
-using LobbyState = Synthesis.GuestService.InternalApi.Enums.LobbyState;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -25,6 +24,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IValidatorLocator _validatorLocator;
         private readonly IGuestUserProjectSessionService _guestUserProjectStateService;
         private readonly IGuestSessionController _guestSessionController;
+        private readonly IProjectLobbyStateController _projectLobbyStateController;
         private readonly IProjectAccessApi _projectAccessApi;
 
         /// <summary>
@@ -46,6 +46,7 @@ namespace Synthesis.GuestService.Controllers
             IProjectApi projectApi,
             IGuestSessionController guestSessionController,
             IProjectAccessApi projectAccessApi,
+            IProjectLobbyStateController projectLobbyStateController,
             IGuestUserProjectSessionService guestUserProjectSessionService)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
@@ -54,6 +55,7 @@ namespace Synthesis.GuestService.Controllers
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
             _guestSessionController = guestSessionController;
+            _projectLobbyStateController = projectLobbyStateController;
 
             _projectApi = projectApi;
             _projectAccessApi = projectAccessApi;
@@ -136,26 +138,34 @@ namespace Synthesis.GuestService.Controllers
             return new CurrentProjectState();
         }
 
-        //private async Task<CurrentProjectState> SetCurrentProjectStateResponse(Project project, bool userHasAccess)
-        //{
-        //    var projectStatusResponse = _proj _lob .GetProjectStatus(project.ProjectID);
-        //    var projectStatus = projectStatusResponse.ResultCode == ResultCode.Success
-        //        ? CollaborationService.GetProjectStatus(project.ProjectID).Payload
-        //        : null;
+        private async Task<CurrentProjectState> SetCurrentProjectStateResponse(Project project, bool userHasAccess)
+        {
+            LobbyState lobbyState;
 
-        //    var guestProperties = await _guestUserProjectStateService.GetGuestUserStateAsync();
+            var lobbyStateTask = _projectLobbyStateController.GetProjectLobbyStateAsync(project.Id);
+            var guestState = await _guestUserProjectStateService.GetGuestUserStateAsync();
 
-        //    var guestSession = guestProperties.GuestSessionId == Guid.Empty
-        //        ? null
-        //        : CollaborationService.GetGuestSessionById(guestProperties.GuestSessionId).Payload;
+            try
+            {
+                var lobbyStateResponse = await lobbyStateTask;
+                lobbyState = lobbyStateResponse.LobbyState;
+            }
+            catch (Nancy.MicroService.NotFoundException)
+            {
+                lobbyState = LobbyState.Undefined;
+            }
+            
+            var guestSession = guestState == null || guestState.GuestSessionId == Guid.Empty
+                ? null
+                : await _guestSessionRepository.GetItemAsync(guestState.GuestSessionId);
 
-        //    return SetCurrentProjectResponse(ResultCode.Success, "Successfully set current project.", new SetCurrentProjectResponse
-        //    {
-        //        ProjectDTO = project,
-        //        ProjectStatusDTO = projectStatus,
-        //        GuestSession = guestSession
-        //    });
-        //}
+            return new CurrentProjectState 
+            { 
+                Project = project,
+                GuestSession = guestSession, 
+                LobbyState = lobbyState
+            };
+        }
 
         public async Task<bool> DetermineGuestAccessAsync(Guid userId, Guid projectId)
         {
@@ -165,8 +175,8 @@ namespace Synthesis.GuestService.Controllers
 
             return guestSession?.GuestSessionState == GuestState.InProject || guestSession?.GuestSessionState == GuestState.PromotedToProjectMember;
         }
-
         
+        // TODO: put the message back
         public async Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest request)
         {
             var result = new UpdateGuestSessionStateResponse

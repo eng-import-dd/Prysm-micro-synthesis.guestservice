@@ -30,7 +30,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly ILogger _logger;
         private readonly int _maxGuestsAllowedInProject;
 
-        public ProjectLobbyStateController(IRepositoryFactory repositoryFactory, 
+        public ProjectLobbyStateController(IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             ISessionService sessionService,
             IProjectApi projectApi,
