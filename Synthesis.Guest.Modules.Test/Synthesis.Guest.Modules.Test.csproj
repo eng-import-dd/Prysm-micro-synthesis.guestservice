@@ -171,7 +171,7 @@
       <HintPath>..\packages\Synthesis.Configuration.Shared.1.0.0-beta004\lib\net452\Synthesis.Configuration.Shared.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.CopyProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta006\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta014\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
@@ -189,7 +189,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta016\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta017\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -222,7 +222,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta027\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta040\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta013\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
