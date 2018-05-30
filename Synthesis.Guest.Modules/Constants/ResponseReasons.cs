@@ -27,6 +27,7 @@ namespace Synthesis.GuestService.Constants
         public const string InternalServerErrorGetGuestSession = "An error occurred retrieving the GuestSession";
         public const string InternalServerErrorGetGuestSessions = "An error occurred retrieving the GuestSession";
         public const string InternalServerErrorUpdateGuestSession = "An error occurred updating the GuestSession";
+        public const string InternalServerErrorUpdateGuestSessionState = "An error occurred updating the GuestSessionState";
         // Not Found Errors
         public const string NotFoundGuestSession = "GuestSession Not Found";
     }

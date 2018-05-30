@@ -204,7 +204,7 @@
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta005\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta015\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta021\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -252,7 +252,7 @@
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta039\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta029\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta031\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
@@ -339,13 +339,12 @@
     <Compile Include="Constants\EventNamespaces.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
-    <Compile Include="Controllers\CurrentProjectStateController.cs" />
+    <Compile Include="Controllers\IProjectGuestContextController.cs" />
+    <Compile Include="Controllers\ProjectGuestContextController.cs" />
     <Compile Include="Controllers\GuestInviteController.cs" />
     <Compile Include="Controllers\GuestSessionController.cs" />
-    <Compile Include="Controllers\GuestUserProjectSessionService.cs" />
     <Compile Include="Controllers\IGuestInviteController.cs" />
     <Compile Include="Controllers\IGuestSessionController.cs" />
-    <Compile Include="Controllers\IGuestUserProjectSessionService.cs" />
     <Compile Include="Controllers\IProjectLobbyStateController.cs" />
     <Compile Include="Controllers\ProjectLobbyStateController.cs" />
     <Compile Include="EventHandlers\EventSubscriber.cs" />
@@ -354,12 +353,12 @@
     <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />
     <Compile Include="EventHandlers\ProjectDeletedEventHandler.cs" />
     <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
-    <Compile Include="Extensions\MicroserviceExtensions.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />
+    <Compile Include="Modules\ProjectGuestContextModule.cs" />
     <Compile Include="Modules\ProjectLobbyStateModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="GuestServiceBootstrapper.cs" />

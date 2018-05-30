@@ -87,7 +87,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
                                                  loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object,
-                                                 _userApiMock.Object, _settingsApiMock.Object);
+                                                 _userApiMock.Object, _projectLobbyStateController.Object,_settingsApiMock.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -101,6 +101,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly GuestInvite _defaultGuestInvite = new GuestInvite();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
+        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
 
         [Fact]
         public async Task CreateGuestSessionCallsCreate()

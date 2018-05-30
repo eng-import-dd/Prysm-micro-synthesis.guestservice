@@ -4,11 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -60,7 +60,7 @@ namespace Synthesis.GuestService.Controllers
             await _projectLobbyStateRepository.CreateItemAsync(new ProjectLobbyState
             {
                 ProjectId = projectId,
-                LobbyState = LobbyState.Undefined
+                LobbyState = LobbyState.Normal
             });
         }
 
@@ -109,7 +109,7 @@ namespace Synthesis.GuestService.Controllers
 
             try
             {
-                await _projectLobbyStateRepository.UpdateItemAsync(projectId, new ProjectLobbyState
+                await UpsertProjectLobbyStateAsync(projectId, new ProjectLobbyState
                 {
                     ProjectId = projectId,
                     LobbyState = CalculateLobbyState(isGuestLimitReached, isHostPresent)
@@ -119,6 +119,23 @@ namespace Synthesis.GuestService.Controllers
             {
                 throw new NotFoundException($"{nameof(ProjectLobbyState)} for {projectId} was not found.", e);
             }
+        }
+
+        public async Task<ProjectLobbyState> UpsertProjectLobbyStateAsync(Guid projectId, ProjectLobbyState projectLobbyState)
+        {
+            ProjectLobbyState updatedProjectLobbyState;
+            try
+            {
+                updatedProjectLobbyState = await _projectLobbyStateRepository.UpdateItemAsync(projectId, projectLobbyState);
+            }
+            catch (DocumentNotFoundException)
+            {
+                updatedProjectLobbyState = await _projectLobbyStateRepository.CreateItemAsync(projectLobbyState);
+            }
+
+            _eventService.Publish(EventNames.ProjectStatusUpdated, updatedProjectLobbyState);
+
+            return updatedProjectLobbyState;
         }
 
         public static LobbyState CalculateLobbyState(bool isGuestLimitReached, bool isHostPresent)

@@ -54,6 +54,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Services;
+using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 
@@ -303,9 +305,11 @@ namespace Synthesis.GuestService
 
             // Apis
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
+            builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
             builder.RegisterType<SettingsApiWrapper>().As<ISettingsApiWrapper>();
             builder.RegisterType<ParticipantApi>().As<IParticipantApi>();
             builder.RegisterType<UserApi>().As<IUserApi>();
+            builder.RegisterType<ProjectGuestContextService>().As<IProjectGuestContextService>();
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
@@ -315,10 +319,13 @@ namespace Synthesis.GuestService
                     (p, c) => p.Name == "maxGuestsAllowedInProject",
                     (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("Guest.MaxGuestsAllowedInProject")))
                 .As<IProjectLobbyStateController>();
+            builder.RegisterType<ProjectGuestContextController>().As<IProjectGuestContextController>();
 
             // Utilities
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
+
+            builder.RegisterType<SessionService>().As<ISessionService>();
 
             builder.RegisterType<DocumentDbRepositoryHealthReport>()
                 .As<IRepositoryHealthReport>()

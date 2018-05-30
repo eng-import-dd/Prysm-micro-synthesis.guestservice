@@ -10,5 +10,6 @@ namespace Synthesis.GuestService.Controllers
         Task RecalculateProjectLobbyStateAsync(Guid projectId);
         Task<ProjectLobbyState> GetProjectLobbyStateAsync(Guid projectId);
         Task DeleteProjectLobbyStateAsync(Guid projectId);
+        Task<ProjectLobbyState> UpsertProjectLobbyStateAsync(Guid projectId, ProjectLobbyState projectLobbyState);
     }
 }
