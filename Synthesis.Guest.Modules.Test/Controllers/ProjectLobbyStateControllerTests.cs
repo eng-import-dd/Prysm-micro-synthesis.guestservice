@@ -91,7 +91,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var projectId = Guid.NewGuid();
             await _target.CreateProjectLobbyStateAsync(projectId);
             _projectLobbyStateRepositoryMock.Verify(m => m.CreateItemAsync(
-                It.Is<ProjectLobbyState>(s => s.LobbyState == LobbyState.Undefined && s.ProjectId == projectId)));
+                It.Is<ProjectLobbyState>(s => s.LobbyState == LobbyState.Normal && s.ProjectId == projectId)));
         }
 
         [Fact]
