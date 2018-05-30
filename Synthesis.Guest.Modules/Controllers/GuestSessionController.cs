@@ -276,7 +276,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException($"Project with access code {accessCode} could not be found");
             }
 
-            var projectOwner = (await _userApi.GetUserAsync(project.OwnerId.GetValueOrDefault())).Payload;
+            var projectOwner = (await _userApi.GetUserAsync(project.OwnerId)).Payload;
             if (projectOwner == null)
             {
                 throw new NotFoundException($"User for project owner {project.OwnerId} could not be found");
