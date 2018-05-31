@@ -18,7 +18,6 @@ using Synthesis.Configuration.Shared;
 using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
-using Synthesis.EventBus.Kafka;
 using Synthesis.EventBus.Kafka.Autofac;
 using Synthesis.GuestService.ApiWrappers;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
@@ -71,6 +70,7 @@ namespace Synthesis.GuestService
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
         public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceName}.EventHub");
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
+        public const string ServiceToServiceProjectApiKey = "ServiceToServiceProjectApiKey";
 
         public GuestServiceBootstrapper()
         {
@@ -303,8 +303,22 @@ namespace Synthesis.GuestService
         {
             // html files and png content files need to be set to copy to output directory
 
+            // Service To Service Resolver
+            builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceClient))))
+                .Keyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))
+                .InstancePerRequest();
+
             // Apis
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
+            builder.RegisterType<ProjectApi>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
+                .Keyed<IProjectApi>(ServiceToServiceProjectApiKey);
+
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
             builder.RegisterType<SettingsApiWrapper>().As<ISettingsApiWrapper>();
             builder.RegisterType<ParticipantApi>().As<IParticipantApi>();
@@ -319,7 +333,12 @@ namespace Synthesis.GuestService
                     (p, c) => p.Name == "maxGuestsAllowedInProject",
                     (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("Guest.MaxGuestsAllowedInProject")))
                 .As<IProjectLobbyStateController>();
-            builder.RegisterType<ProjectGuestContextController>().As<IProjectGuestContextController>();
+
+            builder.RegisterType<ProjectGuestContextController>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceProjectApi",
+                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
+                .As<IProjectGuestContextController>();
 
             // Utilities
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();

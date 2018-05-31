@@ -8,7 +8,6 @@ using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Services;
 using Synthesis.Http.Microservice;
-using Synthesis.Logging;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
@@ -19,6 +18,8 @@ namespace Synthesis.GuestService.Controllers
     {
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IProjectApi _projectApi;
+
+        private readonly IProjectApi _serviceToServiceProjectApi;
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IGuestSessionController _guestSessionController;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
@@ -35,6 +36,7 @@ namespace Synthesis.GuestService.Controllers
             IProjectGuestContextService projectGuestContextService,
             IProjectAccessApi projectAccessApi,
             IProjectApi projectApi,
+            IProjectApi serviceToServiceProjectApi,
             IUserApi userApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
@@ -43,6 +45,7 @@ namespace Synthesis.GuestService.Controllers
             _projectLobbyStateController = projectLobbyStateController;
 
             _projectApi = projectApi;
+            _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _projectAccessApi = projectAccessApi;
             _userApi = userApi;
             _projectGuestContextService = projectGuestContextService;
@@ -77,7 +80,7 @@ namespace Synthesis.GuestService.Controllers
 
             var project = projectResponse.Payload;
             var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
-            var isGuest = await _projectGuestContextService.IsGuestAsync();  // TODO: Move this to an extension method
+            var isGuest = await _projectGuestContextService.IsGuestAsync();
 
             if (isGuest && userIsProjectMember)
             {
@@ -95,6 +98,15 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
 
+            // The user does not have access to the project so we need to fetch it with a service to service client
+            var serviceToServiceProjectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
+            if (!serviceToServiceProjectResponse.IsSuccess())
+            {
+                throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {serviceToServiceProjectResponse.ResponseCode} - {serviceToServiceProjectResponse.ReasonPhrase}");
+            }
+
+            project = serviceToServiceProjectResponse.Payload;
+
             if (isGuest && guestProjectState.ProjectId == project.Id)
             {
                 return await CreateCurrentProjectState(project, userHasAccess);
@@ -106,7 +118,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Error fetching user for  {currentUserId}, {userResonse.ResponseCode} - {userResonse.ReasonPhrase}");
             }
 
-            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(userResonse.Payload.Username, project.Id, accessCode);
+            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(userResonse.Payload.Username, projectId, accessCode);
 
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {
@@ -116,7 +128,7 @@ namespace Synthesis.GuestService.Controllers
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
             {
                 UserId = currentUserId,
-                ProjectId = project.Id,
+                ProjectId = projectId,
                 ProjectAccessCode = project.GuestAccessCode,
                 GuestSessionState = GuestState.InLobby
             });

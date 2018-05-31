@@ -128,7 +128,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Theory]
-        //[InlineData(HttpStatusCode.BadRequest, false)]
+        [InlineData(HttpStatusCode.BadRequest, false)]
         [InlineData(HttpStatusCode.OK, true)]
         public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode, bool participantRequestFails)
         {

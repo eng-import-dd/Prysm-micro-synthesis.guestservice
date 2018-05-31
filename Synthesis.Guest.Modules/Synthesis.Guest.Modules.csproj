@@ -363,6 +363,7 @@
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServiceToServiceMicroserviceHttpClientResolver.cs" />
     <Compile Include="Utilities\EmailUtiltiy.cs" />
     <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IPasswordUtility.cs" />
