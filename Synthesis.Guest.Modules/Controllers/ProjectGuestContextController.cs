@@ -28,23 +28,14 @@ namespace Synthesis.GuestService.Controllers
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
         /// </summary>
-        /// <param name="repositoryFactory">The repository factory.</param>
-        /// <param name="loggerFactory">The logger.</param>
-        /// <param name="projectApi"></param>
-        /// <param name="guestSessionController"></param>
-        /// <param name="projectAccessApi"></param>
-        /// <param name="projectLobbyStateController"></param>
-        /// <param name="userApi"></param>
-        /// <param name="projectGuestContextService"></param>
         public ProjectGuestContextController(
             IRepositoryFactory repositoryFactory,
-            ILoggerFactory loggerFactory,
-            IProjectApi projectApi,
             IGuestSessionController guestSessionController,
-            IProjectAccessApi projectAccessApi,
             IProjectLobbyStateController projectLobbyStateController,
-            IUserApi userApi,
-            IProjectGuestContextService projectGuestContextService)
+            IProjectGuestContextService projectGuestContextService,
+            IProjectAccessApi projectAccessApi,
+            IProjectApi projectApi,
+            IUserApi userApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
 
@@ -167,10 +158,8 @@ namespace Synthesis.GuestService.Controllers
                     Message = "Cleared current project and ended guest session."
                 };
             }
-            return new CurrentProjectState()
-            {
-                Message = $"Could not clear the current project or end the guest session. {guestSessionStateResponse.Message}"
-            };
+
+            throw new InvalidOperationException($"Could not clear the current project or end the guest session. {guestSessionStateResponse.Message}");
         }
 
         private async Task<CurrentProjectState> CreateCurrentProjectState(Project project, bool userHasAccess)

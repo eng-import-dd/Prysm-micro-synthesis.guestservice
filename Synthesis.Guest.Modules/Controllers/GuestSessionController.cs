@@ -345,88 +345,79 @@ namespace Synthesis.GuestService.Controllers
             {
                 ResultCode = UpdateGuestSessionStateResultCodes.Failed
             };
+
             const string failedToUpdateGuestSession = "Failed to update guest session. ";
+            GuestSession currentGuestSession;
             try
             {
-                GuestSession currentGuestSession;
-                try
-                {
-                    currentGuestSession = await _guestSessionRepository.GetItemAsync(request.GuestSessionId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}", ex);
-                    result.Message = $"{failedToUpdateGuestSession} Failed to get guest session, {ex.Message}";
-                    return result;
-                }
-
-                if (currentGuestSession.GuestSessionState == GuestState.Ended && request.GuestSessionState != GuestState.Ended)
-                {
-                    result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
-                    result.Message = $"{failedToUpdateGuestSession} Can\'t update a guest session that is already ended";
-                    return result;
-                }
-
-                if (currentGuestSession.GuestSessionState == request.GuestSessionState)
-                {
-                    result.ResultCode = UpdateGuestSessionStateResultCodes.SameAsCurrent;
-                    result.Message = $"{failedToUpdateGuestSession} The guest session is already in that state";
-                    result.GuestSession = currentGuestSession;
-                    return result;
-                }
-
-                var projectResponse = await _projectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
-                if (projectResponse.ResponseCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session");
-                    result.Message = $"{failedToUpdateGuestSession} ";
-                    return result;
-                }
-                if (!projectResponse.IsSuccess())
-                {
-                    _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
-                    return result;
-                }
-
-                var project = projectResponse.Payload;
-                if (project.GuestAccessCode != currentGuestSession.ProjectAccessCode && request.GuestSessionState != GuestState.Ended)
-                {
-                    result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
-                    return result;
-                }
-
-                var availableGuestCount = await GetAvailableGuestCountAsync(currentGuestSession.ProjectId);
-                if (request.GuestSessionState == GuestState.InProject && availableGuestCount < 1)
-                {
-                    result.ResultCode = UpdateGuestSessionStateResultCodes.ProjectFull;
-
-                    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
-                    return result;
-                }
-
-                currentGuestSession.GuestSessionState = request.GuestSessionState;
-
-                var guestSession = await UpdateGuestSessionAsync(currentGuestSession);
-
-                if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
-                {
-                    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
-                }
-                else if (currentGuestSession.GuestSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
-                {
-                    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
-                }
-
-                result.GuestSession = guestSession;
-                result.Message = "Guest session state updated";
-                result.ResultCode = UpdateGuestSessionStateResultCodes.Success;
+                currentGuestSession = await _guestSessionRepository.GetItemAsync(request.GuestSessionId);
             }
             catch (Exception ex)
             {
-                result.ResultCode = UpdateGuestSessionStateResultCodes.Failed;
-                result.Message = $"{failedToUpdateGuestSession} {ex.Message}";
-                _logger.Error($"Error updating Guest Session State for guest session {request.GuestSessionId}", ex);
+                throw new InvalidOperationException($"{failedToUpdateGuestSession} Failed to get guest session", ex);
             }
+
+            if (currentGuestSession.GuestSessionState == GuestState.Ended && request.GuestSessionState != GuestState.Ended)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
+                result.Message = $"{failedToUpdateGuestSession} Can\'t update a guest session that is already ended";
+                return result;
+            }
+
+            if (currentGuestSession.GuestSessionState == request.GuestSessionState)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.SameAsCurrent;
+                result.Message = $"{failedToUpdateGuestSession} The guest session is already in that state";
+                result.GuestSession = currentGuestSession;
+                return result;
+            }
+
+            var projectResponse = await _projectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
+            if (projectResponse.ResponseCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session");
+                result.Message = $"{failedToUpdateGuestSession} ";
+                return result;
+            }
+
+            if (!projectResponse.IsSuccess())
+            {
+                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
+                return result;
+            }
+
+            var project = projectResponse.Payload;
+            if (project.GuestAccessCode != currentGuestSession.ProjectAccessCode && request.GuestSessionState != GuestState.Ended)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
+                return result;
+            }
+
+            var availableGuestCount = await GetAvailableGuestCountAsync(currentGuestSession.ProjectId);
+            if (request.GuestSessionState == GuestState.InProject && availableGuestCount < 1)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.ProjectFull;
+
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
+                return result;
+            }
+
+            currentGuestSession.GuestSessionState = request.GuestSessionState;
+
+            var guestSession = await UpdateGuestSessionAsync(currentGuestSession);
+
+            if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
+            {
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
+            }
+            else if (currentGuestSession.GuestSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
+            {
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
+            }
+
+            result.GuestSession = guestSession;
+            result.Message = "Guest session state updated";
+            result.ResultCode = UpdateGuestSessionStateResultCodes.Success;
 
             return result;
         }
