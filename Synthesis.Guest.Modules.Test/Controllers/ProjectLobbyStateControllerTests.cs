@@ -14,7 +14,6 @@ using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.ParticipantService.InternalApi.Api;
 using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -129,11 +128,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Theory]
-        [InlineData(HttpStatusCode.OK)]
-        [InlineData(HttpStatusCode.BadRequest)]
-        public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode)
+        //[InlineData(HttpStatusCode.BadRequest, false)]
+        [InlineData(HttpStatusCode.OK, true)]
+        public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode, bool participantRequestFails)
         {
-            SetupApisForRecalculate(projectStatusCode);
+            SetupApisForRecalculate(projectStatusCode, participantRequestFails);
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
             _projectLobbyStateRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.Error)));
         }
@@ -195,14 +194,24 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectLobbyStateRepositoryMock.Verify(m => m.DeleteItemAsync(It.IsAny<Guid>()));
         }
 
-        private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK)
+        private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK, bool participantRequestThrows = false)
         {
-            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync(default(IEnumerable<Participant>));
+            if (participantRequestThrows)
+            {
+                var taskSource = new TaskCompletionSource<IEnumerable<Participant>>();
+                taskSource.SetException(new Exception("participants failed"));
+                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                    .Returns(taskSource.Task);
+            }
+            else
+            {
+                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                    .ReturnsAsync(default(IEnumerable<Participant>));
+            }
 
             _projectApi
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(MicroserviceResponse.Create(projectStatusCode, default(Project))));
+                .ReturnsAsync(MicroserviceResponse.Create(projectStatusCode, default(Project)));
         }
     }
 }

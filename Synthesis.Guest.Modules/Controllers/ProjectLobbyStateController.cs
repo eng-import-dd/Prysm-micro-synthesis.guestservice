@@ -109,7 +109,7 @@ namespace Synthesis.GuestService.Controllers
 
             try
             {
-                await UpsertProjectLobbyStateAsync(projectId, new ProjectLobbyState
+                await _projectLobbyStateRepository.UpdateItemAsync(projectId, new ProjectLobbyState
                 {
                     ProjectId = projectId,
                     LobbyState = CalculateLobbyState(isGuestLimitReached, isHostPresent)
