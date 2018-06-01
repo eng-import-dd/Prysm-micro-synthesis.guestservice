@@ -101,7 +101,7 @@ namespace Synthesis.GuestService.Controllers
             var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName, invitedByUser.LastName);
             if (!emailResult.IsSuccess())
             {
-                _logger.Error($"Sending guest invite email failed. Reason={emailResult.ReasonPhrase} Error={_serializer.Serialize(emailResult.ErrorResponse)}");
+                _logger.Error($"Sending guest invite email failed. Reason={emailResult.ReasonPhrase} Error={_serializer.SerializeToString(emailResult.ErrorResponse)}");
             }
 
             return result;
@@ -112,7 +112,7 @@ namespace Synthesis.GuestService.Controllers
             var projectResult = await _projectApi.GetProjectByIdAsync(guid);
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
             {
-                throw new GetProjectException($"Could not get the project for Id={guid}, Reason={projectResult.ReasonPhrase} Error={_serializer.Serialize(projectResult.ErrorResponse)}");
+                throw new GetProjectException($"Could not get the project for Id={guid}, Reason={projectResult.ReasonPhrase} Error={_serializer.SerializeToString(projectResult.ErrorResponse)}");
             }
 
             return projectResult.Payload;
@@ -123,7 +123,7 @@ namespace Synthesis.GuestService.Controllers
             var userResult = await _userApi.GetUserAsync(guid);
             if (!userResult.IsSuccess() || userResult.Payload == null)
             {
-                throw new GetUserException($"Could not get the user for Id={guid}, Reason={userResult.ReasonPhrase} Error={_serializer.Serialize(userResult.ErrorResponse)}");
+                throw new GetUserException($"Could not get the user for Id={guid}, Reason={userResult.ReasonPhrase} Error={_serializer.SerializeToString(userResult.ErrorResponse)}");
             }
 
             return userResult.Payload;
@@ -139,7 +139,7 @@ namespace Synthesis.GuestService.Controllers
             var codeResult = await _projectApi.ResetGuestAccessCodeAsync(project.Id);
             if (!codeResult.IsSuccess() || codeResult.Payload == null)
             {
-                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, Reason={codeResult.ReasonPhrase} Error={_serializer.Serialize(codeResult.ErrorResponse)}");
+                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, Reason={codeResult.ReasonPhrase} Error={_serializer.SerializeToString(codeResult.ErrorResponse)}");
             }
 
             return codeResult.Payload;
