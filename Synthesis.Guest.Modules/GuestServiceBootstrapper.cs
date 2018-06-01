@@ -335,9 +335,7 @@ namespace Synthesis.GuestService
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceNameShort);
 
-            builder.RegisterType<EmailApi>()
-                .WithParameter("serviceUrlSettingName", "Email.Url")
-                .As<IEmailApi>();
+            builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>();
         }
 
