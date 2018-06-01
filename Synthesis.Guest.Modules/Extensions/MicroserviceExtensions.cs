@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using Synthesis.Http.Microservice;
 
@@ -23,8 +24,8 @@ namespace Synthesis.GuestService.Extensions
         /// </summary>
         /// <param name="response">The <see cref="MicroserviceResponse"/>.</param>
         /// <param name="additionalMessage">An additional message.</param>
-        /// <returns>The formatted message to be used as the value of <see cref="ServiceResult{T}.Message"/>.</returns>
-        public static string GetServiceResultMessage(this MicroserviceResponse response, string additionalMessage = "")
+        /// <returns>The formatted message to be used to describe the results in a <see cref="MicroserviceResponse"/>"/>.</returns>
+        public static string GetMicroserviceResponseResultMessage(this MicroserviceResponse response, string additionalMessage = "")
         {
             var sb = new StringBuilder();
             sb.Append("{");
@@ -37,6 +38,36 @@ namespace Synthesis.GuestService.Extensions
             if (!string.IsNullOrWhiteSpace(additionalMessage))
             {
                 sb.Append($"\"Message\": \"{additionalMessage}\",");
+            }
+
+            if (response.ErrorResponse != null)
+            {
+                sb.Append("\"ErrorResponse\": {");
+                if (!string.IsNullOrWhiteSpace(response.ErrorResponse.Code))
+                {
+                    sb.Append($"\"Code\": \"{response.ErrorResponse.Code}\",");
+                }
+                if (!string.IsNullOrWhiteSpace(response.ErrorResponse.Message))
+                {
+                    sb.Append($"\"Message\": \"{response.ErrorResponse.Message}\",");
+                }
+                if (response.ErrorResponse.Errors != null && response.ErrorResponse.Errors.Any())
+                {
+                    sb.Append("\"Errors\": [");
+                    foreach (var propertyError in response.ErrorResponse.Errors)
+                    {
+                        sb.Append("{");
+                        sb.Append($"\"PropertyName\": \"{propertyError.PropertyName}\",");
+                        sb.Append($"\"Message\": \"{propertyError.Message}\",");
+                        sb.Append($"\"ErrorCode\": \"{propertyError.ErrorCode}\"");
+                        sb.Append("},");
+                    }
+
+                    sb.Remove(sb.Length - 1, 1);
+                    sb.Append("]");
+                }
+
+                sb.Append("},");
             }
 
             sb.Remove(sb.Length - 1, 1);
