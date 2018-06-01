@@ -56,6 +56,7 @@ using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.InternalApi.Models;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
+using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 
 namespace Synthesis.GuestService
 {
