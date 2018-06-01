@@ -6,11 +6,18 @@ using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
+using Synthesis.GuestService.Email;
+using Synthesis.GuestService.Exceptions;
+using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.InternalApi.Api;
+using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -24,15 +31,24 @@ namespace Synthesis.GuestService.Controllers
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
         private readonly IValidatorLocator _validatorLocator;
+        private readonly IProjectApi _projectApi;
+        private readonly IUserApi _userApi;
+        private readonly IEmailSendingService _emailSendingService;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestInviteController" /> class.
         /// </summary>
+        /// <param name="userApi">The user api.</param>
+        /// <param name="emailSendingService">The email sending service.</param>
+        /// <param name="projectApi">The project API.</param>
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger.</param>
         public GuestInviteController(
+            IUserApi userApi,
+            IProjectApi projectApi,
+            IEmailSendingService emailSendingService,
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
@@ -47,6 +63,9 @@ namespace Synthesis.GuestService.Controllers
                 // supressing the repository exceptions for initial testing
             }
 
+            _userApi = userApi;
+            _emailSendingService = emailSendingService;
+            _projectApi = projectApi;
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
@@ -55,21 +74,70 @@ namespace Synthesis.GuestService.Controllers
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
             var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
-
             if (!validationResult.IsValid)
             {
-                _logger.Error("Validation failed while attempting to create a GuestInvite resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            // Get dependent resources
+            var project = await GetProject(model.ProjectId);
+            var invitedByUser = await GetUser(model.InvitedBy);
+            var accessCode = await GetGuestAccessCode(project);
+
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
+            model.ProjectAccessCode = accessCode;
 
             var result = await _guestInviteRepository.CreateItemAsync(model);
 
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
+            // Send an invite email to the guest
+            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName, invitedByUser.LastName);
+            if (!emailResult.IsSuccess())
+            {
+                _logger.Error($"Sending guest invite email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
+            }
+
             return result;
+        }
+
+        private async Task<Project> GetProject(Guid guid)
+        {
+            var projectResult = await _projectApi.GetProjectByIdAsync(guid);
+            if (!projectResult.IsSuccess() || projectResult.Payload == null)
+            {
+                throw new GetProjectException($"Could not get the project for Id={guid}, ReasonPhrase={projectResult.ReasonPhrase}, ErrorResponse={projectResult.ErrorResponse}");
+            }
+
+            return projectResult.Payload;
+        }
+
+        private async Task<User> GetUser(Guid guid)
+        {
+            var userResult = await _userApi.GetUserAsync(guid);
+            if (!userResult.IsSuccess() || userResult.Payload == null)
+            {
+                throw new GetUserException($"Could not get the user for Id={guid}, ReasonPhrase={userResult.ReasonPhrase}, ErrorResponse={userResult.ErrorResponse}");
+            }
+
+            return userResult.Payload;
+        }
+
+        private async Task<string> GetGuestAccessCode(Project project)
+        {
+            if (!string.IsNullOrEmpty(project.GuestAccessCode))
+            {
+                return project.GuestAccessCode;
+            }
+
+            var codeResult = await _projectApi.ResetGuestAccessCodeAsync(project.Id);
+            if (!codeResult.IsSuccess() || codeResult.Payload == null)
+            {
+                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, ReasonPhrase={codeResult.ReasonPhrase}, ErrorResponse={codeResult.ErrorResponse}");
+            }
+
+            return codeResult.Payload;
         }
 
         public async Task<GuestInvite> GetGuestInviteAsync(Guid id)
