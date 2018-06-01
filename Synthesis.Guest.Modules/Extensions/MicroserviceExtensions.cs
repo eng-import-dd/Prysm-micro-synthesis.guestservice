@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 using Synthesis.Http.Microservice;
 
 namespace Synthesis.GuestService.Extensions

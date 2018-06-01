@@ -18,7 +18,6 @@ using Synthesis.Configuration.Shared;
 using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
-using Synthesis.EventBus.Kafka;
 using Synthesis.EventBus.Kafka.Autofac;
 using Synthesis.GuestService.ApiWrappers;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
@@ -53,9 +52,11 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using Synthesis.EmailService.InternalApi.Api;
+using Synthesis.GuestService.Email;
 using Synthesis.GuestService.InternalApi.Models;
-using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
+using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 
 namespace Synthesis.GuestService
 {
@@ -333,6 +334,9 @@ namespace Synthesis.GuestService
             builder.RegisterType<RepositoryHealthReporter<ProjectLobbyState>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceNameShort);
+
+            builder.RegisterType<EmailApi>().As<IEmailApi>();
+            builder.RegisterType<EmailSendingService>().As<IEmailSendingService>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
@@ -432,7 +436,7 @@ namespace Synthesis.GuestService
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(IEventServiceConsumer),
                     (p, c) => c.ResolveKeyed<IEventServiceConsumer>(Registration.PerInstanceEventServiceKey)))
-                .OnActivated(args => args.Instance.SubscribeEventHandler<SettingsInvalidateCacheEventHandler>("*", Configuration.Shared.EventNames.SettingsInvalidateCache))
+                .OnActivated(args => args.Instance.SubscribeEventHandler<SettingsInvalidateCacheEventHandler>("*", EventNames.SettingsInvalidateCache))
                 .Keyed<IEventHandlerLocator>(Registration.PerInstanceEventServiceKey)
                 .SingleInstance()
                 .AutoActivate();
