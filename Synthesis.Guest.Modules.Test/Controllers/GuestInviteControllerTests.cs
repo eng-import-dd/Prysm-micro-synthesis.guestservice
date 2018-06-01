@@ -20,6 +20,7 @@ using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
+using Synthesis.Serialization;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
@@ -77,7 +78,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new GuestInviteController(_userApiMock.Object, _projectApiMock.Object, _emailServiceMock.Object, repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object, loggerFactoryMock.Object);
+            _target = new GuestInviteController(_userApiMock.Object, _projectApiMock.Object, _emailServiceMock.Object, repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object, loggerFactoryMock.Object, _serializerMock.Object);
         }
 
         private readonly GuestInviteController _target;
@@ -88,6 +89,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
+        private readonly Mock<IObjectSerializer> _serializerMock = new Mock<IObjectSerializer>();
         private readonly GuestInvite _defaultGuestInvite;
 
         [Fact]

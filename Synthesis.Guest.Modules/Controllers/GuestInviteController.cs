@@ -18,6 +18,7 @@ using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
+using Synthesis.Serialization;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -34,6 +35,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectApi _projectApi;
         private readonly IUserApi _userApi;
         private readonly IEmailSendingService _emailSendingService;
+        private readonly IObjectSerializer _serializer;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestInviteController" /> class.
@@ -45,6 +47,7 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger.</param>
+        /// <param name="serializer">The serializer.</param>
         public GuestInviteController(
             IUserApi userApi,
             IProjectApi projectApi,
@@ -52,7 +55,8 @@ namespace Synthesis.GuestService.Controllers
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IObjectSerializer serializer)
         {
             try
             {
@@ -69,6 +73,7 @@ namespace Synthesis.GuestService.Controllers
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
+            _serializer = serializer;
         }
 
         public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
@@ -96,7 +101,7 @@ namespace Synthesis.GuestService.Controllers
             var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName, invitedByUser.LastName);
             if (!emailResult.IsSuccess())
             {
-                _logger.Error($"Sending guest invite email failed. Reason={emailResult.GetMicroserviceResponseResultMessage()}");
+                _logger.Error($"Sending guest invite email failed. Reason={emailResult.ReasonPhrase} Error={_serializer.Serialize(emailResult.ErrorResponse)}");
             }
 
             return result;
@@ -107,7 +112,7 @@ namespace Synthesis.GuestService.Controllers
             var projectResult = await _projectApi.GetProjectByIdAsync(guid);
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
             {
-                throw new GetProjectException($"Could not get the project for Id={guid}, ReasonPhrase={projectResult.ReasonPhrase}, ErrorResponse={projectResult.ErrorResponse}");
+                throw new GetProjectException($"Could not get the project for Id={guid}, Reason={projectResult.ReasonPhrase} Error={_serializer.Serialize(projectResult.ErrorResponse)}");
             }
 
             return projectResult.Payload;
@@ -118,7 +123,7 @@ namespace Synthesis.GuestService.Controllers
             var userResult = await _userApi.GetUserAsync(guid);
             if (!userResult.IsSuccess() || userResult.Payload == null)
             {
-                throw new GetUserException($"Could not get the user for Id={guid}, Reason={userResult.GetMicroserviceResponseResultMessage()}");
+                throw new GetUserException($"Could not get the user for Id={guid}, Reason={userResult.ReasonPhrase} Error={_serializer.Serialize(userResult.ErrorResponse)}");
             }
 
             return userResult.Payload;
@@ -134,7 +139,7 @@ namespace Synthesis.GuestService.Controllers
             var codeResult = await _projectApi.ResetGuestAccessCodeAsync(project.Id);
             if (!codeResult.IsSuccess() || codeResult.Payload == null)
             {
-                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, Reason={codeResult.GetMicroserviceResponseResultMessage()}");
+                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, Reason={codeResult.ReasonPhrase} Error={_serializer.Serialize(codeResult.ErrorResponse)}");
             }
 
             return codeResult.Payload;
