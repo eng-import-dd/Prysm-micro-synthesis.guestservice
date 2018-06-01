@@ -161,7 +161,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task CreateNewGuestInviteGetsUser()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _userApiMock.Verify(x => x.GetUserAsync(It.IsAny<Guid>()));
+            _userApiMock.Verify(x => x.GetUserAsync(It.Is<Guid>(u => u == _defaultGuestInvite.InvitedBy)));
         }
 
         [Fact]

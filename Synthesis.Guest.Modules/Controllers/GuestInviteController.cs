@@ -80,9 +80,9 @@ namespace Synthesis.GuestService.Controllers
             }
 
             // Get dependent resources
-            var project = await GetProject(model.ProjectId);
-            var invitedByUser = await GetUser(model.InvitedBy);
-            var accessCode = await GetGuestAccessCode(project);
+            var project = await GetProjectAsync(model.ProjectId);
+            var invitedByUser = await GetUserAsync(model.InvitedBy);
+            var accessCode = await GetGuestAccessCodeAsync(project);
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
@@ -102,7 +102,7 @@ namespace Synthesis.GuestService.Controllers
             return result;
         }
 
-        private async Task<Project> GetProject(Guid guid)
+        private async Task<Project> GetProjectAsync(Guid guid)
         {
             var projectResult = await _projectApi.GetProjectByIdAsync(guid);
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
@@ -113,7 +113,7 @@ namespace Synthesis.GuestService.Controllers
             return projectResult.Payload;
         }
 
-        private async Task<User> GetUser(Guid guid)
+        private async Task<User> GetUserAsync(Guid guid)
         {
             var userResult = await _userApi.GetUserAsync(guid);
             if (!userResult.IsSuccess() || userResult.Payload == null)
@@ -124,7 +124,7 @@ namespace Synthesis.GuestService.Controllers
             return userResult.Payload;
         }
 
-        private async Task<string> GetGuestAccessCode(Project project)
+        private async Task<string> GetGuestAccessCodeAsync(Project project)
         {
             if (!string.IsNullOrEmpty(project.GuestAccessCode))
             {
