@@ -165,7 +165,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateNewGuestInviteResetsAccessCodeIsCodeIsMissing()
+        public async Task CreateNewGuestInviteResetsAccessCodeIfCodeIsMissing()
         {
             var project = Project.Example();
             project.GuestAccessCode = null;
