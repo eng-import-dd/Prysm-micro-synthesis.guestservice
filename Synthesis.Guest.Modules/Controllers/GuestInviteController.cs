@@ -96,7 +96,7 @@ namespace Synthesis.GuestService.Controllers
             var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName, invitedByUser.LastName);
             if (!emailResult.IsSuccess())
             {
-                _logger.Error($"Sending guest invite email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
+                _logger.Error($"Sending guest invite email failed. Reason={emailResult.GetServiceResultMessage()}");
             }
 
             return result;
@@ -118,7 +118,7 @@ namespace Synthesis.GuestService.Controllers
             var userResult = await _userApi.GetUserAsync(guid);
             if (!userResult.IsSuccess() || userResult.Payload == null)
             {
-                throw new GetUserException($"Could not get the user for Id={guid}, ReasonPhrase={userResult.ReasonPhrase}, ErrorResponse={userResult.ErrorResponse}");
+                throw new GetUserException($"Could not get the user for Id={guid}, Reason={userResult.GetServiceResultMessage()}");
             }
 
             return userResult.Payload;
@@ -134,7 +134,7 @@ namespace Synthesis.GuestService.Controllers
             var codeResult = await _projectApi.ResetGuestAccessCodeAsync(project.Id);
             if (!codeResult.IsSuccess() || codeResult.Payload == null)
             {
-                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, ReasonPhrase={codeResult.ReasonPhrase}, ErrorResponse={codeResult.ErrorResponse}");
+                throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, Reason={codeResult.GetServiceResultMessage()}");
             }
 
             return codeResult.Payload;

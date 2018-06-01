@@ -52,7 +52,7 @@ namespace Synthesis.GuestService.Controllers
             await _projectLobbyStateRepository.CreateItemAsync(new ProjectLobbyState
             {
                 ProjectId = projectId,
-                LobbyState = LobbyState.Undefined
+                LobbyState = LobbyState.Normal
             });
         }
 
