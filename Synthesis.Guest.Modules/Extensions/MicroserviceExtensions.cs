@@ -23,9 +23,8 @@ namespace Synthesis.GuestService.Extensions
         /// Formats a message using the properties of a <see cref="MicroserviceResponse"/> instance.
         /// </summary>
         /// <param name="response">The <see cref="MicroserviceResponse"/>.</param>
-        /// <param name="additionalMessage">An additional message.</param>
         /// <returns>The formatted message to be used to describe the results in a <see cref="MicroserviceResponse"/>"/>.</returns>
-        public static string GetMicroserviceResponseResultMessage(this MicroserviceResponse response, string additionalMessage = "")
+        public static string GetMicroserviceResponseResultMessage(this MicroserviceResponse response)
         {
             var sb = new StringBuilder();
             sb.Append("{");
@@ -33,11 +32,6 @@ namespace Synthesis.GuestService.Extensions
             if (!string.IsNullOrWhiteSpace(response.ReasonPhrase))
             {
                 sb.Append($"\"ReasonPhrase\": \"{response.ReasonPhrase}\",");
-            }
-
-            if (!string.IsNullOrWhiteSpace(additionalMessage))
-            {
-                sb.Append($"\"Message\": \"{additionalMessage}\",");
             }
 
             if (response.ErrorResponse != null)
