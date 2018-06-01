@@ -55,7 +55,6 @@ using System.Reflection;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.InternalApi.Models;
-using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 
 namespace Synthesis.GuestService
