@@ -5,6 +5,6 @@ namespace Synthesis.GuestService.Email
 {
     public interface IEmailSendingService
     {
-        Task<MicroserviceResponse> SendGuestInviteEmailAsync(string projectName, string projectCode, string guestEmail, string fromFirstName, string fromLastName);
+        Task<MicroserviceResponse> SendGuestInviteEmailAsync(string projectName, string projectCode, string guestEmail, string fromFirstName);
     }
 }

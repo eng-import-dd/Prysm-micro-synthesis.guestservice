@@ -42,7 +42,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<string>(HttpStatusCode.OK, Project.Example().GuestAccessCode));
 
-            _emailServiceMock.Setup(x => x.SendGuestInviteEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            _emailServiceMock.Setup(x => x.SendGuestInviteEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
             _guestInviteRepositoryMock

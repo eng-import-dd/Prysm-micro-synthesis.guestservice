@@ -16,14 +16,13 @@ namespace Synthesis.GuestService.Email
             _appSettingsReader = appSettingsReader;
         }
 
-        public async Task<MicroserviceResponse> SendGuestInviteEmailAsync(string projectName, string projectCode, string guestEmail, string fromFirstName, string fromLastName)
+        public async Task<MicroserviceResponse> SendGuestInviteEmailAsync(string projectName, string projectCode, string guestEmail, string fromFirstName)
         {
             var request = InviteGuestEmail.BuildRequest(
                 projectName,
                 projectCode,
                 guestEmail,
                 fromFirstName,
-                fromLastName,
                 _appSettingsReader.GetValue<string>("WebClient.Url"));
 
             return await _emailApi.SendEmailAsync(request);
