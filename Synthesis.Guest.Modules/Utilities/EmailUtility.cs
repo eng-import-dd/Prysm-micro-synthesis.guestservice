@@ -51,29 +51,6 @@ namespace Synthesis.GuestService.Utilities
             _emailHostEmail = GetContent("Utilities/EmailTemplates/EmailHost.html");
         }
 
-        public bool SendGuestInvite(string projectName, string projectCode, string guestEmail, string from)
-        {
-            try
-            {
-                var subject = "Prysm Guest Invite: " + projectName;
-
-                var replacedContent = _guestInviteEmail.Replace("{Link}", $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/guest?accesscode={projectCode}&email={HttpUtility.UrlEncode(guestEmail)}");
-
-                replacedContent = replacedContent.Replace("{Name}", from);
-                replacedContent = replacedContent.Replace("{ProjectName}", projectName);
-                replacedContent = replacedContent.Replace("{ProjectCode}", projectCode.Insert(7, " ").Insert(3, " "));
-
-                SendEmail(guestEmail, "", "", subject, replacedContent, "");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex.Message, ex);
-                return false;
-            }
-
-            return true;
-        }
-
         public bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
         {
             try

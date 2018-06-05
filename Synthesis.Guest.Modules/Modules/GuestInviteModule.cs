@@ -8,6 +8,7 @@ using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Exceptions;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
@@ -78,7 +79,23 @@ namespace Synthesis.GuestService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Error("Validation failed while attempting to create a GuestInvite resource.");
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (GetProjectException ex)
+            {
+                Logger.Error("Failed to get the project the guest is being invited to due to an error", ex);
+                return Response.InternalServerError("Failed to get the project the guest is being invited to.");
+            }
+            catch (GetUserException ex)
+            {
+                Logger.Error("Failed to get the user who invited the guest due to an error", ex);
+                return Response.InternalServerError("Failed to get the user who invited the guest.");
+            }
+            catch (ResetAccessCodeException ex)
+            {
+                Logger.Error("Failed to reset the guest access code due to an error.", ex);
+                return Response.InternalServerError("Failed to reset the guest access code.");
             }
             catch (Exception ex)
             {

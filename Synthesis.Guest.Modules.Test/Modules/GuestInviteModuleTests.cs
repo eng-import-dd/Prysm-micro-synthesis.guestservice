@@ -11,6 +11,7 @@ using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Constants;
+using Synthesis.GuestService.Exceptions;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -206,6 +207,42 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             _guestInviteControllerMock
                 .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
                 .Throws<Exception>();
+
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        
+        [Fact]
+        public async Task CreateGuestInviteReturnsInternalServerErrorOnGetProjectException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Throws<GetProjectException>();
+
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestInviteReturnsInternalServerErrorOnGetUserException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Throws<GetUserException>();
+
+            var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestInviteReturnsInternalServerErrorOnGetAccessCodeException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Throws<ResetAccessCodeException>();
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
 

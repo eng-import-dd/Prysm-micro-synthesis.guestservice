@@ -194,6 +194,9 @@
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta019\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta015\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta015\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
@@ -252,7 +255,7 @@
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta040\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta033\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta034\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
@@ -347,12 +350,20 @@
     <Compile Include="Controllers\IGuestSessionController.cs" />
     <Compile Include="Controllers\IProjectLobbyStateController.cs" />
     <Compile Include="Controllers\ProjectLobbyStateController.cs" />
+    <Compile Include="Email\EmailSendingService.cs" />
+    <Compile Include="Email\IEmailSendingService.cs" />
+    <Compile Include="Email\InviteGuestEmail.cs" />
     <Compile Include="EventHandlers\EventSubscriber.cs" />
     <Compile Include="EventHandlers\GuestAccessCodeChangedEventHandler.cs" />
     <Compile Include="EventHandlers\KickGuestsFromProjectHandler.cs" />
     <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />
     <Compile Include="EventHandlers\ProjectDeletedEventHandler.cs" />
     <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
+    <Compile Include="Exceptions\GetProjectException.cs" />
+    <Compile Include="Exceptions\ResetAccessCodeException.cs" />
+    <Compile Include="Exceptions\SendEmailException.cs" />
+    <Compile Include="Exceptions\GetUserException.cs" />
+    <Compile Include="Exceptions\BuildEmailException.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
@@ -364,7 +375,7 @@
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceToServiceMicroserviceHttpClientResolver.cs" />
-    <Compile Include="Utilities\EmailUtiltiy.cs" />
+    <Compile Include="Utilities\EmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IPasswordUtility.cs" />
     <Compile Include="Utilities\Objects\DataSortOrder.cs" />
@@ -389,6 +400,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Email\Templates\UserInvite.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="librdkafka\x64\librdkafka.dll" />
     <Content Include="librdkafka\x64\librdkafkacpp.dll" />
     <Content Include="librdkafka\x64\msvcr120.dll" />
@@ -425,7 +439,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
