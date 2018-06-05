@@ -8,6 +8,9 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Net; 
 using System.Threading;
 using System.Threading.Tasks;
@@ -243,6 +246,47 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             await _target.UpdateGuestInviteAsync(_defaultGuestInvite);
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestInvite>>()));
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByUserIdAsyncThrowsIfValidationFails()
+        {
+            _validatorMock
+                .Setup(v => v.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetGuestInvitesByUserIdAsync(Guid.Empty));
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByUserIdAsyncGetsItems()
+        {
+            var userId = Guid.NewGuid();
+            var invites = new List<GuestInvite> { GuestInvite.Example(), GuestInvite.Example(), GuestInvite.Example() };
+            var moreInvites = new List<GuestInvite> { GuestInvite.Example(), GuestInvite.Example(), GuestInvite.Example() };
+            invites.ForEach(w => w.UserId = userId);
+            invites.AddRange(moreInvites);
+
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
+                .Returns<Expression<Func<GuestInvite, bool>>>(predicate =>
+                {
+                    var expression = predicate.Compile();
+                    IEnumerable<GuestInvite> sublist = invites.Where(expression).ToList();
+                    return Task.FromResult(sublist);
+                });
+
+            var result = await _target.GetGuestInvitesByUserIdAsync(userId);
+
+            Assert.True(result != null && result.Count() == invites.Count - moreInvites.Count);
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByUserIdThrowsNotFoundExceptionIfGetItemsReturnsNull()
+        {
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
+                .ReturnsAsync(default(IEnumerable<GuestInvite>));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.GetGuestInvitesByUserIdAsync(Guid.NewGuid()));
         }
     }
 }

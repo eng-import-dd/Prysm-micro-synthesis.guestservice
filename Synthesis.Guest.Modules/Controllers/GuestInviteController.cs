@@ -183,6 +183,27 @@ namespace Synthesis.GuestService.Controllers
             throw new NotFoundException("GuestInvites could not be found");
         }
 
+        public async Task<IEnumerable<GuestInvite>> GetGuestInvitesByUserIdAsync(Guid userId)
+        {
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the userId while attempting to retrieve GuestInvite resources.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var result = await _guestInviteRepository.GetItemsAsync(x => x.UserId == userId);
+            if (result != null)
+            {
+                return result;
+            }
+
+            _logger.Error($"GuestInvite resources could not be found for userId {userId}");
+            throw new NotFoundException("GuestInvites could not be found");
+        }
+
+
+
         public async Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite guestInviteModel)
         {
             var guestInviteIdValidationResult = _validatorLocator.Validate<GuestInviteIdValidator>(guestInviteModel.Id);

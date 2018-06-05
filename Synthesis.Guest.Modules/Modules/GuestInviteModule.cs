@@ -51,6 +51,11 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
+            CreateRoute("GetGuestInvitesForUser", HttpMethod.Get, $"{Routing.UsersRoute}/{{userId:guid}}/{Routing.GuestInvitesPath}", GetGuestInvitesByUserIdAsync)
+                .Description("Gets All GuestInvites for a specific User.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
+
             CreateRoute("UpdateGuestInvite", HttpMethod.Put, $"{Routing.GuestInvitesRoute}/{{id:guid}}", UpdateGuestInviteAsync)
                 .Description("Update a specific GuestInvite resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
@@ -156,6 +161,32 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 Logger.Error($"GuestInvites could not be retrieved for projectId {projectId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+            }
+        }
+
+        private async Task<object> GetGuestInvitesByUserIdAsync(dynamic input)
+        {
+            var userId = input.userId;
+
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _guestInviteController.GetGuestInvitesByUserIdAsync(userId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"GuestInvites could not be retrieved for userId {userId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }

@@ -13,6 +13,8 @@ namespace Synthesis.GuestService.Controllers
 
         Task<IEnumerable<GuestInvite>> GetGuestInvitesByProjectIdAsync(Guid projectId);
 
+        Task<IEnumerable<GuestInvite>> GetGuestInvitesByUserIdAsync(Guid userId);
+
         Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite model);
     }
 }
