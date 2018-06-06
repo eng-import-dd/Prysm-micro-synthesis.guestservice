@@ -46,6 +46,7 @@ namespace Synthesis.GuestService.Utilities
             {
                 _emailTemplate = streamReader.ReadToEnd();
             }
+            _emailTemplate = _emailTemplate.Replace("{{YEAR}}", DateTime.UtcNow.Year.ToString());
 
             _guestInviteEmail = GetContent("Utilities/EmailTemplates/GuestInvite.html");
             _emailHostEmail = GetContent("Utilities/EmailTemplates/EmailHost.html");
