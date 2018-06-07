@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentValidation.Results;
 using Synthesis.Http.Microservice;
 
 namespace Synthesis.GuestService.Controllers
@@ -99,7 +100,7 @@ namespace Synthesis.GuestService.Controllers
         private async Task EndGuestSessionsForUser(Guid userId)
         {
             var openSessions = (await _guestSessionRepository
-                    .GetItemsAsync(g => g.UserId == userId && g.GuestSessionState != GuestState.Ended))
+                    .GetItemsAsync(g => g.UserId == userId && (g.GuestSessionState == GuestState.InLobby || g.GuestSessionState == GuestState.InProject)))
                     .ToList();
 
             if (openSessions.Count == 0)
@@ -204,6 +205,8 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, Guid projectId, string projectAccessCode)
         {
+            projectAccessCode = string.IsNullOrEmpty(projectAccessCode) ? string.Empty : projectAccessCode.Replace("-", string.Empty).Replace(" ", string.Empty);
+
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
                 { typeof(EmailValidator), username },
@@ -217,14 +220,38 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
-            if (projectResponse == null)
+            ProjectService.InternalApi.Models.Project project;
+            if (projectId != Guid.Empty)
             {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                return response;
+                var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+                if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                    //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                    return response;
+                }
+
+                project = projectResponse.Payload;
+            }
+            else
+            {
+                var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
+                if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                    //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                    return response;
+                }
+
+                project = projectResponse.Payload;
             }
 
-            var project = projectResponse.Payload;
+            if (project.TenantId == Guid.Empty)
+            {
+                response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                return response;
+            }
 
             response.AccountId = project.TenantId;
             response.AssociatedProjectId = project.Id;
@@ -236,6 +263,7 @@ namespace Synthesis.GuestService.Controllers
             if (project.IsGuestModeEnabled != true)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
+                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
                 return response;
             }
 
@@ -243,6 +271,7 @@ namespace Synthesis.GuestService.Controllers
             if (userResponse == null)
             {
                 response.ResultCode = VerifyGuestResponseCode.Failed;
+                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
                 return response;
             }
 
@@ -251,6 +280,7 @@ namespace Synthesis.GuestService.Controllers
             if (user.IsLocked)
             {
                 response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
+                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
                 return response;
             }
 
@@ -346,7 +376,7 @@ namespace Synthesis.GuestService.Controllers
                 ResultCode = UpdateGuestSessionStateResultCodes.Failed
             };
 
-            const string failedToUpdateGuestSession = "Failed to update guest session. ";
+            const string failedToUpdateGuestSession = "Failed to update guest session.";
             GuestSession currentGuestSession;
             try
             {
@@ -354,20 +384,20 @@ namespace Synthesis.GuestService.Controllers
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"{failedToUpdateGuestSession} Failed to get guest session", ex);
+                throw new InvalidOperationException($"{failedToUpdateGuestSession} Failed to get guest session.", ex);
             }
 
             if (currentGuestSession.GuestSessionState == GuestState.Ended && request.GuestSessionState != GuestState.Ended)
             {
                 result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
-                result.Message = $"{failedToUpdateGuestSession} Can\'t update a guest session that is already ended";
+                result.Message = $"{failedToUpdateGuestSession} Can\'t update a guest session that is already ended.";
                 return result;
             }
 
             if (currentGuestSession.GuestSessionState == request.GuestSessionState)
             {
                 result.ResultCode = UpdateGuestSessionStateResultCodes.SameAsCurrent;
-                result.Message = $"{failedToUpdateGuestSession} The guest session is already in that state";
+                result.Message = $"{failedToUpdateGuestSession} The guest session is already in that state.";
                 result.GuestSession = currentGuestSession;
                 return result;
             }
@@ -375,14 +405,15 @@ namespace Synthesis.GuestService.Controllers
             var projectResponse = await _projectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
             if (projectResponse.ResponseCode == System.Net.HttpStatusCode.NotFound)
             {
-                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session");
-                result.Message = $"{failedToUpdateGuestSession} ";
+                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session.");
+                result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";
                 return result;
             }
 
-            if (!projectResponse.IsSuccess())
+            if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
             {
-                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
+                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not retrieve the project associated with this guest session. {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
+                result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";
                 return result;
             }
 
@@ -390,6 +421,7 @@ namespace Synthesis.GuestService.Controllers
             if (project.GuestAccessCode != currentGuestSession.ProjectAccessCode && request.GuestSessionState != GuestState.Ended)
             {
                 result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
+                result.Message = $"{failedToUpdateGuestSession}  Guest access code has changed.";
                 return result;
             }
 
@@ -397,7 +429,7 @@ namespace Synthesis.GuestService.Controllers
             if (request.GuestSessionState == GuestState.InProject && availableGuestCount < 1)
             {
                 result.ResultCode = UpdateGuestSessionStateResultCodes.ProjectFull;
-
+                result.Message = $"{failedToUpdateGuestSession}  Can\'t admit a guest into a full project.";
                 await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
                 return result;
             }
@@ -416,7 +448,7 @@ namespace Synthesis.GuestService.Controllers
             }
 
             result.GuestSession = guestSession;
-            result.Message = "Guest session state updated";
+            result.Message = "Guest session state updated.";
             result.ResultCode = UpdateGuestSessionStateResultCodes.Success;
 
             return result;

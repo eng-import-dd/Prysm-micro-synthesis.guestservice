@@ -62,18 +62,20 @@ namespace Synthesis.GuestService.Controllers
         {
             if (projectId.Equals(Guid.Empty))
             {
-                return await ClearGuestSessionState();
+                var projectState = await ClearGuestSessionState();
+                return projectState;
+                //return await ClearGuestSessionState();
             }
 
             (ProjectGuestContext guestProjectState,
              MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
              MicroserviceResponse<Project> projectResponse) = await LoadData(projectId);
 
-            if (!projectResponse.IsSuccess() && projectResponse.ResponseCode != HttpStatusCode.Forbidden)
+            if ((!projectResponse.IsSuccess() && projectResponse.ResponseCode != HttpStatusCode.Forbidden) || projectResponse.Payload == null)
             {
                 throw new InvalidOperationException($"Error fetching project {projectId}, {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
             }
-            if (!projectUsersResponse.IsSuccess())
+            if (!projectUsersResponse.IsSuccess() || projectUsersResponse.Payload == null)
             {
                 throw new InvalidOperationException($"Error fetching project users {projectId}, {projectUsersResponse.ResponseCode} - {projectUsersResponse.ReasonPhrase}");
             }
@@ -85,7 +87,7 @@ namespace Synthesis.GuestService.Controllers
             if (isGuest && userIsProjectMember)
             {
                 //User is in project's account and was a guest who was promoted to a full
-                //member, clear guest properties. This changes the value of IsGuest.
+                //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
                 await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
             }
 
@@ -100,9 +102,9 @@ namespace Synthesis.GuestService.Controllers
 
             // The user does not have access to the project so we need to fetch it with a service to service client
             var serviceToServiceProjectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
-            if (!serviceToServiceProjectResponse.IsSuccess())
+            if (!serviceToServiceProjectResponse.IsSuccess() || serviceToServiceProjectResponse?.Payload == null)
             {
-                throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {serviceToServiceProjectResponse.ResponseCode} - {serviceToServiceProjectResponse.ReasonPhrase}");
+                throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {serviceToServiceProjectResponse?.ResponseCode} - {serviceToServiceProjectResponse?.ReasonPhrase}");
             }
 
             project = serviceToServiceProjectResponse.Payload;
@@ -112,17 +114,17 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
 
-            var userResonse = await _userApi.GetUserAsync(currentUserId);
-            if (!userResonse.IsSuccess())
+            var userResponse = await _userApi.GetUserAsync(currentUserId);
+            if (!userResponse.IsSuccess() || userResponse?.Payload == null)
             {
-                throw new InvalidOperationException($"Error fetching user for  {currentUserId}, {userResonse.ResponseCode} - {userResonse.ReasonPhrase}");
+                throw new InvalidOperationException($"Error fetching user for {currentUserId}, {userResponse?.ResponseCode} - {userResponse?.ReasonPhrase}");
             }
 
-            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(userResonse.Payload.Username, projectId, accessCode);
+            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(userResponse.Payload.Username, projectId, accessCode);
 
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {
-                throw new InvalidOperationException($"Failed to verify guest for {currentUserId} - {guestVerifyResponse}");
+                throw new InvalidOperationException($"Failed to verify guest for User.Id = {currentUserId}, Project.Id = {projectId}. ");
             }
 
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
@@ -138,6 +140,11 @@ namespace Synthesis.GuestService.Controllers
                 GuestSessionId = newSession.Id, ProjectId = project.Id, GuestState = GuestState.InLobby
             });
 
+            //TODO: CU-598 - This is where a second call to DetermineGuestAccess occurred in the monolith - and it seems both there
+            //                and here and that it should be false because GuestSessionState == GuestState.InLobby. Therefore it
+            //                seems that the second arg of CreateCurrentProjectState should just be false rather than userHasAccess.
+            //                This is because userHasAccess was calculated much earlier and the state of the user's guest session is 
+            //                now different.
             return await CreateCurrentProjectState(project, userHasAccess);
         }
 
@@ -171,7 +178,7 @@ namespace Synthesis.GuestService.Controllers
                 };
             }
 
-            throw new InvalidOperationException($"Could not clear the current project or end the guest session. {guestSessionStateResponse.Message}");
+            throw new InvalidOperationException($"Could not clear the current project or end the guest session. {guestSessionStateResponse?.Message}");
         }
 
         private async Task<CurrentProjectState> CreateCurrentProjectState(Project project, bool userHasAccess)
