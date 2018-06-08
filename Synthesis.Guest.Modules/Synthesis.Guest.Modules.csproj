@@ -179,6 +179,9 @@
     <Reference Include="Synthesis.Cache.Redis, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta003\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.Common, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Common.2.0.0-beta009\lib\net452\Synthesis.Common.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
@@ -207,7 +210,7 @@
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta005\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta021\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta022\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -388,6 +391,7 @@
     <Compile Include="Validators\GuestInviteValidator.cs" />
     <Compile Include="Validators\GuestSessionIdValidator.cs" />
     <Compile Include="Validators\GuestSessionValidator.cs" />
+    <Compile Include="Validators\GuestVerificationRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
     <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
     <Compile Include="Validators\ProjectIdValidator.cs" />

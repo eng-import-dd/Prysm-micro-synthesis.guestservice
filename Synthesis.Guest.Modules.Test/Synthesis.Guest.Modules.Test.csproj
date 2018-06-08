@@ -186,7 +186,7 @@
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta015\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta021\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta022\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>

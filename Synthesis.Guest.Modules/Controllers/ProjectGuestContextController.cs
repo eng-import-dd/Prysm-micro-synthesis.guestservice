@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Services;
 using Synthesis.Http.Microservice;
 using Synthesis.PrincipalService.InternalApi.Api;
@@ -120,7 +121,9 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Error fetching user for {currentUserId}, {userResponse?.ResponseCode} - {userResponse?.ReasonPhrase}");
             }
 
-            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(userResponse.Payload.Username, projectId, accessCode);
+            var verifyRequest = new GuestVerificationRequest() { Username = userResponse.Payload.Username, ProjectAccessCode = accessCode, ProjectId = projectId };
+
+            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest);
 
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {

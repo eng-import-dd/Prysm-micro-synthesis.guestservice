@@ -6,7 +6,7 @@ namespace Synthesis.GuestService.Validators
     {
         protected StringValidator(string name)
         {
-            RuleFor(guid => guid).NotEqual(string.Empty).WithMessage($"The {nameof(name)} must not be empty");
+            RuleFor(value => value.Trim()).NotEqual(string.Empty).WithMessage($"The {nameof(name)} must not be empty or whitepace");
         }
     }
 }

@@ -1,3 +1,4 @@
+using Synthesis.Common;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
@@ -6,6 +7,7 @@ using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.GuestService.Validators;
@@ -36,6 +38,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly ILogger _logger;
         private readonly IProjectApi _projectApi;
         private readonly ISettingsApiWrapper _settingsApi;
+        private readonly ISynthesisApi _synthesisApi;
         private readonly IUserApi _userApi;
         private readonly IValidatorLocator _validatorLocator;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
@@ -52,6 +55,7 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="settingsApi"></param>
         /// <param name="userApi"></param>
         /// <param name="emailUtility"></param>
+        /// <param name="synthesisApi">The monolithic Synthesis cloud service.</param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -61,7 +65,8 @@ namespace Synthesis.GuestService.Controllers
             IProjectApi projectApi,
             IUserApi userApi,
             IProjectLobbyStateController projectLobbyStateController,
-            ISettingsApiWrapper settingsApi)
+            ISettingsApiWrapper settingsApi,
+            ISynthesisApi synthesisApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
@@ -75,6 +80,7 @@ namespace Synthesis.GuestService.Controllers
             _projectApi = projectApi;
             _userApi = userApi;
             _settingsApi = settingsApi;
+            _synthesisApi = synthesisApi;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
@@ -198,21 +204,9 @@ namespace Synthesis.GuestService.Controllers
             return result;
         }
 
-        public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request)
         {
-            return await VerifyGuestAsync(username, Guid.Empty, projectAccessCode);
-        }
-
-        public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, Guid projectId, string projectAccessCode)
-        {
-            projectAccessCode = string.IsNullOrEmpty(projectAccessCode) ? string.Empty : projectAccessCode.Replace("-", string.Empty).Replace(" ", string.Empty);
-
-            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
-            {
-                { typeof(EmailValidator), username },
-                { typeof(ProjectAccessCodeValidator), projectAccessCode }
-            });
-
+            var validationResult = _validatorLocator.Validate<GuestVerificationRequestValidator>(request);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the guest verification request.");
@@ -221,13 +215,13 @@ namespace Synthesis.GuestService.Controllers
 
             var response = new GuestVerificationResponse();
             ProjectService.InternalApi.Models.Project project;
-            if (projectId != Guid.Empty)
+            if (request.ProjectId != Guid.Empty)
             {
-                var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+                var projectResponse = await _projectApi.GetProjectByIdAsync(request.ProjectId);
                 if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                    response.Message = $"Could not find a project with that project Id.";
                     return response;
                 }
 
@@ -235,11 +229,11 @@ namespace Synthesis.GuestService.Controllers
             }
             else
             {
-                var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
+                var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
                 if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                    response.Message = $"Could not find a project with that project access code.";
                     return response;
                 }
 
@@ -249,38 +243,59 @@ namespace Synthesis.GuestService.Controllers
             if (project.TenantId == Guid.Empty)
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                response.Message = $"There is not tenant associated with this project. Please contact support to fix the project.";
                 return response;
             }
 
-            response.AccountId = project.TenantId;
             response.AssociatedProjectId = project.Id;
-            response.ProjectAccessCode = projectAccessCode;
+            response.ProjectAccessCode = request.ProjectAccessCode;
             response.ProjectName = project.Name;
             response.UserId = project.OwnerId;
-            response.Username = username;
+            response.Username = request.Username;
 
-            if (project.IsGuestModeEnabled != true)
-            {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
-                return response;
-            }
-
-            var userResponse = await _userApi.GetUserByUsernameAsync(username);
-            if (userResponse == null)
-            {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
-                return response;
-            }
+            var userResponse = await _userApi.GetUserByUsernameAsync(request.Username);
 
             var user = userResponse.Payload;
+
+            var isProjectInUsersAccount = user?.TenantId == project.TenantId;
+            response.AccountId = user?.TenantId;
+
+            //TODO CU-598 - Need to test whether GuestMode is enable for the project Account
+            //var accountSettings = _synthesisApi
+
+            if (!project.IsGuestModeEnabled && !isProjectInUsersAccount)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = "Guest mode is not enabled on the project";
+                return response;
+            }
+
+
+
+            if (userResponse.Payload == null)
+            {
+                //TODO: CU-598 - Lookup guest invite by request.UserName
+                var invite = (await _guestInviteRepository.GetItemsAsync(x => x.GuestEmail == request.Username && x.ProjectAccessCode == request.ProjectAccessCode)).FirstOrDefault();
+                if (!string.IsNullOrEmpty(invite?.GuestEmail))
+                {
+                    response.ResultCode = VerifyGuestResponseCode.SuccessNoUser;
+                    response.Message = "This user does not exist but has been invited, so can join as a guest";
+                    return response;
+                }
+                else
+                {
+                    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
+                    response.Message = "This user does not exist and has not been invited";
+                    return response;
+                }
+            }
+
+            
 
             if (user.IsLocked)
             {
                 response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
-                //TODO: Need a way to return a response message with this VerifyGuestResponseCode value.
+                response.Message = "This user is locked";
                 return response;
             }
 

@@ -8,6 +8,7 @@ using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
 using Synthesis.GuestService.InternalApi.Services;
 using Synthesis.Http.Microservice;
@@ -67,7 +68,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(new UpdateGuestSessionStateResponse());
 
             _guestSessionControllerMock
-                .Setup(x => x.VerifyGuestAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>()))
+                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>()))
                 .ReturnsAsync(new GuestVerificationResponse() {ResultCode = VerifyGuestResponseCode.Success});
 
             _guestSessionControllerMock
