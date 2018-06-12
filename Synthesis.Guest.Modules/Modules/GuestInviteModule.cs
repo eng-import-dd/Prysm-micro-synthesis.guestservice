@@ -17,6 +17,7 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -51,7 +52,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
-            CreateRoute("GetGuestInvitesForUser", HttpMethod.Get, $"{Routing.UsersRoute}/{{userId:guid}}/{Routing.GuestInvitesPath}", GetGuestInvitesByUserIdAsync)
+            CreateRoute("GetGuestInvitesForUser", HttpMethod.Put, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
                 .Description("Gets All GuestInvites for a specific User.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
@@ -165,16 +166,25 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> GetGuestInvitesByUserIdAsync(dynamic input)
+        private async Task<object> GetGuestInvitesForUserAsync(dynamic input)
         {
-            var userId = input.userId;
+            GetGuestInvitesRequest getUserInvitesRequest;
+            try
+            {
+                getUserInvitesRequest = this.Bind<GetGuestInvitesRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding to the SendEmailRequest model failed.", ex);
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
+            }
 
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
             try
             {
-                return await _guestInviteController.GetGuestInvitesByUserIdAsync(userId);
+                return await _guestInviteController.GetGuestInvitesForUser(getUserInvitesRequest);
             }
             catch (NotFoundException)
             {
@@ -186,7 +196,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error($"GuestInvites could not be retrieved for userId {userId}", ex);
+                Logger.Error("GuestInvites could not be retrieved for user", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }

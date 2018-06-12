@@ -389,7 +389,7 @@
     <Compile Include="Validators\GuestSessionValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
     <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
-    <Compile Include="Validators\UserIdValidator.cs" />
+    <Compile Include="Validators\GetGuestInvitesRequestValidator.cs" />
     <Compile Include="Validators\ProjectIdValidator.cs" />
     <Compile Include="Validators\StringValidator.cs" />
   </ItemGroup>
