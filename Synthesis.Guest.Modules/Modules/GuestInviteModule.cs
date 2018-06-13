@@ -52,7 +52,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
-            CreateRoute("GetGuestInvitesForUser", HttpMethod.Put, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
+            CreateRoute("GetGuestInvitesForUser", HttpMethod.Post, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
                 .Description("Gets All GuestInvites for a specific User.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
