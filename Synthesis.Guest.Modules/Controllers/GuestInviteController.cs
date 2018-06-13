@@ -201,9 +201,7 @@ namespace Synthesis.GuestService.Controllers
             _logger.Error("GuestInvite resources could not be found for user");
             throw new NotFoundException("GuestInvites could not be found");
         }
-
-
-
+        
         public async Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite guestInviteModel)
         {
             var guestInviteIdValidationResult = _validatorLocator.Validate<GuestInviteIdValidator>(guestInviteModel.Id);
