@@ -8,7 +8,8 @@ namespace Synthesis.GuestService.Validators
     {
         public GetGuestInvitesRequestValidator()
         {
-            // Both params are optional so no need to validate...
+            RuleFor(request => request.GuestEmail).NotEmpty().When(request => request.GuestUserId == null);
+            RuleFor(request => request.GuestUserId).NotEmpty().When(request => request.GuestEmail == null);
         }
     }
 }
