@@ -17,6 +17,7 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -48,6 +49,11 @@ namespace Synthesis.GuestService.Modules
 
             CreateRoute("GetGuestInvites", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestInvitesPath}", GetGuestInvitesByProjectIdAsync)
                 .Description("Gets All GuestInvites for a specific Project.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
+
+            CreateRoute("GetGuestInvitesForUser", HttpMethod.Post, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
+                .Description("Gets All GuestInvites for a specific User.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
@@ -145,10 +151,6 @@ namespace Synthesis.GuestService.Modules
             {
                 return await _guestInviteController.GetGuestInvitesByProjectIdAsync(projectId);
             }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
-            }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
@@ -156,6 +158,37 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 Logger.Error($"GuestInvites could not be retrieved for projectId {projectId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+            }
+        }
+
+        private async Task<object> GetGuestInvitesForUserAsync(dynamic input)
+        {
+            GetGuestInvitesRequest getUserInvitesRequest;
+            try
+            {
+                getUserInvitesRequest = this.Bind<GetGuestInvitesRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding to the SendEmailRequest model failed.", ex);
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
+            }
+
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _guestInviteController.GetGuestInvitesForUser(getUserInvitesRequest);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("GuestInvites could not be retrieved for user", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }

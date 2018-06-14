@@ -8,6 +8,7 @@
         public const string GuestInvitesRoute = "/v1/" + GuestInvitesPath;
         public const string GuestSessionsRoute = "/v1/" + GuestSessionsPath;
         public const string ProjectsRoute = "/v1/projects";
+        public const string UsersRoute = "/v1/users";
         public const string VerifyGuestRoute = "/v1/verify";
 
         // Paths
