@@ -179,8 +179,7 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
-            _logger.Error($"GuestInvite resources could not be found for projectId {projectId}");
-            throw new NotFoundException("GuestInvites could not be found");
+            return new List<GuestInvite>();
         }
 
         public async Task<IEnumerable<GuestInvite>> GetGuestInvitesForUser(GetGuestInvitesRequest request)
@@ -198,8 +197,7 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
-            _logger.Error("GuestInvite resources could not be found for user");
-            throw new NotFoundException("GuestInvites could not be found");
+            return new List<GuestInvite>();
         }
         
         public async Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite guestInviteModel)

@@ -49,12 +49,12 @@ namespace Synthesis.GuestService.Modules
 
             CreateRoute("GetGuestInvites", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestInvitesPath}", GetGuestInvitesByProjectIdAsync)
                 .Description("Gets All GuestInvites for a specific Project.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
             CreateRoute("GetGuestInvitesForUser", HttpMethod.Post, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
                 .Description("Gets All GuestInvites for a specific User.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
             CreateRoute("UpdateGuestInvite", HttpMethod.Put, $"{Routing.GuestInvitesRoute}/{{id:guid}}", UpdateGuestInviteAsync)
@@ -151,10 +151,6 @@ namespace Synthesis.GuestService.Modules
             {
                 return await _guestInviteController.GetGuestInvitesByProjectIdAsync(projectId);
             }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
-            }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
@@ -185,10 +181,6 @@ namespace Synthesis.GuestService.Modules
             try
             {
                 return await _guestInviteController.GetGuestInvitesForUser(getUserInvitesRequest);
-            }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
             }
             catch (ValidationFailedException ex)
             {

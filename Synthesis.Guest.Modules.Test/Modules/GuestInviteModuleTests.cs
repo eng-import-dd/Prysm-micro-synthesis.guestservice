@@ -315,12 +315,12 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
-        [Fact]
-        public async Task GetGuestInvitesByUserIdAsyncWithoutAccessReturnsForbidden()
-        {
-            var response = await ForbiddenBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }
+        //[Fact]
+        //public async Task GetGuestInvitesByUserIdAsyncWithoutAccessReturnsForbidden()
+        //{
+        //    var response = await ForbiddenBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+        //    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        //}
 
         //[Fact]
         //public async Task GetGuestInviteByUserIdReturnsOk()
