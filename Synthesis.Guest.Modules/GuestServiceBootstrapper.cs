@@ -44,6 +44,7 @@ using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.Serialization.Json;
+using Synthesis.SettingService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
@@ -52,6 +53,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using Synthesis.Common;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.InternalApi.Models;
@@ -73,6 +75,7 @@ namespace Synthesis.GuestService
         public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceName}.EventHub");
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
         public const string ServiceToServiceProjectApiKey = "ServiceToServiceProjectApiKey";
+        public const string ServiceToServiceSettingApiKey = "ServiceToServiceSettingApiKey";
 
         public GuestServiceBootstrapper()
         {
@@ -286,6 +289,10 @@ namespace Synthesis.GuestService
                 .As<ICache>()
                 .SingleInstance();
 
+            builder.RegisterType<SynthesisApi>()
+                .As<ISynthesisApi>()
+                .SingleInstance();
+
             // Validation
             RegisterValidation(builder);
 
@@ -322,14 +329,29 @@ namespace Synthesis.GuestService
                 .Keyed<IProjectApi>(ServiceToServiceProjectApiKey);
 
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
-            builder.RegisterType<SettingsApiWrapper>().As<ISettingsApiWrapper>();
+
+            // TODO: CU-598 ISettingApi calls use service-to-service auth call?
+            builder.RegisterType<SettingApi>().As<ISettingApi>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
+                .Keyed<ISettingApi>(ServiceToServiceSettingApiKey);
+
             builder.RegisterType<ParticipantApi>().As<IParticipantApi>();
             builder.RegisterType<UserApi>().As<IUserApi>();
             builder.RegisterType<ProjectGuestContextService>().As<IProjectGuestContextService>();
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
-            builder.RegisterType<GuestSessionController>().As<IGuestSessionController>();
+            builder.RegisterType<GuestSessionController>().As<IGuestSessionController>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceAccountSettingApi",
+                    (p, c) => c.ResolveKeyed<ISettingApi>(ServiceToServiceSettingApiKey)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceProjectApi",
+                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
+                .As<IProjectGuestContextController>();
+
             builder.RegisterType<ProjectLobbyStateController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "maxGuestsAllowedInProject",

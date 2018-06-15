@@ -236,6 +236,9 @@
     <Reference Include="Synthesis.Serialization.Json, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Json.1.0.9\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.SettingService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.SettingService.InternalApi.1.0.0-beta003\lib\net452\Synthesis.SettingService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Threading.1.1.0\lib\net452\Synthesis.Threading.dll</HintPath>
       <Private>True</Private>

@@ -58,8 +58,9 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="projectId"></param>
         /// <param name="accessCode"></param>
         /// <param name="currentUserId"></param>
+        /// <param name="currentUserTenantId">
         /// <returns></returns>
-        public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId)
+        public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId, Guid? currentUserTenantId)
         {
             if (projectId.Equals(Guid.Empty))
             {
@@ -72,45 +73,45 @@ namespace Synthesis.GuestService.Controllers
              MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
              MicroserviceResponse<Project> projectResponse) = await LoadData(projectId);
 
-            if ((!projectResponse.IsSuccess() && projectResponse.ResponseCode != HttpStatusCode.Forbidden) || projectResponse.Payload == null)
+            //if ((!projectResponse.IsSuccess() && projectResponse.ResponseCode != HttpStatusCode.Forbidden) || (projectResponse.Payload == null && projectResponse.ResponseCode != HttpStatusCode.Forbidden))
+            //{
+            //    //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
+            //    throw new InvalidOperationException($"Error fetching project {projectId}, {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
+            //}
+            if (!projectResponse.IsSuccess() || projectResponse.Payload == null)
             {
-                throw new InvalidOperationException($"Error fetching project {projectId}, {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
+                //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
+                throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {projectResponse?.ResponseCode} - {projectResponse?.ReasonPhrase}");
             }
             if (!projectUsersResponse.IsSuccess() || projectUsersResponse.Payload == null)
             {
+                //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
                 throw new InvalidOperationException($"Error fetching project users {projectId}, {projectUsersResponse.ResponseCode} - {projectUsersResponse.ReasonPhrase}");
             }
 
-            var project = projectResponse.Payload;
+            var project = projectResponse?.Payload;
             var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
-            var isGuest = await _projectGuestContextService.IsGuestAsync();
+            var userHasSameTenant = project.TenantId == currentUserTenantId;
+            var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
+            var isProjectGuest = await _projectGuestContextService.IsGuestAsync();
 
-            if (isGuest && userIsProjectMember)
+            if (isProjectGuest && userIsProjectMemberInSameTenant)
             {
                 //User is in project's account and was a guest who was promoted to a full
                 //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
                 await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
             }
 
-            var userHasAccess = isGuest ?
+            var userHasAccess = isProjectGuest ?
                 await DetermineGuestAccessAsync(currentUserId, projectId) :
-                projectResponse.ResponseCode != HttpStatusCode.Forbidden;
+                userIsProjectMemberInSameTenant;
 
-            if (projectResponse.ResponseCode != HttpStatusCode.Forbidden)
+            if (userHasAccess)
             {
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
 
-            // The user does not have access to the project so we need to fetch it with a service to service client
-            var serviceToServiceProjectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
-            if (!serviceToServiceProjectResponse.IsSuccess() || serviceToServiceProjectResponse?.Payload == null)
-            {
-                throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {serviceToServiceProjectResponse?.ResponseCode} - {serviceToServiceProjectResponse?.ReasonPhrase}");
-            }
-
-            project = serviceToServiceProjectResponse.Payload;
-
-            if (isGuest && guestProjectState.ProjectId == project.Id)
+            if (isProjectGuest && guestProjectState.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
@@ -231,12 +232,14 @@ namespace Synthesis.GuestService.Controllers
         {
             var guestUserTask =  _projectGuestContextService.GetProjectGuestContextAsync();
             var projectUsersTask =  _projectAccessApi.GetUserIdsByProjectAsync(projectId);
-            var projectTask =  _projectApi.GetProjectByIdAsync(projectId);
+            //var projectTask =  _projectApi.GetProjectByIdAsync(projectId);
+            var projectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             await Task.WhenAll(guestUserTask, projectUsersTask, projectTask);
 
             var guestProjectState = await guestUserTask;
-            var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+            //var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+            var projectResponse = await projectTask;
             var projectUsersResponse = await projectUsersTask;
 
             return (guestProjectState, projectUsersResponse, projectResponse);

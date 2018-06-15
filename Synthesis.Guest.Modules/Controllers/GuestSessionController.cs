@@ -16,12 +16,14 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.SettingService.InternalApi.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.Http.Microservice;
+
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -37,8 +39,8 @@ namespace Synthesis.GuestService.Controllers
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
         private readonly IProjectApi _projectApi;
-        private readonly ISettingsApiWrapper _settingsApi;
-        private readonly ISynthesisApi _synthesisApi;
+        private readonly IProjectApi _serviceToServiceProjectApi;
+        private readonly ISettingApi _serviceToServiceAccountSettingsApi;
         private readonly IUserApi _userApi;
         private readonly IValidatorLocator _validatorLocator;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
@@ -51,11 +53,11 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger.</param>
         /// <param name="projectApi"></param>
+        /// <param name="serviceToServiceProjectApi"></param>
         /// <param name="projectLobbyStateController"></param>
-        /// <param name="settingsApi"></param>
         /// <param name="userApi"></param>
         /// <param name="emailUtility"></param>
-        /// <param name="synthesisApi">The monolithic Synthesis cloud service.</param>
+        /// <param name="serviceToServiceAccountSettingsApi">The API for Account/Tenant specific settings</param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -63,10 +65,10 @@ namespace Synthesis.GuestService.Controllers
             ILoggerFactory loggerFactory,
             IEmailUtility emailUtility,
             IProjectApi projectApi,
+            IProjectApi serviceToServiceProjectApi,
             IUserApi userApi,
             IProjectLobbyStateController projectLobbyStateController,
-            ISettingsApiWrapper settingsApi,
-            ISynthesisApi synthesisApi)
+            ISettingApi serviceToServiceAccountSettingsApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
@@ -78,9 +80,9 @@ namespace Synthesis.GuestService.Controllers
             _emailUtility = emailUtility;
 
             _projectApi = projectApi;
+            _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _userApi = userApi;
-            _settingsApi = settingsApi;
-            _synthesisApi = synthesisApi;
+            _serviceToServiceAccountSettingsApi = serviceToServiceAccountSettingsApi;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
@@ -217,7 +219,7 @@ namespace Synthesis.GuestService.Controllers
             ProjectService.InternalApi.Models.Project project;
             if (request.ProjectId != Guid.Empty)
             {
-                var projectResponse = await _projectApi.GetProjectByIdAsync(request.ProjectId);
+                var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
                 if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
@@ -229,7 +231,7 @@ namespace Synthesis.GuestService.Controllers
             }
             else
             {
-                var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
+                var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
                 if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
@@ -243,7 +245,7 @@ namespace Synthesis.GuestService.Controllers
             if (project.TenantId == Guid.Empty)
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                response.Message = $"There is not tenant associated with this project. Please contact support to fix the project.";
+                response.Message = $"There is no tenant associated with this project. Please contact support to fix this project.";
                 return response;
             }
 
@@ -255,26 +257,10 @@ namespace Synthesis.GuestService.Controllers
 
             var userResponse = await _userApi.GetUserByUsernameAsync(request.Username);
 
-            var user = userResponse.Payload;
+            var user = userResponse?.Payload;
 
-            var isProjectInUsersAccount = user?.TenantId == project.TenantId;
-            response.AccountId = user?.TenantId;
-
-            //TODO CU-598 - Need to test whether GuestMode is enable for the project Account
-            //var accountSettings = _synthesisApi
-
-            if (!project.IsGuestModeEnabled && !isProjectInUsersAccount)
+            if (userResponse?.Payload == null)
             {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                response.Message = "Guest mode is not enabled on the project";
-                return response;
-            }
-
-
-
-            if (userResponse.Payload == null)
-            {
-                //TODO: CU-598 - Lookup guest invite by request.UserName
                 var invite = (await _guestInviteRepository.GetItemsAsync(x => x.GuestEmail == request.Username && x.ProjectAccessCode == request.ProjectAccessCode)).FirstOrDefault();
                 if (!string.IsNullOrEmpty(invite?.GuestEmail))
                 {
@@ -284,13 +270,11 @@ namespace Synthesis.GuestService.Controllers
                 }
                 else
                 {
-                    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
+                    response.ResultCode = VerifyGuestResponseCode.InvalidNoInvite;
                     response.Message = "This user does not exist and has not been invited";
                     return response;
                 }
             }
-
-            
 
             if (user.IsLocked)
             {
@@ -299,32 +283,36 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            // TODO: IsEmailVerified is no longer supplied in the user object returned by the microservice.  Needs to be obtained from elsewhere
-            //if (user.IsEmailVerified != true)
-            //{
-            //    response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
-            //    return response;
-            //}
-
-            // TODO: TenantId is no longer part of the User model.  This is in-flux due to try-n-buy and needs to be thought thru
-            //if (user.TenantId != null)
-            //{
-            //    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
-            //    return response;
-            //}
-
-            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id.GetValueOrDefault());
-            if (settingsResponse != null)
+            if (user.IsEmailVerified != true)
             {
-                var settings = settingsResponse.Payload;
-                if (settings.IsGuestModeEnabled != true)
-                {
-                    response.ResultCode = VerifyGuestResponseCode.Failed;
-                    return response;
-                }
+                response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
+                response.Message = "The user has not verified his email address";
+                return response;
+            }
+
+            var isProjectInUsersAccount = user.TenantId == project.TenantId;
+            response.AccountId = user.TenantId;
+
+            //TODO CU-598 - Need to test whether GuestMode is enable for the project Account
+            var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);
+            var isGuestModeEnableOnProjectAccountSettings = userSettingsResponse.IsSuccess() && userSettingsResponse.Payload != null && userSettingsResponse.Payload.IsGuestModeEnabled;
+
+            if (!isGuestModeEnableOnProjectAccountSettings && !isProjectInUsersAccount)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = "Guest mode is not enabled on the account";
+                return response;
+            }
+
+            if (!project.IsGuestModeEnabled && !isProjectInUsersAccount)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = "Guest mode is not enabled on the project";
+                return response;
             }
 
             response.ResultCode = VerifyGuestResponseCode.Success;
+            response.Message = "The user may join as a guest";
             return response;
         }
 
@@ -349,7 +337,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException($"User guest session with userId {sendingUserId} and project access code {accessCode} could not be found");
             }
 
-            var project = (await _projectApi.GetProjectByAccessCodeAsync(accessCode)).Payload;
+            var project = (await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(accessCode)).Payload;
             if (project == null)
             {
                 throw new NotFoundException($"Project with access code {accessCode} could not be found");

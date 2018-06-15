@@ -32,6 +32,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly ProjectGuestContextController _target;
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Guid _currentUserId = Guid.NewGuid();
+        private readonly Guid _userWithTenantTenantId = Guid.NewGuid();
+        private readonly Guid _userWithoutTenantTenantId = Guid.Empty;
         private readonly Guid _defaultProjectId = Guid.NewGuid();
         private readonly Project _defaultProject;
         private readonly ProjectGuestContext _defaultProjectGuestContext;
@@ -42,7 +44,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         public ProjectGuestContextControllerTests()
         {
-            _defaultProject = new Project() { Id = _defaultProjectId };
+            _defaultProject = new Project() { Id = _defaultProjectId, TenantId = _userWithTenantTenantId};
             _defaultUser = new User { Id = _currentUserId, Username = "George C" };
             _defaultProjectLobbyState = new ProjectLobbyState() { LobbyState = LobbyState.Normal, ProjectId = _defaultProjectId };
             _defaultGuestSession = new GuestSession { ProjectId = _defaultProjectId, UserId = _currentUserId, ProjectAccessCode = _defaultAccessCode, GuestSessionState = GuestState.InLobby };
@@ -51,7 +53,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 GuestSessionId = Guid.NewGuid(),
                 GuestState = GuestState.InLobby,
                 ProjectId =_defaultProjectId,
-                TenantId = Guid.NewGuid()
+                TenantId = _userWithoutTenantTenantId
             };
 
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
@@ -109,7 +111,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GuestSessionIsEndedIfProjectIdIsEmpty()
         {
-            await _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId);
+            await _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId, _userWithoutTenantTenantId);
 
             _guestSessionControllerMock
                 .Verify(x => x.UpdateGuestSessionStateAsync(It.Is<UpdateGuestSessionStateRequest>(y =>
@@ -120,7 +122,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task ProjectGuestContextIsResetIfProjectIdIsEmpty()
         {
-            await _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId);
+            await _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId, _userWithoutTenantTenantId);
 
             _projectGuestContextServiceMock
                 .Verify(y => y.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(x =>
@@ -135,7 +137,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.UpdateGuestSessionStateAsync(It.IsAny<UpdateGuestSessionStateRequest>()))
                 .ReturnsAsync(new UpdateGuestSessionStateResponse() { ResultCode = UpdateGuestSessionStateResultCodes.Failed });
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId, _userWithoutTenantTenantId));
         }
         #endregion
 
@@ -144,12 +146,12 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [InlineData(HttpStatusCode.InternalServerError)]
         public async Task InvalidOperationIsThrownIfProjectCannotBeFetched(HttpStatusCode statusCode)
         {
-            _projectApiMock
+            _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId));
+                _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithoutTenantTenantId));
         }
 
         [Theory]
@@ -162,7 +164,29 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(IEnumerable<Guid>)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId));
+                _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithoutTenantTenantId));
+        }
+
+
+        [Theory]
+        [InlineData(HttpStatusCode.BadRequest)]
+        [InlineData(HttpStatusCode.InternalServerError)]
+        [InlineData(HttpStatusCode.Forbidden)]
+        [InlineData(HttpStatusCode.BadGateway)]
+        [InlineData(HttpStatusCode.NotFound)]
+        [InlineData(HttpStatusCode.Unauthorized)]
+        public async Task InvalidOperationIsThrownForGuestIfProjectCannotBeFetchedByServiceToServiceClient(HttpStatusCode statusCode)
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.IsGuestAsync())
+                .ReturnsAsync(true);
+
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+                .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithoutTenantTenantId));
         }
 
         [Fact]
@@ -172,7 +196,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(true);
 
-            await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId);
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
 
             _projectGuestContextServiceMock
                 .Verify(y => y.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(x =>
@@ -187,7 +211,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(false);
 
-            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId);
+            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
 
             Assert.True(response.UserHasAccess);
         }
@@ -199,11 +223,15 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(false);
 
-            _projectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Forbidden, default(Project)));
+            _projectAccessApiMock
+                .Setup(x => x.GetUserIdsByProjectAsync(_defaultProjectId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
 
-            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId);
+            //_serviceToServiceProjectApiMock
+            //    .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+            //    .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Forbidden, default(Project)));
+
+            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
 
             Assert.False(response.UserHasAccess);
         }

@@ -180,7 +180,7 @@
       <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta003\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Common, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Common.2.0.0-beta009\lib\net452\Synthesis.Common.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Common.2.0.0-beta011\lib\net452\Synthesis.Common.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
@@ -268,6 +268,9 @@
     </Reference>
     <Reference Include="Synthesis.Serialization.Json, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Json.1.0.9\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.SettingService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.SettingService.InternalApi.1.0.0-beta003\lib\net452\Synthesis.SettingService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta017\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
