@@ -214,7 +214,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta017\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta019\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -245,7 +245,7 @@
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta005\lib\net452\Synthesis.Policy.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta010\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta012\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>

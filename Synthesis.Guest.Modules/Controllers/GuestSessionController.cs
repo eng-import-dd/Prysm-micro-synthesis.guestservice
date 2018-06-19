@@ -249,10 +249,8 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            response.AssociatedProjectId = project.Id;
             response.ProjectAccessCode = request.ProjectAccessCode;
             response.ProjectName = project.Name;
-            response.UserId = project.OwnerId;
             response.Username = request.Username;
 
             var userResponse = await _userApi.GetUserByUsernameAsync(request.Username);
@@ -291,7 +289,6 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var isProjectInUsersAccount = user.TenantId == project.TenantId;
-            response.AccountId = user.TenantId;
 
             //TODO CU-598 - Need to test whether GuestMode is enable for the project Account
             var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);
