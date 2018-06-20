@@ -203,6 +203,9 @@ namespace Synthesis.GuestService
                 };
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
+            builder.RegisterType<DocumentFileReader>().As<IDocumentFileReader>();
+            builder.RegisterType<DefaultDocumentDbConfigurationProvider>().As<IDocumentDbConfigurationProvider>();
+            builder.RegisterInstance(Assembly.GetExecutingAssembly());
 
             builder.Register(c =>
             {
