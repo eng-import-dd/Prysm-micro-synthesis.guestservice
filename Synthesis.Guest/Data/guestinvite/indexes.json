@@ -3,48 +3,13 @@
   "automatic": true,
   "includedPaths": [
     {
-      "path": "/ProjectId/?",
+      "path": "/*",
       "indexes": [
         {
-          "kind": "Hash",
-          "dataType": "String",
-          "precision": 3
-        }
-      ]
-    },
-    {
-      "path": "/GuestEmail/?",
-      "indexes": [
-        {
-          "kind": "Hash",
-          "dataType": "String",
-          "precision": 3
-        }
-      ]
-    },
-    {
-      "path": "/ProjectAccessCode/?",
-      "indexes": [
-        {
-          "kind": "Hash",
-          "dataType": "String",
-          "precision": 3
-        }
-      ]
-    },
-    {
-      "path": "/ProjectId/?",
-      "indexes": [
-        {
-          "kind": "Hash",
-          "dataType": "String",
-          "precision": 3
-        }
-      ]
-    },
-    {
-      "path": "/UserId/?",
-      "indexes": [
+          "kind": "Range",
+          "dataType": "Number",
+          "precision": -1
+        },
         {
           "kind": "Hash",
           "dataType": "String",
@@ -53,9 +18,5 @@
       ]
     }
   ],
-  "excludedPaths": [
-    {
-      "path": "/"
-    }
-  ]
+  "excludedPaths": []
 }
