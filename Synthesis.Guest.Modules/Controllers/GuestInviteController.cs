@@ -142,7 +142,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ResetAccessCodeException($"Could not reset the project access code for project with Id={project.Id}, Reason={codeResult.ReasonPhrase} Error={_serializer.SerializeToString(codeResult.ErrorResponse)}");
             }
 
-            return codeResult.Payload;
+            return codeResult.Payload.GuestAccessCode;
         }
 
         public async Task<GuestInvite> GetGuestInviteAsync(Guid id)
