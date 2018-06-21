@@ -175,6 +175,14 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            //TODO: GuestMode - This Get Needs To Match Criteria of the GetGuestSessions stored procedure.
+            //This method gets called through a Cloud Shim by the web client after it receives a notification that the
+            //list of guests has changed. 
+            //The method would more accurately be named "GetMostRecentGuestSessionsOfEligibleUsersByProjectIdAsync".
+            // 1. GuestSession.ProjectId = Project.id
+            // 2. && Project.AccessCode = GuestGuest.AccessCode
+            // 3. && GuestSession.GuestSessionStateId != 3 (PromotedToProjectMember)
+            // 4. Return only most recent record for User based on CreatedDateTime
             var result = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
             if (result != null)
             {

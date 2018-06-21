@@ -343,14 +343,14 @@ namespace Synthesis.GuestService
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
+
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceAccountSettingApi",
                     (p, c) => c.ResolveKeyed<ISettingApi>(ServiceToServiceSettingApiKey)))
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceProjectApi",
-                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
-                .As<IProjectGuestContextController>();
+                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)));
 
             builder.RegisterType<ProjectLobbyStateController>()
                 .WithParameter(new ResolvedParameter(

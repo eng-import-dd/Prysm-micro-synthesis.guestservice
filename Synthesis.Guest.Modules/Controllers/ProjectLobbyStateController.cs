@@ -75,6 +75,10 @@ namespace Synthesis.GuestService.Controllers
 
             var participantTask = _sessionService.GetParticipantsByGroupNameAsync($"{LegacyGroupPrefixes.Project}{projectId}");
             var projectTask = _projectApi.GetProjectByIdAsync(projectId);
+
+            // TODO: These are not the correct criteria for retrieving guest sessions. 
+            // The GuestSession.ProjectAccessCode needs to match the Project's Access Code.
+            // And only the sessions with GuestSessionState == GuestState.InProject are needed
             var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
 
             await Task.WhenAll(projectTask, projectGuestsTask);
