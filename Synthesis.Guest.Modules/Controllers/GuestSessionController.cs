@@ -214,7 +214,7 @@ namespace Synthesis.GuestService.Controllers
             return result;
         }
 
-        public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request)
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId)
         {
             var validationResult = _validatorLocator.Validate<GuestVerificationRequestValidator>(request);
             if (!validationResult.IsValid)
@@ -296,7 +296,7 @@ namespace Synthesis.GuestService.Controllers
                 return response;
             }
 
-            var isProjectInUsersAccount = user.TenantId == project.TenantId;
+            var isProjectInUsersAccount = guestTenantId == project.TenantId;
 
             //TODO CU-598 - Need to test whether GuestMode is enable for the project Account
             var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);

@@ -43,7 +43,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
 
             _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create<string>(HttpStatusCode.OK, Project.Example().GuestAccessCode));
+                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.OK, Project.Example()));
 
             _emailServiceMock.Setup(x => x.SendGuestInviteEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
@@ -157,7 +157,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
 
             _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create<string>(HttpStatusCode.NotFound, new ErrorResponse()));
+                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<ResetAccessCodeException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite));
         }

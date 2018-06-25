@@ -70,7 +70,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(new UpdateGuestSessionStateResponse());
 
             _guestSessionControllerMock
-                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>()))
+                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestVerificationResponse() {ResultCode = VerifyGuestResponseCode.Success});
 
             _guestSessionControllerMock

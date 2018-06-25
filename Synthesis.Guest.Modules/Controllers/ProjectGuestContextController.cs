@@ -73,11 +73,6 @@ namespace Synthesis.GuestService.Controllers
              MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
              MicroserviceResponse<Project> projectResponse) = await LoadData(projectId);
 
-            //if ((!projectResponse.IsSuccess() && projectResponse.ResponseCode != HttpStatusCode.Forbidden) || (projectResponse.Payload == null && projectResponse.ResponseCode != HttpStatusCode.Forbidden))
-            //{
-            //    //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
-            //    throw new InvalidOperationException($"Error fetching project {projectId}, {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
-            //}
             if (!projectResponse.IsSuccess() || projectResponse.Payload == null)
             {
                 //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
@@ -124,7 +119,7 @@ namespace Synthesis.GuestService.Controllers
 
             var verifyRequest = new GuestVerificationRequest() { Username = userResponse.Payload.Username ?? userResponse.Payload.Email, ProjectAccessCode = accessCode, ProjectId = projectId };
 
-            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest);
+            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest, currentUserTenantId);
 
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {
@@ -233,13 +228,11 @@ namespace Synthesis.GuestService.Controllers
         {
             var guestUserTask =  _projectGuestContextService.GetProjectGuestContextAsync();
             var projectUsersTask =  _projectAccessApi.GetUserIdsByProjectAsync(projectId);
-            //var projectTask =  _projectApi.GetProjectByIdAsync(projectId);
             var projectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             await Task.WhenAll(guestUserTask, projectUsersTask, projectTask);
 
             var guestProjectState = await guestUserTask;
-            //var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
             var projectResponse = await projectTask;
             var projectUsersResponse = await projectUsersTask;
 

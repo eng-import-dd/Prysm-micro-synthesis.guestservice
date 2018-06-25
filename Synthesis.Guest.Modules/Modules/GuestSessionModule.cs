@@ -242,7 +242,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.VerifyGuestAsync(request);
+                return await _guestSessionController.VerifyGuestAsync(request, TenantId);
             }
             catch (NotFoundException)
             {
