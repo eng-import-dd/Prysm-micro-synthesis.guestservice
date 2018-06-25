@@ -122,7 +122,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Error fetching user for {currentUserId}, {userResponse?.ResponseCode} - {userResponse?.ReasonPhrase}");
             }
 
-            var verifyRequest = new GuestVerificationRequest() { Username = userResponse.Payload.Username, ProjectAccessCode = accessCode, ProjectId = projectId };
+            var verifyRequest = new GuestVerificationRequest() { Username = userResponse.Payload.Username ?? userResponse.Payload.Email, ProjectAccessCode = accessCode, ProjectId = projectId };
 
             var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest);
 
@@ -211,7 +211,8 @@ namespace Synthesis.GuestService.Controllers
                 Project = project,
                 GuestSession = guestSession,
                 UserHasAccess = userHasAccess,
-                LobbyState = lobbyState
+                LobbyState = lobbyState,
+                Message = "Successfully set current project"
             };
         }
 
