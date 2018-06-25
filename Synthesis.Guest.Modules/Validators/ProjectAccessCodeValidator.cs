@@ -8,9 +8,10 @@ namespace Synthesis.GuestService.Validators
         {
             RuleFor(request => request)
                 .Length(10).WithMessage("The project access code must be 10 characters in length");
-            RuleFor(request => request)
-                .Must(x => int.TryParse(x, out var _))
-                .WithMessage("The project access code must be a number");
+            //CU-598: Figure why this is causing a null ref exception
+            //RuleFor(request => request)
+                //.Must(x => int.TryParse(x, out var _))
+                //.WithMessage("The project access code must be a number");
         }
     }
 }
