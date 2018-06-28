@@ -309,6 +309,14 @@
     <Compile Include="Modules\GuestSessionModuleTests.cs" />
     <Compile Include="Modules\ProjectLobbyStateModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Validators\EmailAddressValidatorTests.cs" />
+    <Compile Include="Validators\GetGuestInvitesRequestValidatorTests.cs" />
+    <Compile Include="Validators\GuestInviteIdValidatorTests.cs" />
+    <Compile Include="Validators\GuestInviteValidatorTests.cs" />
+    <Compile Include="Validators\GuestSessionIdValidatorTests.cs" />
+    <Compile Include="Validators\GuestSessionValidatorTests.cs" />
+    <Compile Include="Validators\ProjectAccessCodeValidatorTests.cs" />
+    <Compile Include="Validators\ProjectIdValidatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.Guest.Modules\Synthesis.Guest.Modules.csproj">
