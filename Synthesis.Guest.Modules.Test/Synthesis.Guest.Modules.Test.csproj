@@ -309,6 +309,7 @@
     <Compile Include="Modules\GuestSessionModuleTests.cs" />
     <Compile Include="Modules\ProjectLobbyStateModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\LoopUtilities.cs" />
     <Compile Include="Validators\EmailAddressValidatorTests.cs" />
     <Compile Include="Validators\GetGuestInvitesRequestValidatorTests.cs" />
     <Compile Include="Validators\GuestInviteIdValidatorTests.cs" />

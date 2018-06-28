@@ -182,7 +182,7 @@ namespace Synthesis.GuestService.Controllers
             return new List<GuestInvite>();
         }
 
-        public async Task<IEnumerable<GuestInvite>> GetGuestInvitesForUser(GetGuestInvitesRequest request)
+        public async Task<IEnumerable<GuestInvite>> GetGuestInvitesForUserAsync(GetGuestInvitesRequest request)
         {
             var validationResult = _validatorLocator.Validate<GetGuestInvitesRequestValidator>(request);
             if (!validationResult.IsValid)
