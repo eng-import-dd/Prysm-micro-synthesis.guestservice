@@ -315,66 +315,90 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
-        //[Fact]
-        //public async Task GetGuestInvitesByUserIdAsyncWithoutAccessReturnsForbidden()
-        //{
-        //    var response = await ForbiddenBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
-        //    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        //}
+        [Fact]
+        public async Task GetGuestInvitesByUserIdAsyncWithoutAccessReturnsForbidden()
+        {
+            var response = await ForbiddenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
 
-        //[Fact]
-        //public async Task GetGuestInviteByUserIdReturnsOk()
-        //{
-        //    _guestInviteControllerMock
-        //        .Setup(x => x.GetGuestInvitesByUserIdAsync(It.IsAny<Guid>()))
-        //        .ReturnsAsync(new List<GuestInvite> {GuestInvite.Example()});
+        [Fact]
+        public async Task GetGuestInviteByUserIdReturnsOk()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.GetGuestInvitesForUserAsync(It.IsAny<GetGuestInvitesRequest>()))
+                .ReturnsAsync(new List<GuestInvite> { GuestInvite.Example() });
 
-        //    var response = await AuthenticatedBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+            var response = await AuthenticatedBrowser.Post($"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", BuildRequest);
 
-        //    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        //}
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
 
-        //[Fact]
-        //public async Task GetGuestInviteByUserIdReturnsInternalServerErrorOnUnexpectedException()
-        //{
-        //    _guestInviteControllerMock
-        //        .Setup(x => x.GetGuestInvitesByUserIdAsync(It.IsAny<Guid>()))
-        //        .Throws<Exception>();
+        [Fact]
+        public async Task GetGuestInviteByUserIdReturnsInternalServerErrorOnUnexpectedException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.GetGuestInvitesForUserAsync(It.IsAny<GetGuestInvitesRequest>()))
+                .Throws<Exception>();
 
-        //    var response = await AuthenticatedBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+            var response = await AuthenticatedBrowser.Post($"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", BuildRequest);
 
-        //    Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        //}
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
 
-        //[Fact]
-        //public async Task GetGuestInviteByUserIdReturnsBadRequestOnValidationFailedException()
-        //{
-        //    _guestInviteControllerMock
-        //        .Setup(x => x.GetGuestInvitesByUserIdAsync(It.IsAny<Guid>()))
-        //        .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+        [Fact]
+        public async Task GetGuestInviteByUserIdReturnsBadRequestOnValidationFailedException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.GetGuestInvitesForUserAsync(It.IsAny<GetGuestInvitesRequest>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-        //    var response = await AuthenticatedBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+            var response = await AuthenticatedBrowser.Post($"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", BuildRequest);
 
-        //    Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        //}
-
-        //[Fact]
-        //public async Task GetGuestInviteByUserIdReturnsNotFoundOnNotFoundException()
-        //{
-        //    _guestInviteControllerMock
-        //        .Setup(x => x.GetGuestInvitesByUserIdAsync(It.IsAny<Guid>()))
-        //        .Throws(new NotFoundException("message!"));
-
-        //    var response = await AuthenticatedBrowser.Get($"{Routing.UsersRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
-
-        //    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        //}
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
 
         [Fact]
         public async Task UpdateGuestInviteAsyncWithoutAccessReturnsForbidden()
         {
             var response = await ForbiddenBrowser.Put($"{Routing.GuestInvitesRoute}/{Guid.NewGuid()}", BuildRequest);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestInviteByProjectIdReturnsOk()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.GetGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new List<GuestInvite> { GuestInvite.Example() });
+
+            var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestInviteByProjectIdReturnsInternalServerErrorOnUnexpectedException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.GetGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
+                .Throws<Exception>();
+
+            var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestInviteByProjectIdReturnsBadRequestOnValidationFailedException()
+        {
+            _guestInviteControllerMock
+                .Setup(x => x.GetGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
     }
 }
