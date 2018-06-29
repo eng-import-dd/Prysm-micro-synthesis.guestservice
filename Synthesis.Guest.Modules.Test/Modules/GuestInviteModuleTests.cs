@@ -365,10 +365,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
-
-
-
-
         [Fact]
         public async Task GetGuestInviteByProjectIdReturnsOk()
         {
