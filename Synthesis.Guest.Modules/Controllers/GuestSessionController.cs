@@ -116,14 +116,13 @@ namespace Synthesis.GuestService.Controllers
                 return;
             }
 
-            var endSessionTasks = openSessions.Select(guestSession =>
-            {
-                return new Task(async () =>
+            var endSessionTasks = openSessions.Select(session =>
                 {
-                    guestSession.GuestSessionState = GuestState.Ended;
-                    await _guestSessionRepository.UpdateItemAsync(guestSession.Id, guestSession);
+                    session.GuestSessionState = GuestState.Ended;
+                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
+                    //TODO: Test that exception thrown when session.id not found
+                    //return _guestSessionRepository.UpdateItemAsync(Guid.NewGuid(), session);
                 });
-            });
 
             await Task.WhenAll(endSessionTasks);
         }
@@ -175,9 +174,9 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            //TODO: GuestMode - This Get Needs To Match Criteria of the GetGuestSessions stored procedure.
+            //TODO: GuestMode - This Get Needs To Match Criteria of the Victory Release GetGuestSessions stored procedure.
             //This method gets called through a Cloud Shim by the web client after it receives a notification that the
-            //list of guests has changed. 
+            //list of guests has changed.
             //The method would more accurately be named "GetMostRecentGuestSessionsOfEligibleUsersByProjectIdAsync".
             // 1. GuestSession.ProjectId = Project.id
             // 2. && Project.AccessCode = GuestGuest.AccessCode

@@ -9,6 +9,7 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
@@ -32,7 +33,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IProjectApi> _projectApi = new Mock<IProjectApi>();
-        private const int MaxNumberOfGuests = 0;
+        private const int MaxNumberOfGuests = 10;
         private static ValidationResult SuccessfulValidationResult => new ValidationResult();
         private static ValidationResult FailedValidationResult => new ValidationResult(
             new List<ValidationFailure>
@@ -133,8 +134,19 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode, bool participantRequestFails)
         {
             SetupApisForRecalculate(projectStatusCode, participantRequestFails);
-            await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _projectLobbyStateRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.Error)));
+
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<ProjectLobbyState>()))
+                .Throws<DocumentNotFoundException>();
+            var projectId = Guid.NewGuid();
+            var expectedResult = new ProjectLobbyState(){ProjectId = projectId, LobbyState = LobbyState.Error};
+
+            var result = await _target.RecalculateProjectLobbyStateAsync(projectId);
+
+
+            Assert.Equal(projectId, result.ProjectId);
+            Assert.Equal(LobbyState.Error, result.LobbyState);
+            //_projectLobbyStateRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.Error)));
         }
 
         [Fact]
@@ -146,14 +158,110 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncThrowsNotFoundExceptionIfProjectLobbyStateDoesNotExist()
+        public async Task RecalculateProjectLobbyStateAsyncCreatesAndReturnsLobbyStateIfNotFoundAndProjectExists()
         {
             SetupApisForRecalculate();
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(default(ProjectLobbyState)));
+
             _projectLobbyStateRepositoryMock
                 .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<ProjectLobbyState>()))
                 .Throws<DocumentNotFoundException>();
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid()));
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<ProjectLobbyState>()))
+                .Returns(Task.FromResult(ProjectLobbyState.Example()));
+
+
+            var result = await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
+            Assert.IsAssignableFrom<ProjectLobbyState>(result);
+        }
+
+        [Fact]
+        public async Task RecalculateProjectLobbyStateAsyncReturnsLobbyStateErrorIfNotFoundAndProjectDoesNotExist()
+        {
+            SetupApisForRecalculate(HttpStatusCode.NotFound, false);
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(default(ProjectLobbyState)));
+
+            var result = await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
+            Assert.IsAssignableFrom<ProjectLobbyState>(result);
+        }
+
+        [Fact]
+        public async Task RecalculateProjectLobbyStateAsyncCalculatesCurrentGuestCount()
+        {
+            var participants = new List<Participant>();
+            var project = Project.Example();
+            var projectId = project.Id;
+            for(int i = 1; i <= 5; i++)
+            {
+                var participant = Participant.Example();
+                participant.ProjectId = projectId;
+                participant.GuestSessionId =  (Guid?)null;
+                participant.IsGuest = false;
+                participants.Add(participant);
+            }
+
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(participants);
+
+            var guestSessions = new List<GuestSession>();
+            
+            project.GuestAccessCode = "0123456789";
+            for (int i = 1; i <= 10; i++)
+            {
+                var guestSession = GuestSession.Example();
+                guestSession.ProjectId = projectId;
+                guestSession.ProjectAccessCode = project.GuestAccessCode;
+                guestSession.GuestSessionState = GuestState.InProject;
+                guestSession.CreatedDateTime = DateTime.UtcNow;
+                guestSessions.Add(guestSession);
+
+                // Should never have two InProject sessions for same user and project, 
+                // but need to test LINQ query with group by, where, and order by clauses.
+                var guestSession2 = CloneGuestSession(guestSession);
+                //guestSession2.GuestSessionState = GuestState.Ended;
+                guestSession2.CreatedDateTime = DateTime.UtcNow.AddHours(-1.0);
+                guestSessions.Add(guestSession2);
+
+                var guestSession3 = CloneGuestSession(guestSession);
+                //guestSession3.GuestSessionState = GuestState.Ended;
+                guestSession3.CreatedDateTime = DateTime.UtcNow.AddHours(-2.0);
+                guestSessions.Add(guestSession3);
+
+                //var guestSession4 = CloneGuestSession(guestSession);
+                //guestSession4.GuestSessionState = GuestState.Ended;
+                //guestSession4.CreatedDateTime = DateTime.UtcNow.AddHours(-3.0);
+                //guestSessions.Add(guestSession4);
+            }
+
+            _guestSessionRepositoryMock
+                .Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(guestSessions);
+
+            _projectApi
+                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(default(ProjectLobbyState)));
+
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<ProjectLobbyState>()))
+                .Throws<DocumentNotFoundException>();
+
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<ProjectLobbyState>()))
+                .ReturnsAsync((ProjectLobbyState state) => state);
+
+
+            var result = await _target.RecalculateProjectLobbyStateAsync(project.Id);
+            Assert.IsAssignableFrom<ProjectLobbyState>(result);
+            Assert.Equal(LobbyState.GuestLimitReached, result.LobbyState);
         }
 
         [Fact]
@@ -167,13 +275,33 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetProjectLobbyStateAsyncThrowsNotFoundExceptionIfProjectLobbyStateDoesNotExist()
+        public async Task GetProjectLobbyStateAsyncReturnsStateIfNotFoundAndProjectExists()
+        {
+
+            _projectLobbyStateRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(ProjectLobbyState.Example()));
+
+            SetupApisForRecalculate();
+
+            var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
+            Assert.IsAssignableFrom<ProjectLobbyState>(result);
+        }
+
+        [Fact]
+        public async Task GetProjectLobbyStateAsyncReturnsLobbyStateErrorIfProjectLobbyStateNotFoundAndProjectDoesNotExist()
         {
             _projectLobbyStateRepositoryMock
                 .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(default(ProjectLobbyState)));
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _target.GetProjectLobbyStateAsync(Guid.NewGuid()));
+            _projectApi
+                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, default(Project)));
+
+            var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
+
+            Assert.Equal(LobbyState.Error, result.LobbyState);
         }
 
         [Fact]
@@ -209,9 +337,31 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     .ReturnsAsync(default(IEnumerable<Participant>));
             }
 
+            var project = projectStatusCode == HttpStatusCode.OK ? Project.Example() : default(Project);
             _projectApi
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(projectStatusCode, default(Project)));
+                .ReturnsAsync(MicroserviceResponse.Create(projectStatusCode, project));
+        }
+
+        private GuestSession CloneGuestSession(GuestSession guestSession)
+        {
+            return new GuestSession()
+            {
+                Id = guestSession.Id,
+                AccessGrantedBy = guestSession.AccessGrantedBy,
+                AccessGrantedDateTime = guestSession.AccessGrantedDateTime,
+                AccessRevokedBy = guestSession.AccessRevokedBy,
+                AccessRevokedDateTime = guestSession.AccessRevokedDateTime,
+                CreatedDateTime = guestSession.CreatedDateTime,
+                Email = guestSession.Email,
+                EmailedHostDateTime = guestSession.EmailedHostDateTime,
+                FirstName = guestSession.FirstName,
+                GuestSessionState = guestSession.GuestSessionState,
+                LastName = guestSession.LastName,
+                LastAccessDate = guestSession.LastAccessDate,
+                ProjectId = guestSession.ProjectId,
+                ProjectAccessCode = guestSession.ProjectAccessCode
+            };
         }
     }
 }

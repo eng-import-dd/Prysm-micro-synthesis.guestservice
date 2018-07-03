@@ -16,6 +16,7 @@ using Synthesis.ParticipantService.InternalApi.Constants;
 using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -65,7 +66,7 @@ namespace Synthesis.GuestService.Controllers
         }
 
         /// <inheritdoc />
-        public async Task RecalculateProjectLobbyStateAsync(Guid projectId)
+        public async Task<ProjectLobbyState> RecalculateProjectLobbyStateAsync(Guid projectId)
         {
             var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
             if (!validationResult.IsValid)
@@ -73,51 +74,57 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var participantTask = _sessionService.GetParticipantsByGroupNameAsync($"{LegacyGroupPrefixes.Project}{projectId}");
-            var projectTask = _projectApi.GetProjectByIdAsync(projectId);
+            var projectResult = await _projectApi.GetProjectByIdAsync(projectId);
 
-            // TODO: These are not the correct criteria for retrieving guest sessions.
-            // The GuestSession.ProjectAccessCode needs to match the Project's Access Code.
-            // And only the sessions with GuestSessionState == GuestState.InProject are needed
-            var projectGuestsTask = _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
+            if (!projectResult.IsSuccess() || projectResult.Payload == null)
+            {
+                var saveState = projectResult.Payload != null;
+                var result = await SetProjectLobbyStateToError(projectId, saveState);
 
-            await Task.WhenAll(projectTask, projectGuestsTask);
+                _logger.Error($"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}");
+                return result;
+            }
+
+            var project = projectResult.Payload;
 
             IEnumerable<Participant> participantResult;
+            var participantTask = _sessionService.GetParticipantsByGroupNameAsync($"{LegacyGroupPrefixes.Project}{projectId}");
             try
             {
                 participantResult = await participantTask;
             }
             catch (Exception ex)
             {
-                await SetProjectLobbyStateToError(projectId);
+                var result = await SetProjectLobbyStateToError(projectId, false);
                 _logger.Error($"Failed to retrieve participants for project: {projectId}. Message: {ex.Message}", ex);
-                return;
+                return result;
             }
 
-            var projectResult = await projectTask;
-            var projectGuestsResult = await projectGuestsTask;
+            // TODO: These are not the correct criteria for retrieving guest sessions.
+            // The GuestSession.ProjectAccessCode needs to match the Project's Access Code.
+            // And only the sessions with GuestSessionState == GuestState.InProject are needed
+            var projectGuestsResult = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState == GuestState.InProject);
+            var currentGuests = from s in projectGuestsResult
+                                group s by s.UserId
+                                into gs
+                                orderby gs.Key
+                                select gs.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState == GuestState.InProject);
 
-            if (!projectResult.IsSuccess())
-            {
-                await SetProjectLobbyStateToError(projectId);
-                _logger.Error($"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}");
-                return;
-            }
 
-            var project = projectResult.Payload;
             var participants = participantResult?.ToList();
 
-            var isHostPresent = participants?.Any(p => p.UserId == project?.OwnerId) ?? false;
-            var isGuestLimitReached = projectGuestsResult.Count(g => g.GuestSessionState == GuestState.InProject) >= _maxGuestsAllowedInProject;
+            var isHostPresent = participants?.Any(p => !p.IsGuest) ?? false;
+            var isGuestLimitReached = currentGuests.Count() >= _maxGuestsAllowedInProject;
 
             try
             {
-                await _projectLobbyStateRepository.UpdateItemAsync(projectId, new ProjectLobbyState
+                return await UpsertProjectLobbyStateAsync(projectId, new ProjectLobbyState()
                 {
                     ProjectId = projectId,
                     LobbyState = CalculateLobbyState(isGuestLimitReached, isHostPresent)
                 });
+
+
             }
             catch (DocumentNotFoundException e)
             {
@@ -171,11 +178,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _projectLobbyStateRepository.GetItemAsync(projectId);
-            if (result == null)
-            {
-                throw new NotFoundException($"ProjectLobbyState with ProjectId {projectId} not found.");
-            }
+            var result = await _projectLobbyStateRepository.GetItemAsync(projectId) ?? await RecalculateProjectLobbyStateAsync(projectId);
 
             return result;
         }
@@ -192,13 +195,17 @@ namespace Synthesis.GuestService.Controllers
             }
         }
 
-        private async Task SetProjectLobbyStateToError(Guid projectId)
+        private async Task<ProjectLobbyState> SetProjectLobbyStateToError(Guid projectId, bool saveState = true)
         {
-            await _projectLobbyStateRepository.UpdateItemAsync(projectId, new ProjectLobbyState
+            var state = new ProjectLobbyState
             {
                 ProjectId = projectId,
                 LobbyState = LobbyState.Error
-            });
+            };
+
+            return saveState ? await UpsertProjectLobbyStateAsync(projectId, state) : state;
+
+            //return state;
         }
     }
 }
