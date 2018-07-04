@@ -98,7 +98,7 @@ namespace Synthesis.GuestService.Controllers
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
             // Send an invite email to the guest
-            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName);
+            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.GetFullName());
             if (!emailResult.IsSuccess())
             {
                 _logger.Error($"Sending guest invite email failed. Reason={emailResult.ReasonPhrase} Error={_serializer.SerializeToString(emailResult.ErrorResponse)}");
