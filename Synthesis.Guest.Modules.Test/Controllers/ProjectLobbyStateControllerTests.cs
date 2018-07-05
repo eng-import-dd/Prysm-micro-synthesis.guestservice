@@ -190,17 +190,33 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
         }
 
-        [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncCalculatesCurrentGuestCount()
+        [Theory]
+        [InlineData(5, 9, LobbyState.Normal)]
+        [InlineData(1, 0, LobbyState.Normal)]
+        [InlineData(10, 0, LobbyState.Normal)]
+        [InlineData(11, 0, LobbyState.Normal)]
+        [InlineData(0, 1, LobbyState.HostNotPresent)]
+        [InlineData(0, 10, LobbyState.HostNotPresent)]
+        [InlineData(0, 11, LobbyState.HostNotPresent)]
+        [InlineData(0, 0, LobbyState.HostNotPresent)]
+        [InlineData(1, 10, LobbyState.GuestLimitReached)]
+        [InlineData(5, 10, LobbyState.GuestLimitReached)]
+        [InlineData(1, 11, LobbyState.GuestLimitReached)]
+        [InlineData(5, 11, LobbyState.GuestLimitReached)]
+        [InlineData(20, 10, LobbyState.GuestLimitReached)]
+        [InlineData(20, 11, LobbyState.GuestLimitReached)]
+        public async Task RecalculateProjectLobbyStateAsyncReturnsExpectedLobbyState(int fullMemberParticipantCount, int guestSessionCount, LobbyState lobbyState)
         {
-            var participants = new List<Participant>();
+
             var project = Project.Example();
             var projectId = project.Id;
-            for(int i = 1; i <= 5; i++)
+
+            var participants = new List<Participant>();
+            for (int i = 1; i <= fullMemberParticipantCount; i++)
             {
                 var participant = Participant.Example();
                 participant.ProjectId = projectId;
-                participant.GuestSessionId =  (Guid?)null;
+                participant.GuestSessionId = (Guid?)null;
                 participant.IsGuest = false;
                 participants.Add(participant);
             }
@@ -209,33 +225,29 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(participants);
 
             var guestSessions = new List<GuestSession>();
-            
+
             project.GuestAccessCode = "0123456789";
-            for (int i = 1; i <= 10; i++)
+            for (int i = 1; i <= guestSessionCount; i++)
             {
                 var guestSession = GuestSession.Example();
                 guestSession.ProjectId = projectId;
                 guestSession.ProjectAccessCode = project.GuestAccessCode;
                 guestSession.GuestSessionState = GuestState.InProject;
                 guestSession.CreatedDateTime = DateTime.UtcNow;
+                guestSession.UserId = Guid.NewGuid();
                 guestSessions.Add(guestSession);
 
-                // Should never have two InProject sessions for same user and project, 
-                // but need to test LINQ query with group by, where, and order by clauses.
+                // Should never have more than one InProject sessions for same user and project,
+                // but need to test LINQ query with group by, where, and order by clauses,
+                // for correct calculation of current guest quantity.
                 var guestSession2 = CloneGuestSession(guestSession);
-                //guestSession2.GuestSessionState = GuestState.Ended;
                 guestSession2.CreatedDateTime = DateTime.UtcNow.AddHours(-1.0);
                 guestSessions.Add(guestSession2);
 
                 var guestSession3 = CloneGuestSession(guestSession);
-                //guestSession3.GuestSessionState = GuestState.Ended;
                 guestSession3.CreatedDateTime = DateTime.UtcNow.AddHours(-2.0);
                 guestSessions.Add(guestSession3);
 
-                //var guestSession4 = CloneGuestSession(guestSession);
-                //guestSession4.GuestSessionState = GuestState.Ended;
-                //guestSession4.CreatedDateTime = DateTime.UtcNow.AddHours(-3.0);
-                //guestSessions.Add(guestSession4);
             }
 
             _guestSessionRepositoryMock
@@ -261,7 +273,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var result = await _target.RecalculateProjectLobbyStateAsync(project.Id);
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
-            Assert.Equal(LobbyState.GuestLimitReached, result.LobbyState);
+            Assert.Equal(lobbyState, result.LobbyState);
         }
 
         [Fact]
@@ -360,7 +372,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 LastName = guestSession.LastName,
                 LastAccessDate = guestSession.LastAccessDate,
                 ProjectId = guestSession.ProjectId,
-                ProjectAccessCode = guestSession.ProjectAccessCode
+                ProjectAccessCode = guestSession.ProjectAccessCode,
+                UserId = guestSession.UserId
             };
         }
     }

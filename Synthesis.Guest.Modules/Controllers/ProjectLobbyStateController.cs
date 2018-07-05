@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
@@ -100,21 +101,15 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
-            // TODO: These are not the correct criteria for retrieving guest sessions.
-            // The GuestSession.ProjectAccessCode needs to match the Project's Access Code.
-            // And only the sessions with GuestSessionState == GuestState.InProject are needed
-            var projectGuestsResult = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState == GuestState.InProject);
-            var currentGuests = from s in projectGuestsResult
-                                group s by s.UserId
-                                into gs
-                                orderby gs.Key
-                                select gs.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState == GuestState.InProject);
+            var validProjectGuestsSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState == GuestState.InProject);
 
+            var currentValidProjectGuestSessions = validProjectGuestsSessions.GroupBy(s => s.UserId)
+                .OrderBy(gs => gs.Key)
+                .Select(gs => gs.OrderByDescending(x => x.CreatedDateTime)
+                .First());
 
-            var participants = participantResult?.ToList();
-
-            var isHostPresent = participants?.Any(p => !p.IsGuest) ?? false;
-            var isGuestLimitReached = currentGuests.Count() >= _maxGuestsAllowedInProject;
+            var isHostPresent = participantResult?.Any(p => !p.IsGuest) ?? false;
+            var isGuestLimitReached = currentValidProjectGuestSessions.Count() >= _maxGuestsAllowedInProject;
 
             try
             {

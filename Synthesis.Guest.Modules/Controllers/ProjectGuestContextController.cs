@@ -144,7 +144,7 @@ namespace Synthesis.GuestService.Controllers
             //                seems that the second arg of CreateCurrentProjectState should just be false rather than userHasAccess.
             //                This is because userHasAccess was calculated much earlier and the state of the user's guest session is 
             //                now different.
-            return await CreateCurrentProjectState(project, userHasAccess);
+            return await CreateCurrentProjectState(project, false);
         }
 
         private async Task<CurrentProjectState> ClearGuestSessionState()
@@ -194,6 +194,11 @@ namespace Synthesis.GuestService.Controllers
             }
             catch (Nancy.MicroService.NotFoundException)
             {
+                // CU-598: If the project is not found, throw NotFoundException. That shouls be the 
+                // only NotFoundException returned by GetProjectLobbyStateAsync, as it the ProjectLobbyState
+                // record can't be found, it's value should be calculated and then saved before being
+                // returned. Therefore, LobbyState.Normal should never be returned if a NotFoundException
+                // is thrown by GetProjectLobbyStateAsync.
                 lobbyState = LobbyState.Normal;
             }
 
@@ -215,7 +220,7 @@ namespace Synthesis.GuestService.Controllers
         {
             var guestSessions = await _guestSessionRepository.GetItemsAsync(g => g.UserId == userId && g.ProjectId == projectId);
 
-            var guestSession = guestSessions.FirstOrDefault();
+            var guestSession = guestSessions.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault();
 
             return guestSession?.GuestSessionState == GuestState.InProject || guestSession?.GuestSessionState == GuestState.PromotedToProjectMember;
         }

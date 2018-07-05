@@ -137,11 +137,11 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.GetGuestSessionsByProjectIdAsync(projectId);
+                return await _guestSessionController.GetMostRecentValidGuestSessionsByProjectIdAsync(projectId);
             }
             catch (NotFoundException)
             {
-                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
