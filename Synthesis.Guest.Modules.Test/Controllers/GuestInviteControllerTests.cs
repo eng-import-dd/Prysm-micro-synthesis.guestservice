@@ -11,12 +11,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net; 
+using System.Net;
+using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Exceptions;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.Modules.Test.Utilities;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Models;
 using Synthesis.PrincipalService.InternalApi.Api;
@@ -25,6 +27,7 @@ using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Xunit;
+using static Synthesis.GuestService.Modules.Test.Utilities.LoopUtilities;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
@@ -248,45 +251,100 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestInvite>>()));
         }
 
-        //[Fact]
-        //public async Task GetGuestInvitesByUserIdAsyncThrowsIfValidationFails()
-        //{
-        //    _validatorMock
-        //        .Setup(v => v.Validate(It.IsAny<object>()))
-        //        .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
+        [Fact]
+        public async Task GetGuestInvitesByProjectIdThrowsExceptionOnValidationError()
+        {
+            _validatorMock.Setup(v => v.Validate(It.IsAny<object>()))
+                          .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
-        //    await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetGuestInvitesByUserIdAsync(Guid.Empty));
-        //}
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetGuestInvitesByProjectIdAsync(Guid.Empty));
+        }
 
-        //[Fact]
-        //public async Task GetGuestInvitesByUserIdAsyncGetsItems()
-        //{
-        //    var userId = Guid.NewGuid();
-        //    var invites = new List<GuestInvite> { GuestInvite.Example(), GuestInvite.Example(), GuestInvite.Example() };
-        //    var moreInvites = new List<GuestInvite> { GuestInvite.Example(), GuestInvite.Example(), GuestInvite.Example() };
-        //    invites.ForEach(w => w.UserId = userId);
-        //    invites.AddRange(moreInvites);
+        [Fact]
+        public async Task GetGuestInvitesByProjectIdGetsInvitesForProject()
+        {
+            var inviteForProjectCount = 3;
+            var projectId = Guid.NewGuid();
+            var invites = MakeTestInviteList(projectId, Guid.NewGuid(), inviteForProjectCount, 5);
 
-        //    _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
-        //        .Returns<Expression<Func<GuestInvite, bool>>>(predicate =>
-        //        {
-        //            var expression = predicate.Compile();
-        //            IEnumerable<GuestInvite> sublist = invites.Where(expression).ToList();
-        //            return Task.FromResult(sublist);
-        //        });
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
+                .Returns<Expression<Func<GuestInvite, bool>>>(predicate =>
+                {
+                    var expression = predicate.Compile();
+                    IEnumerable<GuestInvite> sublist = invites.Where(expression).ToList();
+                    return Task.FromResult(sublist);
+                });
 
-        //    var result = await _target.GetGuestInvitesByUserIdAsync(userId);
+            var response = await _target.GetGuestInvitesByProjectIdAsync(projectId);
 
-        //    Assert.True(result != null && result.Count() == invites.Count - moreInvites.Count);
-        //}
+            Assert.Equal(inviteForProjectCount, response.Count());
+        }
 
-        //[Fact]
-        //public async Task GetGuestInvitesByUserIdThrowsNotFoundExceptionIfGetItemsReturnsNull()
-        //{
-        //    _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
-        //        .ReturnsAsync(default(IEnumerable<GuestInvite>));
+        private IEnumerable<GuestInvite> MakeTestInviteList(Guid projectId, Guid userId, int matchingProjectUserCount, int nonMatchingCount)
+        {
+            var invites = new List<GuestInvite>();
 
-        //    await Assert.ThrowsAsync<NotFoundException>(() => _target.GetGuestInvitesByUserIdAsync(Guid.NewGuid()));
-        //}
+            Repeat(nonMatchingCount, () => { invites.Add(GuestInvite.Example()); });
+
+            Repeat(matchingProjectUserCount, () =>
+            {
+                var invite = GuestInvite.Example();
+                invite.ProjectId = projectId;
+                invite.UserId = userId;
+                invites.Add(invite);
+            });
+
+            return invites;
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByUserIdAsyncThrowsIfValidationFails()
+        {
+            var request = GetGuestInvitesRequest.Example();
+            request.GuestEmail = "";
+            request.GuestUserId = Guid.Empty;
+
+            _validatorMock
+                .Setup(v => v.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetGuestInvitesForUserAsync(request));
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByUserIdAsyncGetsItems()
+        {
+            var userId = Guid.NewGuid();
+            var invites = new List<GuestInvite> { GuestInvite.Example(), GuestInvite.Example(), GuestInvite.Example() };
+            var moreInvites = new List<GuestInvite> { GuestInvite.Example(), GuestInvite.Example(), GuestInvite.Example() };
+            invites.ForEach(w => w.UserId = userId);
+            invites.AddRange(moreInvites);
+
+            var request = GetGuestInvitesRequest.Example();
+            request.GuestUserId = userId;
+            request.GuestEmail = "unique@email.com";
+
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
+                .Returns<Expression<Func<GuestInvite, bool>>>(predicate =>
+                {
+                    var expression = predicate.Compile();
+                    IEnumerable<GuestInvite> sublist = invites.Where(expression).ToList();
+                    return Task.FromResult(sublist);
+                });
+
+            var result = await _target.GetGuestInvitesForUserAsync(request);
+
+            Assert.True(result != null && result.Count() == invites.Count - moreInvites.Count);
+        }
+
+        [Fact]
+        public async Task GetGuestInvitesByUserIdReturnsEmptyListForNotInvites()
+        {
+            var request = GetGuestInvitesRequest.Example();
+
+            var result = await _target.GetGuestInvitesForUserAsync(request);
+
+            Assert.Empty(result);
+        }
     }
 }

@@ -17,7 +17,6 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
-using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -51,7 +50,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
 
-            CreateRoute("GetGuestInvitesForUser", HttpMethod.Post, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
+            CreateRoute("GetGuestInvitesForUserAsync", HttpMethod.Post, $"{Routing.UsersRoute}/{Routing.GuestInvitesPath}", GetGuestInvitesForUserAsync)
                 .Description("Gets All GuestInvites for a specific User.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
@@ -179,7 +178,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestInviteController.GetGuestInvitesForUser(getUserInvitesRequest);
+                return await _guestInviteController.GetGuestInvitesForUserAsync(getUserInvitesRequest);
             }
             catch (ValidationFailedException ex)
             {
