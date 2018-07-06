@@ -34,5 +34,19 @@ namespace Synthesis.GuestService.Modules.Test.Validators
 
             Assert.False(result.IsValid);
         }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("\t ")]
+        [InlineData("\f ")]
+        [InlineData("\n ")]
+        [InlineData("\r ")]
+        public void ShouldFailForEmptyOrWhitespaceCode(string code)
+        {
+            var result = _validator.Validate(code);
+
+            Assert.False(result.IsValid);
+        }
     }
 }

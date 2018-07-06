@@ -20,6 +20,7 @@ namespace Synthesis.GuestService.Constants
         // Not Found Errors
         public const string NotFoundGuestInvite = "GuestInvite Not Found";
         public const string NotFoundProjectLobbyState = "ProjectLobbyState Not Found";
+        public const string NotFoundProject = "Project Not Found";
 
         // -- GuestSession
         // Internal Server Errors

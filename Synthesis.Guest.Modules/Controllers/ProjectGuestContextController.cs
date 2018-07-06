@@ -4,11 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
+using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Services;
 using Synthesis.Http.Microservice;
+using Synthesis.Nancy.MicroService;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
@@ -184,23 +186,17 @@ namespace Synthesis.GuestService.Controllers
         {
             LobbyState lobbyState;
 
-            var lobbyStateTask = _projectLobbyStateController.GetProjectLobbyStateAsync(project.Id);
-            var guestState = await _projectGuestContextService.GetProjectGuestContextAsync();
-
             try
             {
-                var lobbyStateResponse = await lobbyStateTask;
+                var lobbyStateResponse = await _projectLobbyStateController.GetProjectLobbyStateAsync(project.Id);
                 lobbyState = lobbyStateResponse.LobbyState;
             }
-            catch (Nancy.MicroService.NotFoundException)
+            catch (NotFoundException)
             {
-                // CU-598: If the project is not found, throw NotFoundException. That shouls be the 
-                // only NotFoundException returned by GetProjectLobbyStateAsync, as it the ProjectLobbyState
-                // record can't be found, it's value should be calculated and then saved before being
-                // returned. Therefore, LobbyState.Normal should never be returned if a NotFoundException
-                // is thrown by GetProjectLobbyStateAsync.
-                lobbyState = LobbyState.Normal;
+                throw new NotFoundException(ResponseReasons.NotFoundProject);
             }
+
+            var guestState = await _projectGuestContextService.GetProjectGuestContextAsync();
 
             var guestSession = guestState == null || guestState.GuestSessionId == Guid.Empty
                 ? null
