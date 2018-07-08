@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Collections.Async.Internals;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Net;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using FluentValidation;
 using FluentValidation.Results;
 using Moq;
+using Moq.Language.Flow;
+using StackExchange.Redis;
+using Synthesis.Cache;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
@@ -19,6 +24,7 @@ using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
+using Synthesis.Threading.Tasks;
 using Xunit;
 using LobbyState = Synthesis.GuestService.InternalApi.Enums.LobbyState;
 
@@ -28,6 +34,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     {
         private readonly IProjectLobbyStateController _target;
         private readonly Mock<IRepository<ProjectLobbyState>> _projectLobbyStateRepositoryMock = new Mock<IRepository<ProjectLobbyState>>();
+        private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();
@@ -46,12 +53,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             repositoryFactoryMock
-                .Setup(m => m.CreateRepository<ProjectLobbyState>())
-                .Returns(_projectLobbyStateRepositoryMock.Object);
+                .Setup(m => m.CreateRepository<GuestSession>())
+                .Returns(_guestSessionRepositoryMock.Object);
 
             repositoryFactoryMock
                 .Setup(m => m.CreateRepository<GuestSession>())
                 .Returns(_guestSessionRepositoryMock.Object);
+
+            //_cacheMock
+            //    .Setup(c => c.TryItemGetAsync(It.IsAny<string>(), It.IsAny<Reference<ProjectLobbyState>>()))
+            //    .ReturnsAsync(true);
 
             _validatorMock
                 .Setup(v => v.Validate(It.IsAny<object>()))
@@ -67,6 +78,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Returns(new Mock<ILogger>().Object);
 
             _target = new ProjectLobbyStateController(repositoryFactoryMock.Object,
+                _cacheMock.Object,
                 validatorLocatorMock.Object,
                 _sessionServiceMock.Object,
                 _projectApi.Object,
@@ -90,8 +102,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var projectId = Guid.NewGuid();
             await _target.CreateProjectLobbyStateAsync(projectId);
-            _projectLobbyStateRepositoryMock.Verify(m => m.CreateItemAsync(
-                It.Is<ProjectLobbyState>(s => s.LobbyState == LobbyState.Normal && s.ProjectId == projectId)));
+            _cacheMock.Verify(m => m.ItemSetAsync(
+                It.IsAny<string>(),
+                It.Is<ProjectLobbyState>(s => s.LobbyState == LobbyState.Normal && s.ProjectId == projectId),
+                It.IsAny<TimeSpan>()));
         }
 
         [Fact]
@@ -135,9 +149,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate(projectStatusCode, participantRequestFails);
 
-            _projectLobbyStateRepositoryMock
-                .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<ProjectLobbyState>()))
-                .Throws<DocumentNotFoundException>();
+
+            _cacheMock
+                .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>()))
+                .Throws(new ApplicationException());
             var projectId = Guid.NewGuid();
             var expectedResult = new ProjectLobbyState(){ProjectId = projectId, LobbyState = LobbyState.Error};
 
@@ -179,15 +194,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncReturnsLobbyStateErrorIfNotFoundAndProjectDoesNotExist()
+        public async Task RecalculateProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
         {
             SetupApisForRecalculate(HttpStatusCode.NotFound, false);
             _projectLobbyStateRepositoryMock
                 .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(default(ProjectLobbyState)));
 
-            var result = await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            Assert.IsAssignableFrom<ProjectLobbyState>(result);
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid()));
         }
 
         [Theory]
@@ -290,9 +304,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task GetProjectLobbyStateAsyncReturnsStateIfNotFoundAndProjectExists()
         {
 
-            _projectLobbyStateRepositoryMock
-                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(ProjectLobbyState.Example()));
+            //_projectLobbyStateRepositoryMock
+            //    .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            //    .Returns(Task.FromResult(ProjectLobbyState.Example()));
+
+            var state = new Mock<ProjectLobbyState>().Object;
+            _cacheMock
+                .Setup(m => m.TryItemGet<ProjectLobbyState>(It.IsAny<string>(), out state))
+                .Returns(false);
 
             SetupApisForRecalculate();
 
@@ -301,27 +320,25 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetProjectLobbyStateAsyncReturnsLobbyStateErrorIfProjectLobbyStateNotFoundAndProjectDoesNotExist()
+        public async Task GetProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
         {
-            _projectLobbyStateRepositoryMock
-                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(default(ProjectLobbyState)));
+            _cacheMock
+                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), It.IsAny<Reference<ProjectLobbyState>>()))
+                .ReturnsAsync(false);
 
             _projectApi
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, default(Project)));
 
-            var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
-
-            Assert.Equal(LobbyState.Error, result.LobbyState);
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.GetProjectLobbyStateAsync(Guid.NewGuid()));
         }
 
         [Fact]
         public async Task GetProjectLobbyStateAsyncRetrievesLobbyState()
         {
-            _projectLobbyStateRepositoryMock
-                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new ProjectLobbyState()));
+            _cacheMock
+                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), It.IsAny<Reference<ProjectLobbyState>>()))
+                .ReturnsAsync(true);
 
             var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
@@ -331,7 +348,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task DeleteProjectLobbyStateAsyncDeletesProjectLobbyState()
         {
             await _target.DeleteProjectLobbyStateAsync(Guid.NewGuid());
-            _projectLobbyStateRepositoryMock.Verify(m => m.DeleteItemAsync(It.IsAny<Guid>()));
+            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<string>()));
         }
 
         private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK, bool participantRequestThrows = false)

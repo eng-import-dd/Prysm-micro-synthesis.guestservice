@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using Synthesis.Cache;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
+using LobbyStateKeyResolver = Synthesis.GuestService.InternalApi.Services.KeyResolver;
 using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
@@ -18,12 +22,14 @@ using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
+using Synthesis.Threading.Tasks;
 
 namespace Synthesis.GuestService.Controllers
 {
     public class ProjectLobbyStateController : IProjectLobbyStateController
     {
         private readonly IRepository<ProjectLobbyState> _projectLobbyStateRepository;
+        private readonly ICache _cache;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IEventService _eventService;
         private readonly IValidatorLocator _validatorLocator;
@@ -31,8 +37,10 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectApi _projectApi;
         private readonly ILogger _logger;
         private readonly int _maxGuestsAllowedInProject;
+        private readonly TimeSpan _expirationTime = TimeSpan.FromHours(8);
 
         public ProjectLobbyStateController(IRepositoryFactory repositoryFactory,
+            ICache cache,
             IValidatorLocator validatorLocator,
             ISessionService sessionService,
             IProjectApi projectApi,
@@ -40,6 +48,7 @@ namespace Synthesis.GuestService.Controllers
             ILoggerFactory loggerFactory,
             int maxGuestsAllowedInProject)
         {
+            _cache = cache;
             _validatorLocator = validatorLocator;
             _sessionService = sessionService;
             _projectApi = projectApi;
@@ -59,11 +68,13 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            await _projectLobbyStateRepository.CreateItemAsync(new ProjectLobbyState
+            var state = new ProjectLobbyState
             {
                 ProjectId = projectId,
                 LobbyState = LobbyState.Normal
-            });
+            };
+
+            await _cache.ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime);
         }
 
         /// <inheritdoc />
@@ -79,6 +90,11 @@ namespace Synthesis.GuestService.Controllers
 
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
             {
+                if (projectResult.ResponseCode == HttpStatusCode.NotFound)
+                {
+                    throw new NotFoundException(ResponseReasons.NotFoundProject);
+                }
+
                 var saveState = projectResult.Payload != null;
                 var result = await SetProjectLobbyStateToError(projectId, saveState);
 
@@ -111,37 +127,22 @@ namespace Synthesis.GuestService.Controllers
             var isHostPresent = participantResult?.Any(p => !p.IsGuest) ?? false;
             var isGuestLimitReached = currentValidProjectGuestSessions.Count() >= _maxGuestsAllowedInProject;
 
-            try
+            return await UpsertProjectLobbyStateAsync(projectId, new ProjectLobbyState()
             {
-                return await UpsertProjectLobbyStateAsync(projectId, new ProjectLobbyState()
-                {
-                    ProjectId = projectId,
-                    LobbyState = CalculateLobbyState(isGuestLimitReached, isHostPresent)
-                });
-
-
-            }
-            catch (DocumentNotFoundException e)
-            {
-                throw new NotFoundException($"{nameof(ProjectLobbyState)} for {projectId} was not found.", e);
-            }
+                ProjectId = projectId,
+                LobbyState = CalculateLobbyState(isGuestLimitReached, isHostPresent)
+            });
         }
 
         public async Task<ProjectLobbyState> UpsertProjectLobbyStateAsync(Guid projectId, ProjectLobbyState projectLobbyState)
         {
-            ProjectLobbyState updatedProjectLobbyState;
-            try
-            {
-                updatedProjectLobbyState = await _projectLobbyStateRepository.UpdateItemAsync(projectId, projectLobbyState);
-            }
-            catch (DocumentNotFoundException)
-            {
-                updatedProjectLobbyState = await _projectLobbyStateRepository.CreateItemAsync(projectLobbyState);
-            }
+            string key = LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId);
 
-            _eventService.Publish(EventNames.ProjectStatusUpdated, updatedProjectLobbyState);
+            await _cache.ItemSetAsync(key, projectLobbyState, _expirationTime);
 
-            return updatedProjectLobbyState;
+            _eventService.Publish(EventNames.ProjectStatusUpdated, projectLobbyState);
+
+            return projectLobbyState;
         }
 
         public static LobbyState CalculateLobbyState(bool isGuestLimitReached, bool isHostPresent)
@@ -173,21 +174,19 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _projectLobbyStateRepository.GetItemAsync(projectId) ?? await RecalculateProjectLobbyStateAsync(projectId);
+            var stateRef = new Reference<ProjectLobbyState>();
+            if (await _cache.TryItemGetAsync<ProjectLobbyState>(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), stateRef))
+            {
+                return stateRef.Value;
+            }
 
-            return result;
+            return await RecalculateProjectLobbyStateAsync(projectId);
         }
 
         /// <inheritdoc />
         public async Task DeleteProjectLobbyStateAsync(Guid projectId)
         {
-            try
-            {
-                await _projectLobbyStateRepository.DeleteItemAsync(projectId);
-            }
-            catch (DocumentNotFoundException)
-            {
-            }
+            await _cache.KeyDeleteAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId));
         }
 
         private async Task<ProjectLobbyState> SetProjectLobbyStateToError(Guid projectId, bool saveState = true)
@@ -199,8 +198,6 @@ namespace Synthesis.GuestService.Controllers
             };
 
             return saveState ? await UpsertProjectLobbyStateAsync(projectId, state) : state;
-
-            //return state;
         }
     }
 }
