@@ -175,7 +175,8 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var stateRef = new Reference<ProjectLobbyState>();
-            if (await _cache.TryItemGetAsync<ProjectLobbyState>(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), stateRef))
+            var result = await _cache.TryItemGetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), typeof(ProjectLobbyState), stateRef);
+            if (result && stateRef.Value != null)
             {
                 return stateRef.Value;
             }
