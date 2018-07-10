@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Nancy.Helpers;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.GuestService.Exceptions;
 
 namespace Synthesis.GuestService.Email
 {
-    public class InviteGuestEmail
+    public class InviteUserEmail
     {
         public static SendEmailRequest BuildRequest(string projectName, string projectCode, string guestEmail, string fromFirstName,  string webClientUrl)
         {
@@ -21,14 +20,14 @@ namespace Synthesis.GuestService.Email
             }
         }
 
-        private static SendEmailRequest BuildRequestObject(string projectName, string projectCode, string guestEmail, string fromFirstName, string webClientUrl)
+        private static SendEmailRequest BuildRequestObject(string projectName, string projectCode, string guestEmail, string firstName, string webClientUrl)
         {
-            var subject = "Prysm Guest Invite: " + projectName;
-            var link = $"{webClientUrl}/#/guest?accesscode={projectCode}&email={HttpUtility.UrlEncode(guestEmail)}";
+            var subject = "Prysm New User Invite";
+            var link = $"{webClientUrl}";
 
-            var inviteGuestTemplate = GetContent("Email/Templates/GuestInvite.html");
+            var inviteGuestTemplate = GetContent("Email/Templates/UserInvite.html");
             inviteGuestTemplate = inviteGuestTemplate.Replace("{Link}", link);
-            inviteGuestTemplate = inviteGuestTemplate.Replace("{Name}", fromFirstName);
+            inviteGuestTemplate = inviteGuestTemplate.Replace("{Firstname}", firstName);
             inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectName}", projectName);
             inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectCode}", projectCode.Insert(7, " ").Insert(3, " "));
 
