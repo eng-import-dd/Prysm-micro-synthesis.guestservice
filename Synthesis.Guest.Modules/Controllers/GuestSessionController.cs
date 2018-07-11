@@ -50,6 +50,8 @@ namespace Synthesis.GuestService.Controllers
         private readonly IObjectSerializer _synthesisObjectSerializer;
         private readonly ISessionService _sessionService;
 
+        private const int GuestSessionLimit = 10;
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
         /// </summary>
@@ -134,7 +136,6 @@ namespace Synthesis.GuestService.Controllers
                     session.GuestSessionState = GuestState.Ended;
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                     //TODO: Test that exception thrown when session.id not found
-                    //return _guestSessionRepository.UpdateItemAsync(Guid.NewGuid(), session);
                 });
 
             await Task.WhenAll(endSessionTasks);
@@ -192,7 +193,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            // TODO: CU-598 - Cover project NotFoundException in unit tests
+            // TODO: CU-1076 - Cover project NotFoundException in unit tests
             var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
@@ -204,7 +205,7 @@ namespace Synthesis.GuestService.Controllers
 
             var project = projectResult.Payload;
 
-            //TODO: CU-598 GuestMode - cover the filtering of the result in unit tests
+            //TODO: CU-1076 GuestMode - cover the filtering of the result in unit tests
             var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState != GuestState.PromotedToProjectMember);
 
             if (validGuestSessions == null || !validGuestSessions.Any())
@@ -299,12 +300,10 @@ namespace Synthesis.GuestService.Controllers
                     response.Message = "This user does not exist but has been invited, so can join as a guest";
                     return response;
                 }
-                else
-                {
-                    response.ResultCode = VerifyGuestResponseCode.InvalidNoInvite;
-                    response.Message = "This user does not exist and has not been invited";
-                    return response;
-                }
+
+                response.ResultCode = VerifyGuestResponseCode.InvalidNoInvite;
+                response.Message = "This user does not exist and has not been invited";
+                return response;
             }
 
             if (user.IsLocked)
@@ -497,7 +496,7 @@ namespace Synthesis.GuestService.Controllers
 
         private async Task<int> GetAvailableGuestCountAsync(Guid projectId, string projectAccessCode)
         {
-            //TODO: CU598 - Cover validation pass/failure in tests
+            //TODO: CU-598 - Cover validation pass/failure in tests
             var codeValidationResult = _validatorLocator.Validate<ProjectAccessCodeValidator>(projectAccessCode);
             if (!codeValidationResult.IsValid)
             {
@@ -507,7 +506,7 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionsInProject = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == projectAccessCode && x.GuestSessionState == GuestState.InProject);
 
-            return 10 - guestSessionsInProject.Count();
+            return GuestSessionLimit - guestSessionsInProject.Count();
         }
     }
 }

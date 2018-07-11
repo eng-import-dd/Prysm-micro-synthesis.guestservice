@@ -175,36 +175,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            // TODO: GuestMode - This Get Needs To Match Criteria of the Victory release GetGuestInvites stored procedure.
-            // The following is my best explanation of that stored procedure. However the logic in that procedure is to
-            // be considered definitive in terms of expected results over any faults in this explanation.
-            // This controller method gets called through a Cloud Shim by the web client after it receives a
-            // notification that the list of guests has changed.
-            // The method would more accurately be named "GetMostRecentGuestInvitesOfEligibleUsersByProjectIdAsync".
-            // Guest Invites Sub-Query:
-            // 1. GuestInvite.ProjectId = Project.id
-            // 2. && GuestInvite.AccessCode = Project.GuestAccessCode (Must get Project)
-            // 3. Inclusive Joined to Users on GuestInvites.Email = Users.Email (Must get Users when Guest.UserId to populate current User.FirstName, User.LastName, but don't exclude Invites w/o UserId)
-            // 4. Return these properties in this order: GuestInviteId, InvitedBy, GuestInvite.ProjectId, GuestInvite.Email, CreatedDateTime, GuestAccessCode, User.UserId, User.FirstName, User.LastName
-            // 5. Return only most recent record per UserId/ProjectId combination based on GuestInvites.CreatedDateTime
-            // 
-            // Guest Sessions Sub-Query #1 (Informal Invites if Reached Lobby from Workspace URL)
-            // 1. GuestSession.ProjectId = Project.Id
-            // 2. GuestSession.AccessCode = Project.GuestAccessCode (Must get Project)
-            // 3. Joined to Users on GuestSession.UserId = Users.Id (Must get Users to populate current User.Email, User.FirstName, User.LastName)
-            // 4. Return only most recent record per UserId/ProjectId based on GuestSession.CreatedDate
-            //
-            // Guest Session Sub-Query #2
-            // 1. Get all records from Guest Sessions Sub-Query #1
-            // 2. Remove all Guest Sessions that have a corresponding project invite based on matching GuestInvites.Email = GuestSession Sub-Query Email
-            // 3. Project results into new type to return these properties in this order:  GuestInviteId = Guid.Empty, InvitedBy = Guid.Empty,
-            //    ProjectId, User.Email, GuestSession.CreatedDateTime, GuestSession.GuestAccessCode, User.UserId, User.FirstName, User.LastName
-            //
-            // Final Query
-            // 1. Select all from Guest Invites Sub-Query
-            // 2. UNION (merged w/o duplicates)
-            // 3. Select all from Guest Session Sub-Query #2
-            // 4. From UNION query result, return these properties in this order: Return these values in order: GuestInviteId, InvitedBy, ProjectId, Email, CreatedDateTime, GuestAccessCode, UserId, FirstName, LastName
+            // TODO CU-1076: GuestMode - This Get Needs To Match Criteria of the Victory release GetGuestInvites stored procedure.
 
             var result = await _guestInviteRepository.GetItemsAsync(x => x.ProjectId == projectId);
             if (result != null)

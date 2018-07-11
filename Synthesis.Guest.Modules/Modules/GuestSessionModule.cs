@@ -193,7 +193,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to update a GuestSessionState resource.", ex);
+                Logger.Error("Binding failed while attempting to update a GuestSession state.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
@@ -219,7 +219,7 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Unhandled exception encountered while attempting to update a GuestSessionState resource", ex);
+                Logger.Error("Unhandled exception encountered while attempting to update a GuestSession state", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSessionState);
             }
         }
