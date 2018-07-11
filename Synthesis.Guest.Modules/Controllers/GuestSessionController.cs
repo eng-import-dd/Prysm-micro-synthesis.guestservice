@@ -324,8 +324,9 @@ namespace Synthesis.GuestService.Controllers
             var isProjectInUsersAccount = guestTenantId == project.TenantId;
 
             //TODO CU-598 - Need to test whether GuestMode is enable for the project Account
-            var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);
-            var isGuestModeEnableOnProjectAccountSettings = userSettingsResponse.IsSuccess() && userSettingsResponse.Payload != null && userSettingsResponse.Payload.IsGuestModeEnabled;
+            //var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId));
+            //var isGuestModeEnableOnProjectAccountSettings = userSettingsResponse.IsSuccess() && userSettingsResponse.Payload != null && userSettingsResponse.Payload.IsGuestModeEnabled;
+            var isGuestModeEnableOnProjectAccountSettings = true;
 
             if (!isGuestModeEnableOnProjectAccountSettings && !isProjectInUsersAccount)
             {
