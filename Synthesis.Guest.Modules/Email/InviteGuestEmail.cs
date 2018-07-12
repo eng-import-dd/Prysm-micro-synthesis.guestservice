@@ -21,14 +21,14 @@ namespace Synthesis.GuestService.Email
             }
         }
 
-        private static SendEmailRequest BuildRequestObject(string projectName, string projectCode, string guestEmail, string firstName, string webClientUrl)
+        private static SendEmailRequest BuildRequestObject(string projectName, string projectCode, string guestEmail, string fromFirstName, string webClientUrl)
         {
             var subject = "Prysm Guest Invite: " + projectName;
             var link = $"{webClientUrl}/#/guest?accesscode={projectCode}&email={HttpUtility.UrlEncode(guestEmail)}";
 
-            var inviteGuestTemplate = GetContent("Email/Templates/UserInvite.html");
+            var inviteGuestTemplate = GetContent("Email/Templates/GuestInvite.html");
             inviteGuestTemplate = inviteGuestTemplate.Replace("{Link}", link);
-            inviteGuestTemplate = inviteGuestTemplate.Replace("{Firstname}", firstName);
+            inviteGuestTemplate = inviteGuestTemplate.Replace("{Name}", fromFirstName);
             inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectName}", projectName);
             inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectCode}", projectCode.Insert(7, " ").Insert(3, " "));
 
