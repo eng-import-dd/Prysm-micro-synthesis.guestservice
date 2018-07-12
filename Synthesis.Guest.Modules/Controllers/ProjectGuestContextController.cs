@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Constants;
@@ -20,7 +19,6 @@ namespace Synthesis.GuestService.Controllers
     public class ProjectGuestContextController : IProjectGuestContextController
     {
         private readonly IRepository<GuestSession> _guestSessionRepository;
-        private readonly IProjectApi _projectApi;
 
         private readonly IProjectApi _serviceToServiceProjectApi;
         private readonly IProjectGuestContextService _projectGuestContextService;
@@ -38,7 +36,6 @@ namespace Synthesis.GuestService.Controllers
             IProjectLobbyStateController projectLobbyStateController,
             IProjectGuestContextService projectGuestContextService,
             IProjectAccessApi projectAccessApi,
-            IProjectApi projectApi,
             IProjectApi serviceToServiceProjectApi,
             IUserApi userApi)
         {
@@ -47,7 +44,6 @@ namespace Synthesis.GuestService.Controllers
             _guestSessionController = guestSessionController;
             _projectLobbyStateController = projectLobbyStateController;
 
-            _projectApi = projectApi;
             _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _projectAccessApi = projectAccessApi;
             _userApi = userApi;
@@ -60,15 +56,13 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="projectId"></param>
         /// <param name="accessCode"></param>
         /// <param name="currentUserId"></param>
-        /// <param name="currentUserTenantId">
+        /// <param name="currentUserTenantId"></param>
         /// <returns></returns>
         public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId, Guid? currentUserTenantId)
         {
             if (projectId.Equals(Guid.Empty))
             {
-                var projectState = await ClearGuestSessionState();
-                return projectState;
-                //return await ClearGuestSessionState();
+                return await ClearGuestSessionState();
             }
 
             (ProjectGuestContext guestProjectState,
