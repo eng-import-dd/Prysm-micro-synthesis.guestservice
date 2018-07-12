@@ -27,7 +27,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectGuestContextService> _projectGuestContextServiceMock = new Mock<IProjectGuestContextService>();
         private readonly Mock<IProjectAccessApi> _projectAccessApiMock = new Mock<IProjectAccessApi>();
         private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
-        private readonly Mock<IProjectApi> _serviceToServiceProjectApiMock = new Mock<IProjectApi>();
         private readonly Mock<IUserApi> _userApiMock = new Mock<IUserApi>();
         private readonly ProjectGuestContextController _target;
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
@@ -85,10 +84,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
-            _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
-
             _projectAccessApiMock
                 .Setup(x => x.GetUserIdsByProjectAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>() { _currentUserId}).AsEnumerable()));
@@ -103,7 +98,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 _projectGuestContextServiceMock.Object,
                 _projectAccessApiMock.Object,
                 _projectApiMock.Object,
-                _serviceToServiceProjectApiMock.Object,
                 _userApiMock.Object);
         }
 
@@ -146,7 +140,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [InlineData(HttpStatusCode.InternalServerError)]
         public async Task InvalidOperationIsThrownIfProjectCannotBeFetched(HttpStatusCode statusCode)
         {
-            _serviceToServiceProjectApiMock
+            _projectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
 
@@ -181,7 +175,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(true);
 
-            _serviceToServiceProjectApiMock
+            _projectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
 
