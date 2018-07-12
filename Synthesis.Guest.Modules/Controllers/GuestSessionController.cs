@@ -20,6 +20,7 @@ using Synthesis.SettingService.InternalApi.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.Http.Microservice;
@@ -254,7 +255,7 @@ namespace Synthesis.GuestService.Controllers
             if (request.ProjectId != Guid.Empty)
             {
                 var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
-                if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
+                if (!projectResponse.IsSuccess())
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
                     response.Message = $"Could not find a project with that project Id.";
@@ -266,7 +267,7 @@ namespace Synthesis.GuestService.Controllers
             else
             {
                 var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
-                if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
+                if (!projectResponse.IsSuccess())
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
                     response.Message = $"Could not find a project with that project access code.";
@@ -289,22 +290,31 @@ namespace Synthesis.GuestService.Controllers
 
             var userResponse = await _userApi.GetUserByUsernameAsync(request.Username);
 
-            var user = userResponse?.Payload;
-
-            if (userResponse?.Payload == null)
+            if (!userResponse.IsSuccess())
             {
-                var invite = (await _guestInviteRepository.GetItemsAsync(x => x.GuestEmail == request.Username && x.ProjectAccessCode == request.ProjectAccessCode)).FirstOrDefault();
-                if (!string.IsNullOrEmpty(invite?.GuestEmail))
+                if (userResponse.ResponseCode == HttpStatusCode.NotFound)
                 {
-                    response.ResultCode = VerifyGuestResponseCode.SuccessNoUser;
-                    response.Message = "This user does not exist but has been invited, so can join as a guest";
+                    var invite = (await _guestInviteRepository.GetItemsAsync(x => x.GuestEmail == request.Username && x.ProjectAccessCode == request.ProjectAccessCode)).FirstOrDefault();
+                    if (!string.IsNullOrEmpty(invite?.GuestEmail))
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.SuccessNoUser;
+                        response.Message = "This user does not exist but has been invited, so can join as a guest";
+                        return response;
+                    }
+
+                    response.ResultCode = VerifyGuestResponseCode.InvalidNoInvite;
+                    response.Message = "This user does not exist and has not been invited";
                     return response;
                 }
 
-                response.ResultCode = VerifyGuestResponseCode.InvalidNoInvite;
-                response.Message = "This user does not exist and has not been invited";
+                _logger.Error($"An error occured while trying to retrieve the user with username: {request.Username}. ResponseCode: {userResponse.ResponseCode}. Reason: {userResponse.ReasonPhrase}");
+
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = $"An error occurred while trying to get the user with username: {request.Username}. {userResponse.ReasonPhrase}";
                 return response;
             }
+
+            var user = userResponse.Payload;
 
             if (user.IsLocked)
             {
