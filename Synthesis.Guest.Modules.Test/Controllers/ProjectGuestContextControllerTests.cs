@@ -26,7 +26,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
         private readonly Mock<IProjectGuestContextService> _projectGuestContextServiceMock = new Mock<IProjectGuestContextService>();
         private readonly Mock<IProjectAccessApi> _projectAccessApiMock = new Mock<IProjectAccessApi>();
-        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
         private readonly Mock<IProjectApi> _serviceToServiceProjectApiMock = new Mock<IProjectApi>();
         private readonly Mock<IUserApi> _userApiMock = new Mock<IUserApi>();
         private readonly ProjectGuestContextController _target;
@@ -81,10 +80,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetUserAsync(_currentUserId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultUser));
 
-            _projectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
-
             _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
@@ -102,7 +97,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 _projectLobbyStateControllerMock.Object,
                 _projectGuestContextServiceMock.Object,
                 _projectAccessApiMock.Object,
-                _projectApiMock.Object,
                 _serviceToServiceProjectApiMock.Object,
                 _userApiMock.Object);
         }

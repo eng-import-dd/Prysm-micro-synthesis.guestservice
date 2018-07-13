@@ -24,6 +24,7 @@ using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
 using Xunit;
@@ -108,6 +109,13 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
         private readonly Mock<ISessionService> _sessionService = new Mock<ISessionService>();
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<Synthesis.Serialization.IObjectSerializer>();
+
+        private static ValidationResult FailedValidationResult => new ValidationResult(
+            new List<ValidationFailure>
+            {
+                new ValidationFailure(string.Empty, string.Empty)
+            }
+        );
 
         [Fact]
         public async Task CreateGuestSessionCallsCreate()
@@ -288,6 +296,27 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             await _target.UpdateGuestSessionAsync(_defaultGuestSession);
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestSession>>()));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateThrowsValidationExceptionIfProjectWithInvalidGuestAccessCodeIsReturned()
+        {
+            _validatorMock
+                .Setup(v => v.Validate(It.IsAny<object>()))
+                .Returns(FailedValidationResult);
+
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(_defaultGuestSession.ProjectId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project
+                {
+                    Id = _defaultGuestSession.ProjectId,
+                    GuestAccessCode = "INVALID"
+                }));
+
+            await Assert.ThrowsAsync<ValidationFailedException>(async () => await _target.UpdateGuestSessionStateAsync(new UpdateGuestSessionStateRequest
+            {
+                GuestSessionId = _defaultGuestSession.Id,
+                GuestSessionState = GuestState.Ended
+            }));
         }
     }
 }
