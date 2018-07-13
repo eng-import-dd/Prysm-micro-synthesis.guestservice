@@ -20,7 +20,7 @@ namespace Synthesis.GuestService.Controllers
     {
         private readonly IRepository<GuestSession> _guestSessionRepository;
 
-        private readonly IProjectApi _projectApi;
+        private readonly IProjectApi _serviceToServiceProjectApi;
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IGuestSessionController _guestSessionController;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
@@ -36,7 +36,7 @@ namespace Synthesis.GuestService.Controllers
             IProjectLobbyStateController projectLobbyStateController,
             IProjectGuestContextService projectGuestContextService,
             IProjectAccessApi projectAccessApi,
-            IProjectApi projectApi,
+            IProjectApi serviceToServiceProjectApi,
             IUserApi userApi)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
@@ -44,7 +44,7 @@ namespace Synthesis.GuestService.Controllers
             _guestSessionController = guestSessionController;
             _projectLobbyStateController = projectLobbyStateController;
 
-            _projectApi = projectApi;
+            _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _projectAccessApi = projectAccessApi;
             _userApi = userApi;
             _projectGuestContextService = projectGuestContextService;
@@ -223,7 +223,7 @@ namespace Synthesis.GuestService.Controllers
         {
             var guestUserTask =  _projectGuestContextService.GetProjectGuestContextAsync();
             var projectUsersTask =  _projectAccessApi.GetUserIdsByProjectAsync(projectId);
-            var projectTask = _projectApi.GetProjectByIdAsync(projectId);
+            var projectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             await Task.WhenAll(guestUserTask, projectUsersTask, projectTask);
 
