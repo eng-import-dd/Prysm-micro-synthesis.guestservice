@@ -34,7 +34,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     {
         private readonly IProjectLobbyStateController _target;
         //private readonly Mock<IRepository<ProjectLobbyState>> _projectLobbyStateRepositoryMock = new Mock<IRepository<ProjectLobbyState>>();
-        private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
+        private readonly Mock<ICacheAsync> _cacheMock = new Mock<ICacheAsync>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();
@@ -60,9 +60,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(m => m.CreateRepository<GuestSession>())
                 .Returns(_guestSessionRepositoryMock.Object);
 
-            //_cacheMock
-            //    .Setup(c => c.TryItemGetAsync(It.IsAny<string>(), It.IsAny<Reference<ProjectLobbyState>>()))
-            //    .ReturnsAsync(true);
+            _cacheMock
+                .Setup(c => c.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), It.IsAny<Reference<ProjectLobbyState>>()))
+                .ReturnsAsync(true);
 
             _validatorMock
                 .Setup(v => v.Validate(It.IsAny<object>()))
@@ -97,7 +97,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await Assert.ThrowsAsync<ValidationFailedException>(() => _target.CreateProjectLobbyStateAsync(Guid.NewGuid()));
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task CreateProjectLobbyStateAsyncCreatesNewProjectLobbyState()
         {
             var projectId = Guid.NewGuid();
@@ -105,7 +105,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _cacheMock.Verify(m => m.ItemSetAsync(
                 It.IsAny<string>(),
                 It.Is<ProjectLobbyState>(s => s.LobbyState == LobbyState.Normal && s.ProjectId == projectId),
-                It.IsAny<TimeSpan>()));
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CacheCommandOptions>()));
         }
 
         [Fact]
@@ -134,7 +135,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectApi.Verify(m => m.GetProjectByIdAsync(It.IsAny<Guid>()));
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task RecalculateProjectLobbyStateAsyncRetrievesGuests()
         {
             SetupApisForRecalculate();
@@ -142,18 +143,18 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _guestSessionRepositoryMock.Verify(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()));
         }
 
-        [Theory(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Theory]
         [InlineData(HttpStatusCode.BadRequest, false)]
         [InlineData(HttpStatusCode.OK, true)]
         public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode, bool participantRequestFails)
         {
             SetupApisForRecalculate(projectStatusCode, participantRequestFails);
 
-            _cacheMock.Setup(m => m.TryItemGetAsync(It.IsAny<string>(), It.IsAny<Reference<ProjectLobbyState>>()))
-                .ReturnsAsync(false);
+            _cacheMock.Setup(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
+                .ReturnsAsync((List<ProjectLobbyState>)null);
 
             _cacheMock
-                .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>()))
+                .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Throws(new ApplicationException());
             var projectId = Guid.NewGuid();
             var expectedResult = new ProjectLobbyState(){ProjectId = projectId, LobbyState = LobbyState.Error};
@@ -166,7 +167,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task RecalculateProjectLobbyStateAsyncUpdatesLobbyState()
         {
             SetupApisForRecalculate();
@@ -175,7 +176,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _cacheMock.Verify(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()));
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task RecalculateProjectLobbyStateAsyncCreatesAndReturnsLobbyStateIfNotFoundAndProjectExists()
         {
             SetupApisForRecalculate();
@@ -184,7 +185,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var stateRef2 = new Reference<ProjectLobbyState> { Value = ProjectLobbyState.Example() };
 
             _cacheMock
-                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), stateRef2))
+                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef2))
                 .ReturnsAsync(false)
                 .ReturnsAsync(true);
 
@@ -197,20 +198,20 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task RecalculateProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
         {
             SetupApisForRecalculate(HttpStatusCode.NotFound, false);
             var stateRef = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
 
             _cacheMock
-                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), stateRef))
+                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef))
                 .ReturnsAsync(true);
 
             await Assert.ThrowsAsync<NotFoundException>(() => _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid()));
         }
 
-        [Theory(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Theory]
         [InlineData(5, 9, LobbyState.Normal)]
         [InlineData(1, 0, LobbyState.Normal)]
         [InlineData(10, 0, LobbyState.Normal)]
@@ -278,11 +279,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
 
-            var stateRef1 = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
-
             _cacheMock
-                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), stateRef1))
-                .ReturnsAsync(false);
+                .SetupSequence(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
+                .ReturnsAsync(new List<ProjectLobbyState>(){default(ProjectLobbyState)});
 
             _cacheMock
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
@@ -304,36 +303,47 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetProjectLobbyStateAsync(Guid.NewGuid()));
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task GetProjectLobbyStateAsyncReturnsStateIfNotFoundAndProjectExists()
         {
+            var project = Project.Example();
+            SetupApisForRecalculate(HttpStatusCode.OK, false, project);
+
+            var state = ProjectLobbyState.Example();
+            state.ProjectId = project.Id;
+
+            var participants = new List<Participant>();
+            var participant = Participant.Example();
+            participant.ProjectId = project.Id;
+            participant.GuestSessionId = (Guid?)null;
+            participant.IsGuest = false;
+            participants.Add(participant);
+
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(participants);
 
             _cacheMock
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
-                .Returns(Task.FromResult(ProjectLobbyState.Example()));
+                .Returns(Task.FromResult(state));
 
-            var refState = new Reference<ProjectLobbyState>
-            {
-                Value = ProjectLobbyState.Example()
-            };
 
             _cacheMock
-                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), refState))
-                .ReturnsAsync(false)
-                .ReturnsAsync(true);
+                .SetupSequence(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
+                .ReturnsAsync(default(List<ProjectLobbyState>))
+                .ReturnsAsync(new List<ProjectLobbyState>(){ state });
 
-            SetupApisForRecalculate();
 
-            var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
+            var result = await _target.GetProjectLobbyStateAsync(project.Id);
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
-            Assert.Equal(refState.Value, result);
+            Assert.Equal(state.ProjectId, result.ProjectId);
+            Assert.Equal(state.LobbyState, result.LobbyState);
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task GetProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
         {
             _cacheMock
-                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), It.IsAny<Reference<ProjectLobbyState>>()))
+                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), It.IsAny<Reference<ProjectLobbyState>>()))
                 .ReturnsAsync(false);
 
             _projectApi
@@ -343,31 +353,31 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await Assert.ThrowsAsync<NotFoundException>(() => _target.GetProjectLobbyStateAsync(Guid.NewGuid()));
         }
 
-        [Fact(Skip = "CU-598: Fix Moq not using mocked TryItemGetAsync so it returns false with null Reference<T>.")]
+        [Fact]
         public async Task GetProjectLobbyStateAsyncRetrievesLobbyState()
         {
-            var stateRef = new Reference<ProjectLobbyState>() {Value = ProjectLobbyState.Example() };
-
+            var state = ProjectLobbyState.Example();
             _cacheMock
-                .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef))
-                .ReturnsAsync(true);
+                .Setup(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
+                .ReturnsAsync(new List<ProjectLobbyState>() { state });
+
 
             var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
-            Assert.Equal(stateRef.Value, result);
+            Assert.Equal(state, result);
         }
 
-        [Fact(Skip = "CU-598: Fix incorrect method assignment inside Lambda expression")]
+        [Fact]
         public async Task DeleteProjectLobbyStateAsyncDeletesProjectLobbyState()
         {
-            _cacheMock.Setup(m => m.KeyDeleteAsync(It.IsAny<string>(), It.IsAny<CacheCommandOptions>()))
-                .Returns(Task.FromResult(true));
+            _cacheMock.Setup(m => m.KeyDeleteAsync(It.IsAny<List<string>>(), It.IsAny<CacheCommandOptions>()))
+                .ReturnsAsync(1);
 
             await _target.DeleteProjectLobbyStateAsync(Guid.NewGuid());
-            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<string>(), It.IsAny<CacheCommandOptions>() ));
+            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<List<string>>(), It.IsAny<CacheCommandOptions>() ));
         }
 
-        private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK, bool participantRequestThrows = false)
+        private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK, bool participantRequestThrows = false, Project project = null)
         {
             if (participantRequestThrows)
             {
@@ -382,10 +392,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     .ReturnsAsync(default(IEnumerable<Participant>));
             }
 
-            var project = projectStatusCode == HttpStatusCode.OK ? Project.Example() : default(Project);
+            var projectPayload = projectStatusCode == HttpStatusCode.OK ? project ?? Project.Example() : default(Project);
             _projectApi
                 .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(projectStatusCode, project));
+                .ReturnsAsync(MicroserviceResponse.Create(projectStatusCode, projectPayload));
         }
 
         private GuestSession CloneGuestSession(GuestSession guestSession)

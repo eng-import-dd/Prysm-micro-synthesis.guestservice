@@ -137,6 +137,7 @@ namespace Synthesis.GuestService.Controllers
                     session.GuestSessionState = GuestState.Ended;
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                     //TODO: Test that exception thrown when session.id not found
+                    //return _guestSessionRepository.UpdateItemAsync(Guid.NewGuid(), session);
                 });
 
             await Task.WhenAll(endSessionTasks);
@@ -332,7 +333,6 @@ namespace Synthesis.GuestService.Controllers
 
             var isProjectInUsersAccount = guestTenantId == project.TenantId;
 
-            //TODO Add updated Setting Api nuget package to solution for GetUserSettingsAsync to work
             var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);
             var isGuestModeEnableOnProjectAccountSettings = userSettingsResponse.IsSuccess() && userSettingsResponse.Payload.IsGuestModeEnabled;
 

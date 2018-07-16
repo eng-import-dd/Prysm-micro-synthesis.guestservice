@@ -29,7 +29,7 @@ namespace Synthesis.GuestService.Controllers
     public class ProjectLobbyStateController : IProjectLobbyStateController
     {
         private readonly IRepository<ProjectLobbyState> _projectLobbyStateRepository;
-        private readonly ICache _cache;
+        private readonly ICacheAsync _cache;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IEventService _eventService;
         private readonly IValidatorLocator _validatorLocator;
@@ -40,7 +40,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly TimeSpan _expirationTime = TimeSpan.FromHours(8);
 
         public ProjectLobbyStateController(IRepositoryFactory repositoryFactory,
-            ICache cache,
+            ICacheAsync cache,
             IValidatorLocator validatorLocator,
             ISessionService sessionService,
             IProjectApi projectApi,
@@ -74,7 +74,7 @@ namespace Synthesis.GuestService.Controllers
                 LobbyState = LobbyState.Normal
             };
 
-            await _cache.ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime);
+            await _cache.ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime, CacheCommandOptions.None);
         }
 
         /// <inheritdoc />
@@ -174,11 +174,10 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var stateRef = new Reference<ProjectLobbyState>();
-            var result = await _cache.TryItemGetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), typeof(ProjectLobbyState), stateRef);
-            if (result && stateRef.Value != null)
+            var result = await _cache.ItemGetAsync(new List<string>() {LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId)}, typeof(ProjectLobbyState));
+            if (result != null && result.Any())
             {
-                return stateRef.Value;
+                return result.FirstOrDefault() as ProjectLobbyState;
             }
 
             return await RecalculateProjectLobbyStateAsync(projectId);
@@ -187,7 +186,7 @@ namespace Synthesis.GuestService.Controllers
         /// <inheritdoc />
         public async Task DeleteProjectLobbyStateAsync(Guid projectId)
         {
-            await _cache.KeyDeleteAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId));
+            await _cache.KeyDeleteAsync(new List<string> {LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId)});
         }
 
         private async Task<ProjectLobbyState> SetProjectLobbyStateToError(Guid projectId, bool saveState = true)

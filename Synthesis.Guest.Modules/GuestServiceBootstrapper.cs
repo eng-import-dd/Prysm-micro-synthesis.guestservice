@@ -289,7 +289,7 @@ namespace Synthesis.GuestService
                         redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
                         return ConnectionMultiplexer.Connect(redisOptions);
                     }))
-                .As<ICache>()
+                .As<ICacheAsync>()
                 .SingleInstance();
 
             builder.RegisterType<SynthesisApi>()
@@ -333,7 +333,6 @@ namespace Synthesis.GuestService
 
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
 
-            // TODO: CU-598 ISettingApi calls use service-to-service auth call?
             builder.RegisterType<SettingApi>().As<ISettingApi>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
