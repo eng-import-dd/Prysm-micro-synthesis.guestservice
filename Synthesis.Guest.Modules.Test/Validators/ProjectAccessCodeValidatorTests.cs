@@ -7,10 +7,15 @@ namespace Synthesis.GuestService.Modules.Test.Validators
     {
         private readonly ProjectAccessCodeValidator _validator = new ProjectAccessCodeValidator();
 
-        [Fact]
-        public void ShouldPassForValidCode()
+        [Theory]
+        [InlineData("0000000001")]
+        [InlineData("1000000000")]
+        [InlineData("0123456789")]
+        [InlineData("9876543210")]
+        [InlineData("9999999999")]
+        public void ShouldPassForValidCode(string code)
         {
-            var result = _validator.Validate("0123456789");
+            var result = _validator.Validate(code);
 
             Assert.True(result.IsValid);
         }

@@ -11,7 +11,7 @@ namespace Synthesis.GuestService.Validators
 
             // TODCO: CU-598: Figure why this is causing a null ref exception
             RuleFor(request => request)
-                .Must(x => int.TryParse(x, out var _))
+                .Must(x => long.TryParse(x, out var _))
                 .WithMessage("The project access code must be a number");
         }
     }

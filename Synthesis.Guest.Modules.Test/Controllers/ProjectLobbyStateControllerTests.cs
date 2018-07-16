@@ -34,7 +34,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     {
         private readonly IProjectLobbyStateController _target;
         //private readonly Mock<IRepository<ProjectLobbyState>> _projectLobbyStateRepositoryMock = new Mock<IRepository<ProjectLobbyState>>();
-        private readonly Mock<ICacheAsync> _cacheMock = new Mock<ICacheAsync>();
+        private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();

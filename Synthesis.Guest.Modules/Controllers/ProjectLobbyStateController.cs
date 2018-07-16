@@ -29,21 +29,21 @@ namespace Synthesis.GuestService.Controllers
     public class ProjectLobbyStateController : IProjectLobbyStateController
     {
         private readonly IRepository<ProjectLobbyState> _projectLobbyStateRepository;
-        private readonly ICacheAsync _cache;
+        private readonly ICache _cache;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IEventService _eventService;
         private readonly IValidatorLocator _validatorLocator;
         private readonly ISessionService _sessionService;
-        private readonly IProjectApi _projectApi;
+        private readonly IProjectApi _serviceToServiceProjectApi;
         private readonly ILogger _logger;
         private readonly int _maxGuestsAllowedInProject;
         private readonly TimeSpan _expirationTime = TimeSpan.FromHours(8);
 
         public ProjectLobbyStateController(IRepositoryFactory repositoryFactory,
-            ICacheAsync cache,
+            ICache cache,
             IValidatorLocator validatorLocator,
             ISessionService sessionService,
-            IProjectApi projectApi,
+            IProjectApi serviceToServiceProjectApi,
             IEventService eventService,
             ILoggerFactory loggerFactory,
             int maxGuestsAllowedInProject)
@@ -51,7 +51,7 @@ namespace Synthesis.GuestService.Controllers
             _cache = cache;
             _validatorLocator = validatorLocator;
             _sessionService = sessionService;
-            _projectApi = projectApi;
+            _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _projectLobbyStateRepository = repositoryFactory.CreateRepository<ProjectLobbyState>();
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _eventService = eventService;
@@ -86,7 +86,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var projectResult = await _projectApi.GetProjectByIdAsync(projectId);
+            var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
             {

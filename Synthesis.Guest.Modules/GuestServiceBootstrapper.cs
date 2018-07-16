@@ -289,7 +289,7 @@ namespace Synthesis.GuestService
                         redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
                         return ConnectionMultiplexer.Connect(redisOptions);
                     }))
-                .As<ICacheAsync>()
+                .As<ICache>()
                 .SingleInstance();
 
             builder.RegisterType<SynthesisApi>()
@@ -358,6 +358,9 @@ namespace Synthesis.GuestService
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "maxGuestsAllowedInProject",
                     (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("Guest.MaxGuestsAllowedInProject")))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceProjectApi",
+                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
                 .As<IProjectLobbyStateController>();
 
             builder.RegisterType<ProjectGuestContextController>()

@@ -102,7 +102,7 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
 
-            if (isProjectGuest && guestProjectState.ProjectId == project?.Id)
+            if (isProjectGuest && guestProjectState?.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
