@@ -21,8 +21,6 @@ using Synthesis.ParticipantService.InternalApi.Constants;
 using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Api;
-using Synthesis.ProjectService.InternalApi.Models;
-using Synthesis.Threading.Tasks;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -74,7 +72,7 @@ namespace Synthesis.GuestService.Controllers
                 LobbyState = LobbyState.Normal
             };
 
-            await _cache.ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime, CacheCommandOptions.None);
+            await _cache.ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime);
         }
 
         /// <inheritdoc />
@@ -174,10 +172,10 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _cache.ItemGetAsync(new List<string>() {LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId)}, typeof(ProjectLobbyState));
-            if (result != null && result.Any())
+            var result = await _cache.ItemGetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), typeof(ProjectLobbyState));
+            if (result != null)
             {
-                return result.FirstOrDefault() as ProjectLobbyState;
+                return result as ProjectLobbyState;
             }
 
             return await RecalculateProjectLobbyStateAsync(projectId);
@@ -186,7 +184,7 @@ namespace Synthesis.GuestService.Controllers
         /// <inheritdoc />
         public async Task DeleteProjectLobbyStateAsync(Guid projectId)
         {
-            await _cache.KeyDeleteAsync(new List<string> {LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId)});
+            await _cache.KeyDeleteAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId));
         }
 
         private async Task<ProjectLobbyState> SetProjectLobbyStateToError(Guid projectId, bool saveState = true)

@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Async.Internals;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Net;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using FluentValidation;
 using FluentValidation.Results;
 using Moq;
-using Moq.Language.Flow;
-using StackExchange.Redis;
 using Synthesis.Cache;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -33,7 +29,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     public class ProjectLobbyStateControllerTests
     {
         private readonly IProjectLobbyStateController _target;
-        //private readonly Mock<IRepository<ProjectLobbyState>> _projectLobbyStateRepositoryMock = new Mock<IRepository<ProjectLobbyState>>();
         private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
@@ -358,7 +353,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var state = ProjectLobbyState.Example();
             _cacheMock
-                .Setup(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
+                .Setup(m => m.ItemGetAsync(It.IsAny<IEnumerable<string>>(), typeof(ProjectLobbyState)))
                 .ReturnsAsync(new List<ProjectLobbyState>() { state });
 
 
@@ -370,11 +365,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task DeleteProjectLobbyStateAsyncDeletesProjectLobbyState()
         {
-            _cacheMock.Setup(m => m.KeyDeleteAsync(It.IsAny<List<string>>(), It.IsAny<CacheCommandOptions>()))
+            _cacheMock.Setup(m => m.KeyDeleteAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CacheCommandOptions>()))
                 .ReturnsAsync(1);
 
             await _target.DeleteProjectLobbyStateAsync(Guid.NewGuid());
-            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<List<string>>(), It.IsAny<CacheCommandOptions>() ));
+            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CacheCommandOptions>() ));
         }
 
         private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK, bool participantRequestThrows = false, Project project = null)
