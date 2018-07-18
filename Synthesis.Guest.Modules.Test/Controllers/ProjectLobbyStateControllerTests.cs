@@ -23,6 +23,7 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Threading.Tasks;
 using Xunit;
 using LobbyState = Synthesis.GuestService.InternalApi.Enums.LobbyState;
+using Project = Synthesis.ProjectService.InternalApi.Models.Project;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {

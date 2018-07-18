@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Moq;
 using Synthesis.DocumentStorage;
+using Synthesis.GuestService;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
@@ -16,6 +17,7 @@ using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
+using ProjectApiProject = Synthesis.ProjectService.InternalApi.Models.Project;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
@@ -34,7 +36,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Guid _userWithTenantTenantId = Guid.NewGuid();
         private readonly Guid _userWithoutTenantTenantId = Guid.Empty;
         private readonly Guid _defaultProjectId = Guid.NewGuid();
-        private readonly Project _defaultProject;
+        private readonly ProjectApiProject _defaultProject;
         private readonly ProjectGuestContext _defaultProjectGuestContext;
         private readonly ProjectLobbyState _defaultProjectLobbyState;
         private readonly User _defaultUser;
@@ -43,7 +45,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         public ProjectGuestContextControllerTests()
         {
-            _defaultProject = new Project() { Id = _defaultProjectId, TenantId = _userWithTenantTenantId};
+            _defaultProject = new ProjectApiProject() { Id = _defaultProjectId, TenantId = _userWithTenantTenantId};
             _defaultUser = new User { Id = _currentUserId, Username = "George C" };
             _defaultProjectLobbyState = new ProjectLobbyState() { LobbyState = LobbyState.Normal, ProjectId = _defaultProjectId };
             _defaultGuestSession = new GuestSession { ProjectId = _defaultProjectId, UserId = _currentUserId, ProjectAccessCode = _defaultAccessCode, GuestSessionState = GuestState.InLobby };
@@ -91,6 +93,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectLobbyStateControllerMock
                 .Setup(x => x.GetProjectLobbyStateAsync(_defaultProjectId))
                 .ReturnsAsync(_defaultProjectLobbyState);
+
+            Mappings.CreateMappings();
 
             _target = new ProjectGuestContextController(repositoryFactoryMock.Object,
                 _guestSessionControllerMock.Object,
@@ -142,7 +146,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
+                .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(ProjectApiProject)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithoutTenantTenantId));
@@ -177,7 +181,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
+                .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(ProjectApiProject)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithoutTenantTenantId));
@@ -221,9 +225,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetUserIdsByProjectAsync(_defaultProjectId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
 
-            //_serviceToServiceProjectApiMock
-            //    .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-            //    .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Forbidden, default(Project)));
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
 

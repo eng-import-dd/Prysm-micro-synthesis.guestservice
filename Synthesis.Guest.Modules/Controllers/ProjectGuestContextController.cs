@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
@@ -13,6 +14,8 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
+using ProjectApiProject = Synthesis.ProjectService.InternalApi.Models.Project;
+using GuestApiProject = Synthesis.GuestService.InternalApi.Models.Project;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -67,7 +70,7 @@ namespace Synthesis.GuestService.Controllers
 
             (ProjectGuestContext guestProjectState,
              MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
-             MicroserviceResponse<Project> projectResponse) = await LoadData(projectId);
+             MicroserviceResponse<ProjectApiProject> projectResponse) = await LoadData(projectId);
 
             if (!projectResponse.IsSuccess() || projectResponse.Payload == null)
             {
@@ -176,7 +179,7 @@ namespace Synthesis.GuestService.Controllers
             throw new InvalidOperationException($"Could not clear the current project or end the guest session. {guestSessionStateResponse?.Message}");
         }
 
-        private async Task<CurrentProjectState> CreateCurrentProjectState(Project project, bool userHasAccess)
+        private async Task<CurrentProjectState> CreateCurrentProjectState(ProjectApiProject project, bool userHasAccess)
         {
             LobbyState lobbyState;
 
@@ -196,9 +199,11 @@ namespace Synthesis.GuestService.Controllers
                 ? null
                 : await _guestSessionRepository.GetItemAsync(guestState.GuestSessionId);
 
+            var guestProject = Mapper.Map<ProjectApiProject, GuestApiProject>(project);
+
             return new CurrentProjectState
             {
-                Project = project,
+                Project = guestProject,
                 GuestSession = guestSession,
                 UserHasAccess = userHasAccess,
                 LobbyState = lobbyState,
@@ -218,7 +223,7 @@ namespace Synthesis.GuestService.Controllers
         private async Task<(
                 ProjectGuestContext guestProjectState,
                 MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
-                MicroserviceResponse<Project> projectResponse)>
+                MicroserviceResponse<ProjectApiProject> projectResponse)>
             LoadData(Guid projectId)
         {
             var guestUserTask =  _projectGuestContextService.GetProjectGuestContextAsync();

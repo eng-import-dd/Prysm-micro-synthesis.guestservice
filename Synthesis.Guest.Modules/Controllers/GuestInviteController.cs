@@ -5,10 +5,8 @@ using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Exceptions;
-using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
@@ -19,8 +17,8 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
-using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
+using Project = Synthesis.ProjectService.InternalApi.Models.Project;
 
 namespace Synthesis.GuestService.Controllers
 {

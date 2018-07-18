@@ -303,6 +303,8 @@ namespace Synthesis.GuestService
 
             RegisterServiceSpecificRegistrations(builder);
 
+            Mappings.CreateMappings();
+
             return builder.Build();
         }
 
