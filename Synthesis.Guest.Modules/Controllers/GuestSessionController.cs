@@ -136,8 +136,6 @@ namespace Synthesis.GuestService.Controllers
                 {
                     session.GuestSessionState = GuestState.Ended;
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
-                    //TODO: Test that exception thrown when session.id not found
-                    //return _guestSessionRepository.UpdateItemAsync(Guid.NewGuid(), session);
                 });
 
             await Task.WhenAll(endSessionTasks);
@@ -161,7 +159,6 @@ namespace Synthesis.GuestService.Controllers
 
             _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
 
-            //TODO: CU-598 - Cover the calls to recalc and publish event in unit tests
             await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
 
             _eventService.Publish(EventNames.ProjectStatusUpdated, new GuidEvent(projectId));
@@ -505,7 +502,6 @@ namespace Synthesis.GuestService.Controllers
 
         private async Task<int> GetAvailableGuestCountAsync(Guid projectId, string projectAccessCode)
         {
-            //TODO: CU-598 - Cover validation pass/failure in tests
             var codeValidationResult = _validatorLocator.Validate<ProjectAccessCodeValidator>(projectAccessCode);
             if (!codeValidationResult.IsValid)
             {

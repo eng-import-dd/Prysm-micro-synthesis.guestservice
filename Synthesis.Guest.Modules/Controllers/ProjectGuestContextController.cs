@@ -74,12 +74,10 @@ namespace Synthesis.GuestService.Controllers
 
             if (!projectResponse.IsSuccess() || projectResponse.Payload == null)
             {
-                //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
                 throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {projectResponse?.ResponseCode} - {projectResponse?.ReasonPhrase}");
             }
             if (!projectUsersResponse.IsSuccess() || projectUsersResponse.Payload == null)
             {
-                //TODO: CU-598 - Pass through the Http Status Code Forbidden, NotFound, Unauthorized?
                 throw new InvalidOperationException($"Error fetching project users {projectId}, {projectUsersResponse.ResponseCode} - {projectUsersResponse.ReasonPhrase}");
             }
 
@@ -116,7 +114,8 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Error fetching user for {currentUserId}, {userResponse?.ResponseCode} - {userResponse?.ReasonPhrase}");
             }
 
-            var verifyRequest = new GuestVerificationRequest() { Username = userResponse.Payload.Username ?? userResponse.Payload.Email, ProjectAccessCode = accessCode, ProjectId = projectId };
+            var userName = !string.IsNullOrEmpty(userResponse.Payload.Email) ? userResponse.Payload.Email : userResponse.Payload.Username;
+            var verifyRequest = new GuestVerificationRequest() { Username = userName, ProjectAccessCode = accessCode, ProjectId = projectId };
 
             var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest, currentUserTenantId);
 
@@ -138,11 +137,6 @@ namespace Synthesis.GuestService.Controllers
                 GuestSessionId = newSession.Id, ProjectId = project.Id, GuestState = GuestState.InLobby
             });
 
-            //TODO: CU-598 - This is where a second call to DetermineGuestAccess occurred in the monolith - and it seems both there
-            //                and here and that it should be false because GuestSessionState == GuestState.InLobby. Therefore it
-            //                seems that the second arg of CreateCurrentProjectState should just be false rather than userHasAccess.
-            //                This is because userHasAccess was calculated much earlier and the state of the user's guest session is 
-            //                now different.
             return await CreateCurrentProjectState(project, false);
         }
 

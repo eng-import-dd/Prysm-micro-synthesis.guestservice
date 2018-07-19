@@ -50,7 +50,6 @@ namespace Synthesis.GuestService.Modules
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
-            //TODO: CU-598 - Is a separate InvalidOperationException catch block needed that sets more relevant ResponseCode or ReasonPhrase?
             catch (Exception ex)
             {
                 Logger.Error($"Failed to set {nameof(ProjectGuestContext)} due to an error", ex);
