@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
-using Synthesis.Authentication;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Exceptions;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -26,7 +26,6 @@ namespace Synthesis.GuestService.Modules
 
         public GuestInviteModule(
             IMetadataRegistry metadataRegistry,
-            ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             IGuestInviteController guestInviteController,
             ILoggerFactory loggerFactory)

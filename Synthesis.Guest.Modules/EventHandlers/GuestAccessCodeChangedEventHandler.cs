@@ -1,7 +1,7 @@
 ﻿using System;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
-using Synthesis.GuestService.Constants;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.Logging;
 

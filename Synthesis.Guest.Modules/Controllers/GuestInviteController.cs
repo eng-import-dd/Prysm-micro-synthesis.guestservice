@@ -5,20 +5,20 @@ using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Exceptions;
-using Synthesis.GuestService.Extensions;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Validators;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
-using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
+using Project = Synthesis.ProjectService.InternalApi.Models.Project;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -172,6 +172,8 @@ namespace Synthesis.GuestService.Controllers
                 _logger.Error("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
+
+            // TODO CU-1076: GuestMode - This Get Needs To Match Criteria of the Victory release GetGuestInvites stored procedure.
 
             var result = await _guestInviteRepository.GetItemsAsync(x => x.ProjectId == projectId);
             if (result != null)

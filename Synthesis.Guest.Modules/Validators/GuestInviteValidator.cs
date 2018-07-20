@@ -14,8 +14,9 @@ namespace Synthesis.GuestService.Validators
             RuleFor(request => request.ProjectId)
                 .NotEqual(Guid.Empty).WithMessage("The ProjectId field must not be empty");
 
-            RuleFor(request => EmailValidator.IsValid(request.GuestEmail))
-                .Equal(true).WithMessage("The Email address is invalid");
+            RuleFor(request => request.GuestEmail)
+                .SetValidator(new EmailValidator())
+                .WithMessage("The GuestEmail address is invalid");
         }
     }
 }

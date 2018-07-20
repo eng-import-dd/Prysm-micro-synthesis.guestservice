@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Synthesis.Common;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.ApiWrappers.Interfaces;
-using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Extensions;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
@@ -19,6 +16,18 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.SettingService.InternalApi.Api;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
+using FluentValidation.Results;
+using Synthesis.Http.Microservice;
+using Synthesis.ParticipantService.InternalApi.Constants;
+using Synthesis.ParticipantService.InternalApi.Models;
+using Synthesis.ParticipantService.InternalApi.Services;
+using Synthesis.Serialization;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -34,9 +43,15 @@ namespace Synthesis.GuestService.Controllers
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
         private readonly IProjectApi _projectApi;
-        private readonly ISettingsApiWrapper _settingsApi;
+        private readonly IProjectApi _serviceToServiceProjectApi;
+        private readonly ISettingApi _serviceToServiceAccountSettingsApi;
         private readonly IUserApi _userApi;
         private readonly IValidatorLocator _validatorLocator;
+        private readonly IProjectLobbyStateController _projectLobbyStateController;
+        private readonly IObjectSerializer _synthesisObjectSerializer;
+        private readonly ISessionService _sessionService;
+
+        private const int GuestSessionLimit = 10;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -46,9 +61,13 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger.</param>
         /// <param name="projectApi"></param>
-        /// <param name="settingsApi"></param>
+        /// <param name="serviceToServiceProjectApi"></param>
+        /// <param name="projectLobbyStateController"></param>
         /// <param name="userApi"></param>
         /// <param name="emailUtility"></param>
+        /// <param name="serviceToServiceAccountSettingsApi">The API for Account/Tenant specific settings</param>
+        /// <param name="sessionService">The session service exposes user session and project participant data.</param>
+        /// <param name="synthesisObjectSerializer">The Synthesis object serializer</param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -56,8 +75,12 @@ namespace Synthesis.GuestService.Controllers
             ILoggerFactory loggerFactory,
             IEmailUtility emailUtility,
             IProjectApi projectApi,
+            IProjectApi serviceToServiceProjectApi,
             IUserApi userApi,
-            ISettingsApiWrapper settingsApi)
+            IProjectLobbyStateController projectLobbyStateController,
+            ISettingApi serviceToServiceAccountSettingsApi,
+            ISessionService sessionService,
+            IObjectSerializer synthesisObjectSerializer)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
@@ -65,12 +88,15 @@ namespace Synthesis.GuestService.Controllers
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
-
+            _projectLobbyStateController = projectLobbyStateController;
             _emailUtility = emailUtility;
 
             _projectApi = projectApi;
+            _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _userApi = userApi;
-            _settingsApi = settingsApi;
+            _serviceToServiceAccountSettingsApi = serviceToServiceAccountSettingsApi;
+            _sessionService = sessionService;
+            _synthesisObjectSerializer = synthesisObjectSerializer;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
@@ -82,22 +108,47 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            await EndGuestSessionsForUser(model.UserId);
+
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
             var result = await _guestSessionRepository.CreateItemAsync(model);
+
+            await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(model.ProjectId);
 
             _eventService.Publish(EventNames.GuestSessionCreated, result);
 
             return result;
         }
 
+        private async Task EndGuestSessionsForUser(Guid userId)
+        {
+            var openSessions = (await _guestSessionRepository
+                    .GetItemsAsync(g => g.UserId == userId && (g.GuestSessionState == GuestState.InLobby || g.GuestSessionState == GuestState.InProject)))
+                    .ToList();
+
+            if (openSessions.Count == 0)
+            {
+                return;
+            }
+
+            var endSessionTasks = openSessions.Select(session =>
+                {
+                    session.GuestSessionState = GuestState.Ended;
+                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
+                });
+
+            await Task.WhenAll(endSessionTasks);
+        }
+
+
         public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
             var guestSessionTasks = guestSessions
-                .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
-                    !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
+                .Where(x => (onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject) ||
+                    (!onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended))
                 .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
@@ -107,6 +158,10 @@ namespace Synthesis.GuestService.Controllers
             await Task.WhenAll(guestSessionTasks);
 
             _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
+
+            await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
+
+            _eventService.Publish(EventNames.ProjectStatusUpdated, new GuidEvent(projectId));
         }
 
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
@@ -128,7 +183,7 @@ namespace Synthesis.GuestService.Controllers
             throw new NotFoundException("GuestSession could not be found");
         }
 
-        public async Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdAsync(Guid projectId)
+        public async Task<IEnumerable<GuestSession>> GetMostRecentValidGuestSessionsByProjectIdAsync(Guid projectId)
         {
             var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
             if (!validationResult.IsValid)
@@ -137,14 +192,30 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId);
-            if (result != null)
+            // TODO: CU-1076 - Cover project NotFoundException in unit tests
+            var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
+
+            if (!projectResult.IsSuccess() || projectResult.Payload == null)
             {
-                return result;
+                var message = $"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}, StatusCode: {projectResult.ResponseCode}, ErrorResponse: {_synthesisObjectSerializer.SerializeToString(projectResult.ErrorResponse)}";
+                _logger.Error(message);
+                throw new NotFoundException(message);
             }
 
-            _logger.Error($"GuestSession resources could not be found for projectId {projectId}");
-            throw new NotFoundException("GuestSessions could not be found");
+            var project = projectResult.Payload;
+
+            //TODO: CU-1076 GuestMode - cover the filtering of the result in unit tests
+            var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState != GuestState.PromotedToProjectMember);
+
+            if (validGuestSessions == null || !validGuestSessions.Any())
+            {
+                return new List<GuestSession>();
+            }
+
+            var currentValidProjectGuestSessions = validGuestSessions.GroupBy(s => s.UserId).OrderBy(gs => gs.Key).Select(gs => gs.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault());
+
+            return currentValidProjectGuestSessions;
+
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
@@ -168,14 +239,9 @@ namespace Synthesis.GuestService.Controllers
             return result;
         }
 
-        public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId)
         {
-            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
-            {
-                { typeof(EmailValidator), username },
-                { typeof(ProjectAccessCodeValidator), projectAccessCode }
-            });
-
+            var validationResult = _validatorLocator.Validate<GuestVerificationRequestValidator>(request);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the guest verification request.");
@@ -183,32 +249,66 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
-            if (projectResponse == null)
+            ProjectService.InternalApi.Models.Project project;
+            if (request.ProjectId != Guid.Empty)
             {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
+                var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
+                if (!projectResponse.IsSuccess())
+                {
+                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                    response.Message = $"Could not find a project with that project Id.";
+                    return response;
+                }
+
+                project = projectResponse.Payload;
+            }
+            else
+            {
+                var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
+                if (!projectResponse.IsSuccess())
+                {
+                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                    response.Message = $"Could not find a project with that project access code.";
+                    return response;
+                }
+
+                project = projectResponse.Payload;
+            }
+
+            if (project.TenantId == Guid.Empty)
+            {
+                response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                response.Message = $"There is no tenant associated with this project. Please contact support to fix this project.";
                 return response;
             }
 
-            var project = projectResponse.Payload;
-
-            response.AccountId = project.TenantId;
-            response.AssociatedProjectId = project.Id;
-            response.ProjectAccessCode = projectAccessCode;
+            response.ProjectAccessCode = request.ProjectAccessCode;
             response.ProjectName = project.Name;
-            response.UserId = project.OwnerId;
-            response.Username = username;
+            response.Username = request.Username;
 
-            if (project.IsGuestModeEnabled != true)
-            {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                return response;
-            }
+            var userResponse = await _userApi.GetUserByUsernameAsync(request.Username);
 
-            var userResponse = await _userApi.GetUserByUsernameAsync(username);
-            if (userResponse == null)
+            if (!userResponse.IsSuccess())
             {
+                if (userResponse.ResponseCode == HttpStatusCode.NotFound)
+                {
+                    var invite = (await _guestInviteRepository.GetItemsAsync(x => x.GuestEmail == request.Username && x.ProjectAccessCode == request.ProjectAccessCode)).FirstOrDefault();
+                    if (!string.IsNullOrEmpty(invite?.GuestEmail))
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.SuccessNoUser;
+                        response.Message = "This user does not exist but has been invited, so can join as a guest";
+                        return response;
+                    }
+
+                    response.ResultCode = VerifyGuestResponseCode.InvalidNoInvite;
+                    response.Message = "This user does not exist and has not been invited";
+                    return response;
+                }
+
+                _logger.Error($"An error occured while trying to retrieve the user with username: {request.Username}. ResponseCode: {userResponse.ResponseCode}. Reason: {userResponse.ReasonPhrase}");
+
                 response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = $"An error occurred while trying to get the user with username: {request.Username}. {userResponse.ReasonPhrase}";
                 return response;
             }
 
@@ -217,35 +317,38 @@ namespace Synthesis.GuestService.Controllers
             if (user.IsLocked)
             {
                 response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
+                response.Message = "This user is locked";
                 return response;
             }
 
-            // TODO: IsEmailVerified is no longer supplied in the user object returned by the microservice.  Needs to be obtained from elsewhere
-            //if (user.IsEmailVerified != true)
-            //{
-            //    response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
-            //    return response;
-            //}
-
-            // TODO: TenantId is no longer part of the User model.  This is in-flux due to try-n-buy and needs to be thought thru
-            //if (user.TenantId != null)
-            //{
-            //    response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
-            //    return response;
-            //}
-
-            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id.GetValueOrDefault());
-            if (settingsResponse != null)
+            if (user.IsEmailVerified != true)
             {
-                var settings = settingsResponse.Payload;
-                if (settings.IsGuestModeEnabled != true)
-                {
-                    response.ResultCode = VerifyGuestResponseCode.Failed;
-                    return response;
-                }
+                response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
+                response.Message = "The user has not verified his email address";
+                return response;
+            }
+
+            var isProjectInUsersAccount = guestTenantId == project.TenantId;
+
+            var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);
+            var isGuestModeEnableOnProjectAccountSettings = userSettingsResponse.IsSuccess() && userSettingsResponse.Payload.IsGuestModeEnabled;
+
+            if (!isGuestModeEnableOnProjectAccountSettings && !isProjectInUsersAccount)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = "Guest mode is not enabled on the account";
+                return response;
+            }
+
+            if (!project.IsGuestModeEnabled && !isProjectInUsersAccount)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                response.Message = "Guest mode is not enabled on the project";
+                return response;
             }
 
             response.ResultCode = VerifyGuestResponseCode.Success;
+            response.Message = "The user may join as a guest";
             return response;
         }
 
@@ -270,7 +373,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException($"User guest session with userId {sendingUserId} and project access code {accessCode} could not be found");
             }
 
-            var project = (await _projectApi.GetProjectByAccessCodeAsync(accessCode)).Payload;
+            var project = (await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(accessCode)).Payload;
             if (project == null)
             {
                 throw new NotFoundException($"Project with access code {accessCode} could not be found");
@@ -303,6 +406,112 @@ namespace Synthesis.GuestService.Controllers
                 EmailSentDateTime = DateTime.UtcNow,
                 SentBy = sendingUser.Email
             };
+        }
+
+        public async Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest request)
+        {
+            var result = new UpdateGuestSessionStateResponse
+            {
+                ResultCode = UpdateGuestSessionStateResultCodes.Failed
+            };
+
+            const string failedToUpdateGuestSession = "Failed to update guest session.";
+            GuestSession currentGuestSession;
+            try
+            {
+                currentGuestSession = await _guestSessionRepository.GetItemAsync(request.GuestSessionId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"{failedToUpdateGuestSession} Failed to get guest session.", ex);
+            }
+
+            if (currentGuestSession.GuestSessionState == GuestState.Ended && request.GuestSessionState != GuestState.Ended)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
+                result.Message = $"{failedToUpdateGuestSession} Can\'t update a guest session that is already ended.";
+                return result;
+            }
+
+            if (currentGuestSession.GuestSessionState == request.GuestSessionState)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.SameAsCurrent;
+                result.Message = $"{failedToUpdateGuestSession} The guest session is already in that state.";
+                result.GuestSession = currentGuestSession;
+                return result;
+            }
+
+            var projectResponse = await _projectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
+            if (projectResponse.ResponseCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session.");
+                result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";
+                return result;
+            }
+
+            if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
+            {
+                _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not retrieve the project associated with this guest session. {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
+                result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";
+                return result;
+            }
+
+            var project = projectResponse.Payload;
+            if (project.GuestAccessCode != currentGuestSession.ProjectAccessCode && request.GuestSessionState != GuestState.Ended)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.SessionEnded;
+                result.Message = $"{failedToUpdateGuestSession}  Guest access code has changed.";
+                return result;
+            }
+
+            var availableGuestCount = await GetAvailableGuestCountAsync(currentGuestSession.ProjectId, project.GuestAccessCode);
+            if (request.GuestSessionState == GuestState.InProject && availableGuestCount < 1)
+            {
+                result.ResultCode = UpdateGuestSessionStateResultCodes.ProjectFull;
+                result.Message = $"{failedToUpdateGuestSession}  Can\'t admit a guest into a full project.";
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
+                return result;
+            }
+
+            currentGuestSession.GuestSessionState = request.GuestSessionState;
+
+            var guestSession = await UpdateGuestSessionAsync(currentGuestSession);
+
+            if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
+            {
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
+            }
+            else if (currentGuestSession.GuestSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
+            {
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
+            }
+
+            result.GuestSession = guestSession;
+            result.Message = "Guest session state updated.";
+            result.ResultCode = UpdateGuestSessionStateResultCodes.Success;
+
+            return result;
+        }
+
+        private async Task UpdateProjectLobbyStateAsync(Guid projectId, LobbyState lobbyStatus)
+        {
+            var projectLobbyState = new ProjectLobbyState { ProjectId = projectId,  LobbyState = lobbyStatus };
+
+            await _projectLobbyStateController.UpsertProjectLobbyStateAsync(projectId, projectLobbyState);
+        }
+
+        private async Task<int> GetAvailableGuestCountAsync(Guid projectId, string projectAccessCode)
+        {
+            var codeValidationResult = _validatorLocator.Validate<ProjectAccessCodeValidator>(projectAccessCode);
+            if (!codeValidationResult.IsValid)
+            {
+                _logger.Error($"Failed to validate the project access code {projectAccessCode} for project with Id {projectId}.");
+                throw new ValidationFailedException(codeValidationResult.Errors);
+            }
+
+            var guestSessionsInProject = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == projectAccessCode && x.GuestSessionState == GuestState.InProject);
+
+            return GuestSessionLimit - guestSessionsInProject.Count();
         }
     }
 }

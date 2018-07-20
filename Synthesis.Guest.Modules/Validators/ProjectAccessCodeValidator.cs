@@ -2,15 +2,17 @@
 
 namespace Synthesis.GuestService.Validators
 {
-    public class ProjectAccessCodeValidator : StringValidator
+    public class ProjectAccessCodeValidator : AbstractValidator<string>
     {
-        public ProjectAccessCodeValidator() : base("ProjectAccessCode")
+        public ProjectAccessCodeValidator()
         {
             RuleFor(request => request)
-                .Length(10).WithMessage("The ProjectAccessCode field must be 10 characters in length");
+                .Length(10).WithMessage("The project access code must be 10 characters in length");
+
+            // TODCO: CU-598: Figure why this is causing a null ref exception
             RuleFor(request => request)
-                .Must(x => int.TryParse(x, out var _))
-                .WithMessage("The access code must be a number");
+                .Must(x => long.TryParse(x, out var _))
+                .WithMessage("The project access code must be a number");
         }
     }
 }

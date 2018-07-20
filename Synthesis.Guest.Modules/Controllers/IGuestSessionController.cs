@@ -9,12 +9,20 @@ namespace Synthesis.GuestService.Controllers
 {
     public interface IGuestSessionController
     {
+        /// <summary>
+        /// Creates a guest session.
+        /// </summary>
+        /// <remarks>Exposed as public method only for unit testing. Should not be called by any external consumers of this interface.
+        ///  External consumers should instead call <see cref="IProjectGuestContextController.SetProjectGuestContextAsync"/> to create a guest session.</remarks>
+        /// <param name="model">The property values to assign to the created guest session</param>
+        /// <returns></returns>
         Task<GuestSession> CreateGuestSessionAsync(GuestSession model);
         Task<GuestSession> GetGuestSessionAsync(Guid guestSessionId);
-        Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdAsync(Guid projectId);
+        Task<IEnumerable<GuestSession>> GetMostRecentValidGuestSessionsByProjectIdAsync(Guid projectId);
         Task<GuestSession> UpdateGuestSessionAsync(GuestSession model);
-        Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode);
+        Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId);
         Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject);
         Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId);
+        Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest guestSessionRequest);
     }
 }

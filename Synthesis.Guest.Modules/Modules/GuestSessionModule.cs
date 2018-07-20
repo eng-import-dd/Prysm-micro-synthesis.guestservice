@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
+using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
@@ -49,6 +51,12 @@ namespace Synthesis.GuestService.Modules
                 .Description("Update a specific GuestSession resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
+
+            CreateRoute("UpdateGuestSessionState", HttpMethod.Put, Routing.UpdateGuestSessionStateRoute, UpdateGuestSessionStateAsync)
+                .Description("Updates the guest session state")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .RequestFormat(UpdateGuestSessionStateRequest.Example)
+                .ResponseFormat(UpdateGuestSessionStateResponse.Example);
 
             CreateRoute("GetGuestSessions", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestSessionsPath}", GetGuestSessionsByProjectIdAsync)
                 .Description("Gets All GuestSessions for a specific Project")
@@ -129,11 +137,11 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.GetGuestSessionsByProjectIdAsync(projectId);
+                return await _guestSessionController.GetMostRecentValidGuestSessionsByProjectIdAsync(projectId);
             }
             catch (NotFoundException)
             {
-                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
@@ -148,8 +156,6 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> UpdateGuestSessionAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
-
             GuestSession guestSessionModel;
 
             try
@@ -162,6 +168,10 @@ namespace Synthesis.GuestService.Modules
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
 
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => guestSessionModel.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
                 return await _guestSessionController.UpdateGuestSessionAsync(guestSessionModel);
@@ -170,6 +180,47 @@ namespace Synthesis.GuestService.Modules
             {
                 Logger.Error("Unhandled exception encountered while attempting to update a GuestSession resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSession);
+            }
+        }
+
+        private async Task<object> UpdateGuestSessionStateAsync(dynamic input)
+        {
+            UpdateGuestSessionStateRequest guestSessionStateRequest;
+
+            try
+            {
+                guestSessionStateRequest = this.Bind<UpdateGuestSessionStateRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to update a GuestSession state.", ex);
+                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
+            }
+
+            Guid projectId;
+            try
+            {
+                var guestSession = await _guestSessionController.GetGuestSessionAsync(guestSessionStateRequest.GuestSessionId);
+                projectId = guestSession.ProjectId;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error fetching projectId for GuestSession {guestSessionStateRequest.GuestSessionId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSessionState);
+            }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionStateRequest);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Unhandled exception encountered while attempting to update a GuestSession state", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestSessionState);
             }
         }
 
@@ -191,7 +242,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.VerifyGuestAsync(request.Username, request.ProjectAccessCode);
+                return await _guestSessionController.VerifyGuestAsync(request, TenantId);
             }
             catch (NotFoundException)
             {
