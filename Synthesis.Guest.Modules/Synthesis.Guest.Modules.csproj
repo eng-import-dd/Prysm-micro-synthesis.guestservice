@@ -47,9 +47,6 @@
     <Reference Include="Autofac.Integration.Owin, Version=4.1.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.Owin.4.1.0\lib\net45\Autofac.Integration.Owin.dll</HintPath>
     </Reference>
-    <Reference Include="AutoMapper, Version=7.0.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
-      <HintPath>..\packages\AutoMapper.7.0.1\lib\net45\AutoMapper.dll</HintPath>
-    </Reference>
     <Reference Include="Castle.Core, Version=4.1.1.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
       <HintPath>..\packages\Castle.Core.4.1.1\lib\net45\Castle.Core.dll</HintPath>
     </Reference>
@@ -174,12 +171,11 @@
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta013\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Cache.2.1.0-beta002\lib\net452\Synthesis.Cache.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache.Redis, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta003\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta007\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Common, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Common.2.0.0-beta011\lib\net452\Synthesis.Common.dll</HintPath>
@@ -211,8 +207,11 @@
     <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta007\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta002\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta028\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta031\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -260,7 +259,7 @@
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta040\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta041\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta042\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.6\lib\net452\Synthesis.Serialization.dll</HintPath>
@@ -373,7 +372,6 @@
     <Compile Include="Exceptions\BuildEmailException.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
-    <Compile Include="Mappings.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Modules\GuestInviteModule.cs" />
     <Compile Include="Modules\GuestSessionModule.cs" />

@@ -28,7 +28,6 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
 using Xunit;
-using Project = Synthesis.ProjectService.InternalApi.Models.Project;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
