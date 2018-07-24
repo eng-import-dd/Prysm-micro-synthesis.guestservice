@@ -50,12 +50,10 @@ using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
 using System;
 using System.Collections.Generic;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using Microsoft.Owin;
 using Microsoft.Owin;
 using Synthesis.Common;
 using Synthesis.EmailService.InternalApi.Api;
@@ -209,7 +207,8 @@ namespace Synthesis.GuestService
                 {
                     AuthKey = settings.GetValue<string>("Guest.DocumentDB.AuthKey"),
                     Endpoint = settings.GetValue<string>("Guest.DocumentDB.Endpoint"),
-                    DatabaseName = settings.GetValue<string>("Guest.DocumentDB.DatabaseName")
+                    DatabaseName = settings.GetValue<string>("Guest.DocumentDB.DatabaseName"),
+                    RuThroughput = settings.GetValue<int>("Guest.DocumentDB.RuThroughput")
                 };
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
