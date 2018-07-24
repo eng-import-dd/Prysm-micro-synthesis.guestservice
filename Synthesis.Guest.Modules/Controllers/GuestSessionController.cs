@@ -114,6 +114,11 @@ namespace Synthesis.GuestService.Controllers
             model.CreatedDateTime = DateTime.UtcNow;
             var result = await _guestSessionRepository.CreateItemAsync(model);
 
+            // Delete all prior guest sessions with the same UserId and ProjectId as the session just created.
+            await _guestSessionRepository.DeleteItemsAsync(x => x.UserId == model.UserId &&
+                                                                x.ProjectId == model.ProjectId &&
+                                                                x.Id != result.Id);
+
             await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(model.ProjectId);
 
             _eventService.Publish(EventNames.GuestSessionCreated, result);

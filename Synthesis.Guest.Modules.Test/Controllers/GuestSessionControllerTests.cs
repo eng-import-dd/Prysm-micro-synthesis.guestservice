@@ -126,6 +126,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task CreateGuestSessionCallsDeleteItemsToClearOldGuestSessionsForUserAndProject()
+        {
+            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+
+            _guestSessionRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()));
+        }
+
+        [Fact]
         public async Task CreateGuestSessionReturnsProvidedGuestSession()
         {
             var result = await _target.CreateGuestSessionAsync(_defaultGuestSession);
