@@ -95,6 +95,11 @@ namespace Synthesis.GuestService.Controllers
 
             var result = await _guestInviteRepository.CreateItemAsync(model);
 
+            // Delete all prior guest invites with the same email and ProjectId as the session just created.
+            await _guestInviteRepository.DeleteItemsAsync(x => x.ProjectId == model.ProjectId &&
+                                                               x.GuestEmail == model.GuestEmail &&
+                                                               x.Id != result.Id);
+
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
             // Send an invite email to the guest

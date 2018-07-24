@@ -99,10 +99,17 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly GuestInvite _defaultGuestInvite;
 
         [Fact]
-        public async Task CreateGuestInvitCallsCreate()
+        public async Task CreateGuestInviteCallsCreate()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
             _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>()));
+        }
+
+        [Fact]
+        public async Task CreateGuestInviteCallsDeleteItemsToClearOldGuestInvitesForEmailAndProject()
+        {
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            _guestInviteRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()));
         }
 
         [Fact]
