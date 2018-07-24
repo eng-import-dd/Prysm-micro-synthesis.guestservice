@@ -173,9 +173,10 @@
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.1.0-beta002\lib\net452\Synthesis.Cache.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Synthesis.Cache.Redis, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta007\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta008\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Common, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Common.2.0.0-beta011\lib\net452\Synthesis.Common.dll</HintPath>
@@ -250,10 +251,10 @@
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta005\lib\net452\Synthesis.Policy.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta012\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta019\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta008\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta011\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta040\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
@@ -267,8 +268,8 @@
     <Reference Include="Synthesis.Serialization.Avro, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Avro.1.0.0-beta006\lib\net452\Synthesis.Serialization.Avro.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization.Json, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.Json.1.0.9\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
+    <Reference Include="Synthesis.Serialization.Json, Version=1.0.11.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.Json.1.0.11-beta001\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.SettingService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.SettingService.InternalApi.1.0.0-beta003\lib\net452\Synthesis.SettingService.InternalApi.dll</HintPath>
@@ -338,6 +339,9 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Synthesis.Guest.ProjectContext, 1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta002\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
+    </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
