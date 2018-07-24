@@ -265,7 +265,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _validatorMock.Setup(v => v.Validate(It.IsAny<object>()))
                           .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetGuestInvitesByProjectIdAsync(Guid.Empty));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetValidGuestInvitesByProjectIdAsync(Guid.Empty));
         }
 
         [Fact]
@@ -283,7 +283,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     return Task.FromResult(sublist);
                 });
 
-            var response = await _target.GetGuestInvitesByProjectIdAsync(projectId);
+            var response = await _target.GetValidGuestInvitesByProjectIdAsync(projectId);
 
             Assert.Equal(inviteForProjectCount, response.Count());
         }

@@ -370,7 +370,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task GetGuestInviteByProjectIdReturnsOk()
         {
             _guestInviteControllerMock
-                .Setup(x => x.GetGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
+                .Setup(x => x.GetValidGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<GuestInvite> { GuestInvite.Example() });
 
             var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
@@ -382,7 +382,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task GetGuestInviteByProjectIdReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.GetGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
+                .Setup(x => x.GetValidGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
                 .Throws<Exception>();
 
             var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);
@@ -394,7 +394,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task GetGuestInviteByProjectIdReturnsBadRequestOnValidationFailedException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.GetGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
+                .Setup(x => x.GetValidGuestInvitesByProjectIdAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.GuestInvitesPath}", BuildRequest);

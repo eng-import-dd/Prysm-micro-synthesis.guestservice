@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
@@ -169,7 +170,7 @@ namespace Synthesis.GuestService.Controllers
             throw new NotFoundException("GuestInvite could not be found");
         }
 
-        public async Task<IEnumerable<GuestInvite>> GetGuestInvitesByProjectIdAsync(Guid projectId)
+        public async Task<IEnumerable<GuestInvite>> GetValidGuestInvitesByProjectIdAsync(Guid projectId)
         {
             var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
             if (!validationResult.IsValid)
@@ -178,15 +179,30 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            // TODO CU-1076: GuestMode - This Get Needs To Match Criteria of the Victory release GetGuestInvites stored procedure.
-
-            var result = await _guestInviteRepository.GetItemsAsync(x => x.ProjectId == projectId);
-            if (result != null)
+            var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+            if (!projectResponse.IsSuccess())
             {
-                return result;
+                if (projectResponse.ResponseCode == HttpStatusCode.NotFound)
+                {
+                    var notFoundMessage = $"Project could not be found: {projectId}";
+                    _logger.Error(notFoundMessage);
+                    throw new NotFoundException(notFoundMessage);
+                }
+
+                var message = $"Failed to retrieve project: {projectId}. Message: {projectResponse.ReasonPhrase}, StatusCode: {projectResponse.ResponseCode}";
+                _logger.Error(message);
+                throw new Exception(message);
             }
 
-            return new List<GuestInvite>();
+            var result = await _guestInviteRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+                                                                         x.ProjectAccessCode == projectResponse.Payload.GuestAccessCode);
+            if (result == null)
+            {
+                return new List<GuestInvite>();
+            }
+
+            var filteredList = result.ToList().GroupBy(x => x.GuestEmail).Select(group => group.FirstOrDefault());
+            return filteredList;
         }
 
         public async Task<IEnumerable<GuestInvite>> GetGuestInvitesForUserAsync(GetGuestInvitesRequest request)
