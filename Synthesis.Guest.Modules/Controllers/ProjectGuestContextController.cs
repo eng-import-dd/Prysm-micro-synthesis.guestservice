@@ -68,7 +68,7 @@ namespace Synthesis.GuestService.Controllers
                 return await ClearGuestSessionState();
             }
 
-            (ProjectGuestContext guestProjectState,
+            (ProjectGuestContext guestContext,
              MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
              MicroserviceResponse<Project> projectResponse) = await LoadData(projectId);
 
@@ -85,7 +85,7 @@ namespace Synthesis.GuestService.Controllers
             var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
             var userHasSameTenant = project.TenantId == currentUserTenantId;
             var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
-            var isProjectGuest = guestProjectState != null && guestProjectState.IsGuest();
+            var isProjectGuest = guestContext != null && guestContext.IsGuest();
 
             if (isProjectGuest && userIsProjectMemberInSameTenant)
             {
@@ -103,7 +103,7 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
 
-            if (isProjectGuest && guestProjectState?.ProjectId == project?.Id)
+            if (isProjectGuest && guestContext?.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, userHasAccess);
             }
@@ -213,22 +213,22 @@ namespace Synthesis.GuestService.Controllers
         }
 
         private async Task<(
-                ProjectGuestContext guestProjectState,
+                ProjectGuestContext guestContext,
                 MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
                 MicroserviceResponse<Project> projectResponse)>
             LoadData(Guid projectId)
         {
-            var guestUserTask =  _projectGuestContextService.GetProjectGuestContextAsync();
+            var guestContextTask =  _projectGuestContextService.GetProjectGuestContextAsync();
             var projectUsersTask =  _projectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser);
             var projectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
-            await Task.WhenAll(guestUserTask, projectUsersTask, projectTask);
+            await Task.WhenAll(guestContextTask, projectUsersTask, projectTask);
 
-            var guestProjectState = await guestUserTask;
+            var guestContext = await guestContextTask;
             var projectResponse = await projectTask;
             var projectUsersResponse = await projectUsersTask;
 
-            return (guestProjectState, projectUsersResponse, projectResponse);
+            return (guestContext, projectUsersResponse, projectResponse);
         }
     }
 }
