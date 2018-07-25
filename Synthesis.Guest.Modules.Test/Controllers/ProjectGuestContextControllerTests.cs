@@ -219,10 +219,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(false);
 
-            _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project() { Id = _defaultProject.Id, TenantId = _defaultProject.TenantId, UserIds = new List<Guid>(){_currentUserId}, GuestUserIds = new List<Guid>() }));
-
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
 
             Assert.True(response.UserHasAccess);
@@ -238,10 +234,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectAccessApiMock
                 .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
-
-            _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project(){Id = _defaultProject.Id, TenantId = _defaultProject.TenantId, UserIds = new List<Guid>(), GuestUserIds = new List<Guid>()}));
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
 
