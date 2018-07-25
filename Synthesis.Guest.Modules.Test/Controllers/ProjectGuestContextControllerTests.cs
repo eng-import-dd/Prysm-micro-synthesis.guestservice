@@ -194,6 +194,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(true);
 
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(new ProjectGuestContext()
+                {
+                    GuestSessionId = Guid.NewGuid(),
+                    GuestState = Synthesis.Guest.ProjectContext.Enums.GuestState.InLobby,
+                    ProjectId = _defaultProjectId,
+                    TenantId = _userWithTenantTenantId
+                });
+
             await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
 
             _projectGuestContextServiceMock
@@ -224,10 +234,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectAccessApiMock
                 .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
-
-            _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
 
