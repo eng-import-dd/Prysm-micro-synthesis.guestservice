@@ -57,9 +57,9 @@ using System.Reflection;
 using Microsoft.Owin;
 using Synthesis.Common;
 using Synthesis.EmailService.InternalApi.Api;
+using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.InternalApi.Models;
-using Synthesis.GuestService.InternalApi.Services;
 using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
@@ -322,8 +322,6 @@ namespace Synthesis.GuestService
             })
             .As<IRequestHeaders>()
             .InstancePerLifetimeScope();
-
-            Mappings.CreateMappings();
 
             return builder.Build();
         }

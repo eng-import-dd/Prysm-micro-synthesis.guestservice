@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Newtonsoft.Json;
+using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Constants;
