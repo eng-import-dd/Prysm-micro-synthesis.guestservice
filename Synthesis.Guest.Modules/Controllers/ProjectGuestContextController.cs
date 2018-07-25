@@ -85,7 +85,7 @@ namespace Synthesis.GuestService.Controllers
             var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
             var userHasSameTenant = project.TenantId == currentUserTenantId;
             var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
-            var isProjectGuest = await _projectGuestContextService.IsGuestAsync();
+            var isProjectGuest = guestProjectState != null && guestProjectState.IsGuest();
 
             if (isProjectGuest && userIsProjectMemberInSameTenant)
             {
@@ -142,9 +142,9 @@ namespace Synthesis.GuestService.Controllers
 
         private async Task<CurrentProjectState> ClearGuestSessionState()
         {
-            var guestUserState = await _projectGuestContextService.GetProjectGuestContextAsync();
+            var guestContext = await _projectGuestContextService.GetProjectGuestContextAsync();
 
-            if (guestUserState == null || guestUserState.GuestSessionId == Guid.Empty)
+            if (guestContext == null || guestContext.GuestSessionId == Guid.Empty)
             {
                 return new CurrentProjectState()
                 {
@@ -154,7 +154,7 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionRequest = new UpdateGuestSessionStateRequest()
             {
-                GuestSessionId = guestUserState.GuestSessionId,
+                GuestSessionId = guestContext.GuestSessionId,
                 GuestSessionState = InternalApi.Enums.GuestState.Ended
             };
 

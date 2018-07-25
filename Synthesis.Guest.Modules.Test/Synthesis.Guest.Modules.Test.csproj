@@ -188,7 +188,7 @@
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta016\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta002\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta003\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta032\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
@@ -295,9 +295,6 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Synthesis.Guest.ProjectContext, 1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta002\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
-    </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />

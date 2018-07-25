@@ -194,6 +194,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(true);
 
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(new ProjectGuestContext()
+                {
+                    GuestSessionId = Guid.NewGuid(),
+                    GuestState = Synthesis.Guest.ProjectContext.Enums.GuestState.InLobby,
+                    ProjectId = _defaultProjectId,
+                    TenantId = _userWithTenantTenantId
+                });
+
             await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
 
             _projectGuestContextServiceMock
@@ -208,6 +218,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectGuestContextServiceMock
                 .Setup(x => x.IsGuestAsync())
                 .ReturnsAsync(false);
+
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project() { Id = _defaultProject.Id, TenantId = _defaultProject.TenantId, UserIds = new List<Guid>(){_currentUserId}, GuestUserIds = new List<Guid>() }));
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
 
@@ -227,7 +241,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project(){Id = _defaultProject.Id, TenantId = _defaultProject.TenantId, UserIds = new List<Guid>(), GuestUserIds = new List<Guid>()}));
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
 
