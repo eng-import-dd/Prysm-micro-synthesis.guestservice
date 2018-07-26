@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Threading;
@@ -17,6 +18,7 @@ using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
+using Synthesis.Http.Microservice.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -28,6 +30,7 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
 using Xunit;
+using static Synthesis.GuestService.Modules.Test.Utilities.LoopUtilities;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
@@ -35,10 +38,17 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     {
         public GuestSessionControllerTests()
         {
+            _defaultProject = new Project
+            {
+                GuestAccessCode = "0123456789",
+                Id = Guid.NewGuid()
+            };
+
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();
-            _defaultGuestSession.ProjectId = Guid.NewGuid();
-            _defaultGuestSession.ProjectAccessCode = "0123456789";
+            _defaultGuestSession.ProjectId = _defaultProject.Id;
+            _defaultGuestSession.ProjectAccessCode = _defaultProject.GuestAccessCode;
+            _defaultGuestSession.GuestSessionState = GuestState.InLobby;
 
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
@@ -108,7 +118,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
         private readonly Mock<ISessionService> _sessionService = new Mock<ISessionService>();
-        private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<Synthesis.Serialization.IObjectSerializer>();
+        private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
+        private readonly Project _defaultProject;
 
         private static ValidationResult FailedValidationResult => new ValidationResult(
             new List<ValidationFailure>
@@ -371,6 +382,114 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 GuestSessionId = _defaultGuestSession.Id,
                 GuestSessionState = GuestState.Ended
             }));
+        }
+
+        [Fact]
+        public async Task GetMostRecentValidGuestSessionsByProjectIdThrowsNotFoundExceptionIfProjectNotFound()
+        {
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
+
+            await Assert.ThrowsAsync<NotFoundException>(async () =>
+                await _target.GetMostRecentValidGuestSessionsByProjectIdAsync(_defaultGuestSession.ProjectId));
+        }
+
+        [Fact]
+        public async Task GetMostRecentValidGuestSessionsByProjectIdReturnsSessionsMatchingProjectIdAndAccessCodeAndNotPromotedToProjectMember()
+        {
+            var expectedReturnedGuestSession = new GuestSession
+            {
+                ProjectId = _defaultProject.Id,
+                ProjectAccessCode = _defaultProject.GuestAccessCode,
+                UserId = Guid.NewGuid()
+            };
+
+            var guestSessions = new List<GuestSession>
+            {
+                expectedReturnedGuestSession,
+                new GuestSession
+                {
+                    ProjectId = _defaultProject.Id,
+                    ProjectAccessCode = "5555555555",
+                    UserId = Guid.NewGuid()
+                },
+                new GuestSession
+                {
+                    ProjectId = Guid.NewGuid(),
+                    ProjectAccessCode = _defaultProject.GuestAccessCode,
+                    UserId = Guid.NewGuid()
+                },
+                new GuestSession
+                {
+                    ProjectId = _defaultProject.Id,
+                    ProjectAccessCode = _defaultProject.GuestAccessCode,
+                    UserId = Guid.NewGuid(),
+                    GuestSessionState = GuestState.PromotedToProjectMember
+                }
+            };
+
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
+
+            _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .Returns<Expression<Func<GuestSession, bool>>>(predicate =>
+                {
+                    var expression = predicate.Compile();
+                    IEnumerable<GuestSession> sublist = guestSessions.Where(expression).ToList();
+                    return Task.FromResult(sublist);
+                });
+
+            var result = await _target.GetMostRecentValidGuestSessionsByProjectIdAsync(_defaultProject.Id);
+            var resultList = result.ToList();
+
+            Assert.Single(resultList);
+            Assert.Contains(expectedReturnedGuestSession, resultList);
+        }
+
+        [Fact]
+        public async Task GetMostRecentValidGuestSessionsByProjectIdReturnsEmptyListIfNoSessionsFound()
+        {
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
+
+            _guestSessionRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>())).ReturnsAsync(new List<GuestSession>());
+
+            var result = await _target.GetMostRecentValidGuestSessionsByProjectIdAsync(_defaultGuestSession.ProjectId);
+
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task GetMostRecentValidGuestSessionsByProjectIdFiltersResultsToReturnMostRecentSessionForEachUniqueUserId()
+        {
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
+            var userId3 = Guid.NewGuid();
+
+            var shouldBeReturned = new List<GuestSession>
+            {
+                new GuestSession { CreatedDateTime = new DateTime(2018, 7, 26), UserId = userId1 },
+                new GuestSession { CreatedDateTime = new DateTime(2018, 7, 26), UserId = userId2 },
+                new GuestSession { CreatedDateTime = new DateTime(2018, 7, 26), UserId = userId3 }
+            };
+
+            var shouldNotBeReturned = new List<GuestSession>
+            {
+                new GuestSession { CreatedDateTime = new DateTime(2018, 7, 25), UserId = userId1 },
+                new GuestSession { CreatedDateTime = new DateTime(2018, 7, 25), UserId = userId2 },
+                new GuestSession { CreatedDateTime = new DateTime(2018, 7, 25), UserId = userId3 }
+            };
+
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
+
+            _guestSessionRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .ReturnsAsync(shouldBeReturned.Concat(shouldNotBeReturned));
+
+            var result = await _target.GetMostRecentValidGuestSessionsByProjectIdAsync(_defaultGuestSession.ProjectId);
+
+            Assert.All(shouldBeReturned, session => Assert.Contains(session, result));
+            Assert.All(shouldNotBeReturned, session => Assert.DoesNotContain(session, result));
         }
     }
 }
