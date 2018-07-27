@@ -19,22 +19,26 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
+using Synthesis.ProjectService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Modules
 {
     public sealed class GuestSessionModule : SynthesisModule
     {
         private readonly IGuestSessionController _guestSessionController;
+        private readonly IProjectApi _projectApi;
 
         public GuestSessionModule(
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
+            IProjectApi projectApi,
             IGuestSessionController guestSessionController,
             ILoggerFactory loggerFactory)
             : base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             // Init DI
             _guestSessionController = guestSessionController;
+            _projectApi = projectApi;
 
             // Initialize Routes
             CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
@@ -76,8 +80,6 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
-
             GuestSession newGuestSession;
             try
             {
@@ -88,6 +90,10 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error("Binding failed while attempting to create a GuestSession resource", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(context => newGuestSession.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -106,11 +112,11 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestSessionAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            GuestSession session;
 
             try
             {
-                return await _guestSessionController.GetGuestSessionAsync(input.id);
+                session = await _guestSessionController.GetGuestSessionAsync(input.id);
             }
             catch (NotFoundException)
             {
@@ -125,6 +131,12 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error($"Failed to get guestSession with id {input.id} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(context => session.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
+
+            return session;
         }
 
         private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input)
@@ -226,8 +238,6 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> VerifyGuestAsync()
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
-
             GuestVerificationRequest request;
 
             try
@@ -239,6 +249,10 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error("Binding failed while attempting to verify a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => request.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
