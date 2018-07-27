@@ -348,6 +348,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 invite.ProjectId = projectId;
                 invite.GuestEmail = email;
                 invite.ProjectAccessCode = _defaultProject.GuestAccessCode;
+                invite.CreatedDateTime = DateTime.UtcNow;
                 invites.Add(invite);
             });
 

@@ -201,7 +201,10 @@ namespace Synthesis.GuestService.Controllers
                 return new List<GuestInvite>();
             }
 
-            var filteredList = result.ToList().GroupBy(x => x.GuestEmail).Select(group => group.FirstOrDefault());
+            var filteredList = result.ToList().GroupBy(x => x.GuestEmail)
+                .OrderBy(invite => invite.Key)
+                .Select(invite => invite.OrderByDescending(y => y.CreatedDateTime).FirstOrDefault());
+
             return filteredList;
         }
 
