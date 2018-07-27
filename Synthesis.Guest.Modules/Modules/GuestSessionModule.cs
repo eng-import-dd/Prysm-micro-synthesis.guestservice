@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
-using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Constants;
@@ -19,26 +18,22 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
-using Synthesis.ProjectService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Modules
 {
     public sealed class GuestSessionModule : SynthesisModule
     {
         private readonly IGuestSessionController _guestSessionController;
-        private readonly IProjectApi _projectApi;
 
         public GuestSessionModule(
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
-            IProjectApi projectApi,
             IGuestSessionController guestSessionController,
             ILoggerFactory loggerFactory)
             : base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             // Init DI
             _guestSessionController = guestSessionController;
-            _projectApi = projectApi;
 
             // Initialize Routes
             CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
