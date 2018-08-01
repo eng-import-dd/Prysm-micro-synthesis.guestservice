@@ -395,10 +395,6 @@ namespace Synthesis.GuestService
 
             builder.RegisterType<SessionService>().As<ISessionService>();
 
-            builder.RegisterType<DocumentDbRepositoryHealthReport>()
-                .As<IRepositoryHealthReport>()
-                .SingleInstance();
-
             builder.RegisterType<RepositoryHealthReporter<GuestInvite>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceNameShort);
