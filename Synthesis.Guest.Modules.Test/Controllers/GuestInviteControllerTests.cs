@@ -46,22 +46,22 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
 
             _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.OK, Project.Example()));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
 
             _emailServiceMock.Setup(x => x.SendGuestInviteEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
             _guestInviteRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_defaultGuestInvite);
 
             _guestInviteRepositoryMock
-                .Setup(x => x.CreateItemAsync(It.IsAny<GuestInvite>()))
-                .ReturnsAsync((GuestInvite guestInvite) => guestInvite);
+                .Setup(x => x.CreateItemAsync(It.IsAny<GuestInvite>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((GuestInvite guestInvite, CancellationToken c) => guestInvite);
 
             _guestInviteRepositoryMock
-                .Setup(x => x.UpdateItemAsync(_defaultGuestInvite.Id, It.IsAny<GuestInvite>()))
-                .ReturnsAsync((Guid id, GuestInvite guestInvite) => guestInvite);
+                .Setup(x => x.UpdateItemAsync(_defaultGuestInvite.Id, It.IsAny<GuestInvite>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Guid id, GuestInvite guestInvite, UpdateOptions o, CancellationToken c) => guestInvite);
 
             repositoryFactoryMock
                 .Setup(x => x.CreateRepository<GuestInvite>())
@@ -102,14 +102,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task CreateGuestInviteCallsCreate()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>()));
+            _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task CreateGuestInviteCallsDeleteItemsToClearOldGuestInvitesForEmailAndProject()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _guestInviteRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()));
+            _guestInviteRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
@@ -214,7 +214,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var id = Guid.NewGuid();
             await _target.GetGuestInviteAsync(id);
-            _guestInviteRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>()));
+            _guestInviteRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
@@ -228,7 +228,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task GetGuestInviteThrowsNotFoundOnDocumentNotFound()
         {
             _guestInviteRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException("GuestInvite not found"));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.GetGuestInviteAsync(It.IsAny<Guid>()));
@@ -238,7 +238,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task UpdateGuestInviteThrowsNotFoundOnNotFoundException()
         {
             _guestInviteRepositoryMock
-                .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), _defaultGuestInvite))
+                .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), _defaultGuestInvite, It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException("Message"));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.UpdateGuestInviteAsync(_defaultGuestInvite));
@@ -248,7 +248,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task UpdateGuestInviteVerifyCalled()
         {
             await _target.UpdateGuestInviteAsync(_defaultGuestInvite);
-            _guestInviteRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestInvite>()));
+            _guestInviteRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestInvite>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
@@ -274,8 +274,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var projectId = Guid.NewGuid();
             var invites = MakeTestInviteList(projectId, Guid.NewGuid(), inviteForProjectCount, 5);
 
-            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
-                .Returns<Expression<Func<GuestInvite, bool>>>(predicate =>
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Returns<Expression<Func<GuestInvite, bool>>, BatchOptions, CancellationToken>((predicate, o, c) =>
                 {
                     var expression = predicate.Compile();
                     IEnumerable<GuestInvite> sublist = invites.Where(expression).ToList();
@@ -331,8 +331,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             request.GuestUserId = userId;
             request.GuestEmail = "unique@email.com";
 
-            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
-                .Returns<Expression<Func<GuestInvite, bool>>>(predicate =>
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Returns<Expression<Func<GuestInvite, bool>>, BatchOptions, CancellationToken>((predicate, o, c) =>
                 {
                     var expression = predicate.Compile();
                     IEnumerable<GuestInvite> sublist = invites.Where(expression).ToList();
