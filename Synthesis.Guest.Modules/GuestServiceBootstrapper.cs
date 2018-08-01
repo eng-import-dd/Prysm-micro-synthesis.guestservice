@@ -63,6 +63,7 @@ using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
+using Synthesis.Common.Cache;
 
 namespace Synthesis.GuestService
 {
@@ -169,6 +170,10 @@ namespace Synthesis.GuestService
         {
             var builder = new ContainerBuilder();
 
+            RegisterRedisKeyed(builder, "Redis.General.Key", "Redis.General.Endpoint", CacheConnection.General);
+            RegisterRedisKeyed(builder, "Redis.Refresh.Key", "Redis.Refresh.Endpoint", CacheConnection.Refresh);
+            RegisterRedisKeyed(builder, "Redis.ExpirationNotifier.Key", "Redis.ExpirationNotifier.Endpoint", CacheConnection.KEN);
+
             builder.RegisterType<DefaultAppSettingsReader>()
                 .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
 
@@ -274,27 +279,6 @@ namespace Synthesis.GuestService
             // Policy Evaluator components
             builder.RegisterPolicyEvaluatorComponents();
 
-            // Redis cache
-            builder.RegisterType<RedisCache>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
-                    (p, c) =>
-                    {
-                        var reader = c.Resolve<IAppSettingsReader>();
-                        var redisOptions = new ConfigurationOptions
-                        {
-                            Password = reader.GetValue<string>("Redis.General.Key"),
-                            AbortOnConnectFail = false,
-                            SyncTimeout = RedisSyncTimeoutInMilliseconds,
-                            ConnectTimeout = RedisConnectTimeoutInMilliseconds,
-                            ConnectRetry = RedisConnectRetryTimes
-                        };
-                        redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
-                        return ConnectionMultiplexer.Connect(redisOptions);
-                    }))
-                .As<ICache>()
-                .SingleInstance();
-
             builder.RegisterType<SynthesisApi>()
                 .As<ISynthesisApi>()
                 .SingleInstance();
@@ -326,6 +310,29 @@ namespace Synthesis.GuestService
             return builder.Build();
         }
 
+        private static void RegisterRedisKeyed(ContainerBuilder builder, string passwordKey, string endpointKey, CacheConnection instanceKey)
+        {
+            builder.RegisterType<RedisCache>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
+                    (p, c) =>
+                    {
+                        var reader = c.Resolve<IAppSettingsReader>();
+                        var redisOptions = new ConfigurationOptions
+                        {
+                            Password = reader.GetValue<string>(passwordKey),
+                            AbortOnConnectFail = false,
+                            SyncTimeout = RedisSyncTimeoutInMilliseconds,
+                            ConnectTimeout = RedisConnectTimeoutInMilliseconds,
+                            ConnectRetry = RedisConnectRetryTimes
+                        };
+                        redisOptions.EndPoints.Add(reader.GetValue<string>(endpointKey));
+                        return ConnectionMultiplexer.Connect(redisOptions);
+                    }))
+                .Keyed<ICache>(instanceKey)
+                .SingleInstance();
+        }
+
         /// <summary>
         ///     The point of this method is to ease updating services.  Any registrations that a service needs can go into this
         ///     method and then when updating to the latest template, this can just be copied forward.
@@ -333,7 +340,7 @@ namespace Synthesis.GuestService
         /// <param name="builder"></param>
         private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
         {
-            // html files and png content files need to be set to copy to output directory
+            builder.RegisterType<CacheSelector>().As<ICacheSelector>().SingleInstance();
 
             // Service To Service Resolver
             builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()

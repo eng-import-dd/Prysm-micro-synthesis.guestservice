@@ -10,7 +10,6 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
-using Synthesis.GuestService.ApiWrappers.Interfaces;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Enums;
@@ -20,7 +19,6 @@ using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -91,7 +89,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
                                                  loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
-                                                 _userApiMock.Object, _projectLobbyStateController.Object,_settingsApiMock.Object, _sessionService.Object, _synthesisObjectSerializer.Object);
+                                                 _userApiMock.Object, _projectLobbyStateController.Object,_settingsApiMock.Object, _synthesisObjectSerializer.Object);
         }
 
         private readonly GuestSessionController _target;
@@ -107,8 +105,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
-        private readonly Mock<ISessionService> _sessionService = new Mock<ISessionService>();
-        private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<Synthesis.Serialization.IObjectSerializer>();
+        private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
 
         private static ValidationResult FailedValidationResult => new ValidationResult(
             new List<ValidationFailure>

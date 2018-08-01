@@ -7,6 +7,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.Cache;
+using Synthesis.Common.Cache;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
@@ -30,6 +31,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     {
         private readonly IProjectLobbyStateController _target;
         private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
+        private readonly Mock<ICacheSelector> _cacheSelectorMock = new Mock<ICacheSelector>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();
@@ -46,6 +48,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         public ProjectLobbyStateControllerTests()
         {
+            _cacheSelectorMock.Setup(x => x[It.IsAny<CacheConnection>()])
+                .Returns(_cacheMock.Object);
+
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             repositoryFactoryMock
                 .Setup(m => m.CreateRepository<GuestSession>())
@@ -73,7 +78,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Returns(new Mock<ILogger>().Object);
 
             _target = new ProjectLobbyStateController(repositoryFactoryMock.Object,
-                _cacheMock.Object,
+                _cacheSelectorMock.Object,
                 validatorLocatorMock.Object,
                 _sessionServiceMock.Object,
                 _projectApi.Object,
@@ -152,7 +157,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Throws(new ApplicationException());
             var projectId = Guid.NewGuid();
-            var expectedResult = new ProjectLobbyState(){ProjectId = projectId, LobbyState = LobbyState.Error};
 
             var result = await _target.RecalculateProjectLobbyStateAsync(projectId);
 
@@ -176,11 +180,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
 
-            var stateRef1 = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
-            var stateRef2 = new Reference<ProjectLobbyState> { Value = ProjectLobbyState.Example() };
+            var stateRef = new Reference<ProjectLobbyState> { Value = ProjectLobbyState.Example() };
 
             _cacheMock
-                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef2))
+                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef))
                 .ReturnsAsync(false)
                 .ReturnsAsync(true);
 
@@ -196,7 +199,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task RecalculateProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
         {
-            SetupApisForRecalculate(HttpStatusCode.NotFound, false);
+            SetupApisForRecalculate(HttpStatusCode.NotFound);
             var stateRef = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
 
             _cacheMock
@@ -232,7 +235,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             {
                 var participant = Participant.Example();
                 participant.ProjectId = projectId;
-                participant.GuestSessionId = (Guid?)null;
+                participant.GuestSessionId = null;
                 participant.IsGuest = false;
                 participants.Add(participant);
             }
@@ -310,7 +313,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var participants = new List<Participant>();
             var participant = Participant.Example();
             participant.ProjectId = project.Id;
-            participant.GuestSessionId = (Guid?)null;
+            participant.GuestSessionId = null;
             participant.IsGuest = false;
             participants.Add(participant);
 
