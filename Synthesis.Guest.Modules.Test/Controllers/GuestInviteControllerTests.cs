@@ -37,7 +37,19 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             _guestInviteRepositoryMock = new Mock<IRepository<GuestInvite>>();
-            _defaultGuestInvite = new GuestInvite { Id = Guid.NewGuid(), InvitedBy = Guid.NewGuid(), ProjectId = Guid.NewGuid(), CreatedDateTime = DateTime.UtcNow };
+            _defaultGuestInvite = new GuestInvite
+            {
+                Id = Guid.NewGuid(),
+                InvitedBy = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                CreatedDateTime = DateTime.UtcNow
+            };
+
+            _defaultProject = new Project
+            {
+                Id = Guid.NewGuid(),
+                GuestAccessCode = "0123456789"
+            };
 
             _userApiMock.Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.GuestUserExample()));
@@ -97,6 +109,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
         private readonly Mock<IObjectSerializer> _serializerMock = new Mock<IObjectSerializer>();
         private readonly GuestInvite _defaultGuestInvite;
+        private readonly Project _defaultProject;
 
         [Fact]
         public async Task CreateGuestInviteCallsCreate()
@@ -259,20 +272,31 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetGuestInvitesByProjectIdThrowsExceptionOnValidationError()
+        public async Task GetValidGuestInvitesByProjectIdThrowsExceptionOnValidationError()
         {
             _validatorMock.Setup(v => v.Validate(It.IsAny<object>()))
                           .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetGuestInvitesByProjectIdAsync(Guid.Empty));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.GetValidGuestInvitesByProjectIdAsync(Guid.Empty));
+        }
+
+        [Fact]
+        public async Task GetValidGuestInvitesByProjectIdThrowsNotFoundExceptionIfProjectIsNotFound()
+        {
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.GetValidGuestInvitesByProjectIdAsync(Guid.NewGuid()));
         }
 
         [Fact]
         public async Task GetGuestInvitesByProjectIdGetsInvitesForProject()
         {
             var inviteForProjectCount = 3;
-            var projectId = Guid.NewGuid();
-            var invites = MakeTestInviteList(projectId, Guid.NewGuid(), inviteForProjectCount, 5);
+            var invites = MakeTestInviteList(_defaultProject.Id, "test@test.com", 0, inviteForProjectCount, 2, 2);
+
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns<Expression<Func<GuestInvite, bool>>, BatchOptions, CancellationToken>((predicate, o, c) =>
@@ -282,24 +306,70 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     return Task.FromResult(sublist);
                 });
 
-            var response = await _target.GetGuestInvitesByProjectIdAsync(projectId);
+            var response = await _target.GetValidGuestInvitesByProjectIdAsync(_defaultProject.Id);
 
             Assert.Equal(inviteForProjectCount, response.Count());
         }
 
-        private IEnumerable<GuestInvite> MakeTestInviteList(Guid projectId, Guid userId, int matchingProjectUserCount, int nonMatchingCount)
+        [Fact]
+        public async Task GetValidGuestInvitesByProjectIdFiltersToReturnOneInvitePerEmail()
+        {
+            var firstEmailInvites = MakeTestInviteList(_defaultProject.Id, "firstEmail@test.com", 2, 0, 0, 0);
+            var secondEmailInvites = MakeTestInviteList(_defaultProject.Id, "secondEmail@test.com", 2, 0, 0, 0);
+            var thirdEmailInvites = MakeTestInviteList(_defaultProject.Id, "thirdEmail@test.com", 2, 0, 0, 0);
+
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
+
+            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
+                .ReturnsAsync(firstEmailInvites.Concat(secondEmailInvites.Concat(thirdEmailInvites)));
+
+            var result = await _target.GetValidGuestInvitesByProjectIdAsync(_defaultProject.Id);
+            var resultList = result.ToList();
+
+            Assert.Equal(3, resultList.Count);
+            Assert.Contains(resultList, invite => invite.GuestEmail == firstEmailInvites.First().GuestEmail);
+            Assert.Contains(resultList, invite => invite.GuestEmail == secondEmailInvites.First().GuestEmail);
+            Assert.Contains(resultList, invite => invite.GuestEmail == thirdEmailInvites.First().GuestEmail);
+        }
+
+        private List<GuestInvite> MakeTestInviteList(Guid projectId,
+                                                     string email,
+                                                     int matchingProjectIdEmailAccessCodeCount,
+                                                     int matchingProjectIdAccessCodeCount,
+                                                     int matchingProjectIdEmailCount,
+                                                     int nonMatchingProjectCount)
         {
             var invites = new List<GuestInvite>();
 
-            Repeat(nonMatchingCount, () => { invites.Add(GuestInvite.Example()); });
-
-            Repeat(matchingProjectUserCount, () =>
+            Repeat(matchingProjectIdEmailAccessCodeCount, () =>
             {
                 var invite = GuestInvite.Example();
                 invite.ProjectId = projectId;
-                invite.UserId = userId;
+                invite.GuestEmail = email;
+                invite.ProjectAccessCode = _defaultProject.GuestAccessCode;
+                invite.CreatedDateTime = DateTime.UtcNow;
                 invites.Add(invite);
             });
+
+            for (var i = 0; i < matchingProjectIdAccessCodeCount; i++)
+            {
+                var invite = GuestInvite.Example();
+                invite.ProjectId = projectId;
+                invite.ProjectAccessCode = _defaultProject.GuestAccessCode;
+                invite.GuestEmail = i + email;
+                invites.Add(invite);
+            }
+
+            Repeat(matchingProjectIdEmailCount, () =>
+            {
+                var invite = GuestInvite.Example();
+                invite.ProjectId = projectId;
+                invite.GuestEmail = email;
+                invites.Add(invite);
+            });
+
+            Repeat(nonMatchingProjectCount, () => { invites.Add(GuestInvite.Example()); });
 
             return invites;
         }
