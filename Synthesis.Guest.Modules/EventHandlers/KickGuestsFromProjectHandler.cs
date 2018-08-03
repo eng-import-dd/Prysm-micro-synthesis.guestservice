@@ -7,9 +7,10 @@ using Synthesis.GuestService.Retry;
 using Synthesis.Logging;
 using Synthesis.ProjectService.InternalApi.Models;
 using Microsoft.Practices.TransientFaultHandling;
-using Synthesis.Common.Cache;
 using Synthesis.Cache;
 using Synthesis.ExpirationNotifierService.InternalApi.Services;
+using Synthesis.GuestService.Enumerations;
+using Synthesis.GuestService.Utilities.Interfaces;
 
 namespace Synthesis.GuestService.EventHandlers
 {
@@ -45,7 +46,7 @@ namespace Synthesis.GuestService.EventHandlers
             {
                 _logger.Error($"Errors occurred while kicking guests for {nameof(Project)}.Id={args.Value}.", ex);
 
-                _cacheSelector[CacheConnection.KEN].ItemSet(KeyResolver.ExpKickGuestsFromProject(args.Value), "Value not used", _retryKickingGuestsTimeSpan);
+                _cacheSelector[CacheConnection.ExpirationNotifier].ItemSet(KeyResolver.ExpKickGuestsFromProject(args.Value), "Value not used", _retryKickingGuestsTimeSpan);
             }
         }
 

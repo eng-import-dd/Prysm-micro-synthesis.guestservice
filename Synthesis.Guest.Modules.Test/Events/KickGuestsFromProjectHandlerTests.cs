@@ -1,10 +1,11 @@
 ﻿using System;
 using Moq;
 using Synthesis.Cache;
-using Synthesis.Common.Cache;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.EventHandlers;
+using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Logging;
 using Xunit;
 
