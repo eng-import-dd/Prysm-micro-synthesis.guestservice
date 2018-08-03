@@ -28,7 +28,6 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
 using Xunit;
-using static Synthesis.GuestService.Modules.Test.Utilities.LoopUtilities;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
@@ -47,7 +46,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
-        private readonly Mock<ISessionService> _sessionService = new Mock<ISessionService>();
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
         private readonly Project _defaultProject;
 
@@ -101,7 +99,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync((Guid id, GuestInvite session, UpdateOptions o, CancellationToken c) => session);
 
             repositoryFactoryMock
+#pragma warning disable 612
                 .Setup(x => x.CreateRepository<GuestSession>())
+#pragma warning restore 612
                 .Returns(_guestSessionRepositoryMock.Object);
 
             _validatorMock
@@ -123,30 +123,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
                                                  loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
-                                                 _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _sessionService.Object, _synthesisObjectSerializer.Object);
+                                                 _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object);
         }
-
-        private readonly GuestSessionController _target;
-        private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
-        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
-        private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
-        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
-        private readonly Mock<IProjectApi> _serviceToServiceProjectApiMock = new Mock<IProjectApi>();
-        private readonly Mock<ISettingApi> _settingsApiMock = new Mock<ISettingApi>();
-        private readonly Mock<IUserApi> _userApiMock = new Mock<IUserApi>();
-        private readonly GuestSession _defaultGuestSession = new GuestSession();
-        private readonly GuestInvite _defaultGuestInvite = new GuestInvite();
-        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
-        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
-        private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
-
-        private static ValidationResult FailedValidationResult => new ValidationResult(
-            new List<ValidationFailure>
-            {
-                new ValidationFailure(string.Empty, string.Empty)
-            }
-        );
 
         [Fact]
         public async Task CreateGuestSessionCallsCreate()
