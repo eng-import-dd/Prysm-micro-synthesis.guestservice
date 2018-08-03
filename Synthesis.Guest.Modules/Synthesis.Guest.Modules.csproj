@@ -24,6 +24,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>612,618</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -182,7 +183,7 @@
       <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta008\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Common, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Common.2.0.0-beta011\lib\net452\Synthesis.Common.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Common.2.0.0-beta014\lib\net452\Synthesis.Common.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
@@ -194,10 +195,10 @@
       <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta018\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta020\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta028\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta030\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta015\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>

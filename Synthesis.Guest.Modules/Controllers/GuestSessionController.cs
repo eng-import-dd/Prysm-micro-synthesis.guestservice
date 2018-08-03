@@ -187,7 +187,6 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            // TODO: CU-1076 - Cover project NotFoundException in unit tests
             var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
@@ -199,8 +198,9 @@ namespace Synthesis.GuestService.Controllers
 
             var project = projectResult.Payload;
 
-            //TODO: CU-1076 GuestMode - cover the filtering of the result in unit tests
-            var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == project.GuestAccessCode && x.GuestSessionState != GuestState.PromotedToProjectMember);
+            var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+                                                                                      x.ProjectAccessCode == project.GuestAccessCode &&
+                                                                                      x.GuestSessionState != GuestState.PromotedToProjectMember);
 
             if (validGuestSessions == null || !validGuestSessions.Any())
             {
@@ -210,7 +210,6 @@ namespace Synthesis.GuestService.Controllers
             var currentValidProjectGuestSessions = validGuestSessions.GroupBy(s => s.UserId).OrderBy(gs => gs.Key).Select(gs => gs.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault());
 
             return currentValidProjectGuestSessions;
-
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
