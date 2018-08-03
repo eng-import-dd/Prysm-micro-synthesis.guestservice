@@ -20,7 +20,7 @@ namespace Synthesis.GuestService.EventHandlers
         private readonly IGuestSessionController _guestSessionController;
         private readonly ICacheSelector _cacheSelector;
 
-        private readonly TimeSpan _retryKickingGuestsTimeSpan = TimeSpan.FromMinutes(5);
+        private readonly TimeSpan _retryKickingGuestsAfterFailureTimeSpan = TimeSpan.FromMinutes(5);
 
         public KickGuestsFromProjectHandler(
             ILoggerFactory loggerFactory,
@@ -46,7 +46,7 @@ namespace Synthesis.GuestService.EventHandlers
             {
                 _logger.Error($"Errors occurred while kicking guests for {nameof(Project)}.Id={args.Value}.", ex);
 
-                _cacheSelector[CacheConnection.ExpirationNotifier].ItemSet(KeyResolver.ExpKickGuestsFromProject(args.Value), "Value not used", _retryKickingGuestsTimeSpan);
+                _cacheSelector[CacheConnection.ExpirationNotifier].ItemSet(KeyResolver.ExpKickGuestsFromProject(args.Value), "Value not used", _retryKickingGuestsAfterFailureTimeSpan);
             }
         }
 
