@@ -430,8 +430,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
-            _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
-                .Returns<Expression<Func<GuestSession, bool>>>(predicate =>
+            _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Returns<Expression<Func<GuestSession, bool>>, BatchOptions, CancellationToken>((predicate, bo, ct) =>
                 {
                     var expression = predicate.Compile();
                     IEnumerable<GuestSession> sublist = guestSessions.Where(expression).ToList();
@@ -451,7 +451,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
-            _guestSessionRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>())).ReturnsAsync(new List<GuestSession>());
+            _guestSessionRepositoryMock.Setup(x => x
+                .GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession>());
 
             var result = await _target.GetMostRecentValidGuestSessionsByProjectIdAsync(_defaultGuestSession.ProjectId);
 
@@ -482,7 +484,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
-            _guestSessionRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+            _guestSessionRepositoryMock.Setup(x => x
+                .GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(shouldBeReturned.Concat(shouldNotBeReturned));
 
             var result = await _target.GetMostRecentValidGuestSessionsByProjectIdAsync(_defaultGuestSession.ProjectId);

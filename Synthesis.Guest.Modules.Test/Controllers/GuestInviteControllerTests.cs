@@ -321,7 +321,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
-            _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>()))
+            _guestInviteRepositoryMock.Setup(m => m
+                .GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(firstEmailInvites.Concat(secondEmailInvites.Concat(thirdEmailInvites)));
 
             var result = await _target.GetValidGuestInvitesByProjectIdAsync(_defaultProject.Id);
