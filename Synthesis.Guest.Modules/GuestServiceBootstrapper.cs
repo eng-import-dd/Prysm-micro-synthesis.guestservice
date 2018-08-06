@@ -276,6 +276,27 @@ namespace Synthesis.GuestService
             // Policy Evaluator components
             builder.RegisterPolicyEvaluatorComponents();
 
+            // Redis cache - this unkeyed instance is needed for the policy evaluator
+            builder.RegisterType<RedisCache>()
+                 .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
+                    (p, c) =>
+                    {
+                        var reader = c.Resolve<IAppSettingsReader>();
+                        var redisOptions = new ConfigurationOptions
+                        {
+                            Password = reader.GetValue<string>("Redis.General.Key"),
+                            AbortOnConnectFail = false,
+                            SyncTimeout = RedisSyncTimeoutInMilliseconds,
+                            ConnectTimeout = RedisConnectTimeoutInMilliseconds,
+                            ConnectRetry = RedisConnectRetryTimes
+                        };
+                        redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
+                        return ConnectionMultiplexer.Connect(redisOptions);
+                    }))
+                .As<ICache>()
+                .SingleInstance();
+
             // Validation
             RegisterValidation(builder);
 
