@@ -21,7 +21,6 @@ using Synthesis.Http.Microservice.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -29,7 +28,6 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
 using Xunit;
-using static Synthesis.GuestService.Modules.Test.Utilities.LoopUtilities;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
@@ -48,7 +46,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
-        private readonly Mock<ISessionService> _sessionService = new Mock<ISessionService>();
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
         private readonly Project _defaultProject;
 
@@ -102,7 +99,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync((Guid id, GuestInvite session, UpdateOptions o, CancellationToken c) => session);
 
             repositoryFactoryMock
+#pragma warning disable 612
                 .Setup(x => x.CreateRepository<GuestSession>())
+#pragma warning restore 612
                 .Returns(_guestSessionRepositoryMock.Object);
 
             _validatorMock
@@ -124,7 +123,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
                                                  loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
-                                                 _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _sessionService.Object, _synthesisObjectSerializer.Object);
+                                                 _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object);
         }
 
         [Fact]
