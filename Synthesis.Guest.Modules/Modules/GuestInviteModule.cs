@@ -45,7 +45,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestInvite()));
 
-            CreateRoute("GetGuestInvites", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestInvitesPath}", GetGuestInvitesByProjectIdAsync)
+            CreateRoute("GetGuestInvites", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestInvitesPath}", GetValidGuestInvitesByProjectIdAsync)
                 .Description("Gets All GuestInvites for a specific Project.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestInvite> { new GuestInvite() }));
@@ -137,7 +137,7 @@ namespace Synthesis.GuestService.Modules
             return result;
         }
 
-        private async Task<object> GetGuestInvitesByProjectIdAsync(dynamic input)
+        private async Task<object> GetValidGuestInvitesByProjectIdAsync(dynamic input)
         {
             var projectId = input.projectId;
 
@@ -147,7 +147,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestInviteController.GetGuestInvitesByProjectIdAsync(projectId);
+                return await _guestInviteController.GetValidGuestInvitesByProjectIdAsync(projectId);
             }
             catch (ValidationFailedException ex)
             {

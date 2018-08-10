@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -8,9 +7,11 @@ using Synthesis.Cache;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Constants;
+using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.Utilities.Interfaces;
 using LobbyStateKeyResolver = Synthesis.GuestService.InternalApi.Services.KeyResolver;
 using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
@@ -26,8 +27,7 @@ namespace Synthesis.GuestService.Controllers
 {
     public class ProjectLobbyStateController : IProjectLobbyStateController
     {
-        private readonly IRepository<ProjectLobbyState> _projectLobbyStateRepository;
-        private readonly ICache _cache;
+        private readonly ICacheSelector _cacheSelector;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IEventService _eventService;
         private readonly IValidatorLocator _validatorLocator;
@@ -38,7 +38,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly TimeSpan _expirationTime = TimeSpan.FromHours(8);
 
         public ProjectLobbyStateController(IRepositoryFactory repositoryFactory,
-            ICache cache,
+            ICacheSelector cacheSelector,
             IValidatorLocator validatorLocator,
             ISessionService sessionService,
             IProjectApi serviceToServiceProjectApi,
@@ -46,11 +46,10 @@ namespace Synthesis.GuestService.Controllers
             ILoggerFactory loggerFactory,
             int maxGuestsAllowedInProject)
         {
-            _cache = cache;
+            _cacheSelector = cacheSelector;
             _validatorLocator = validatorLocator;
             _sessionService = sessionService;
             _serviceToServiceProjectApi = serviceToServiceProjectApi;
-            _projectLobbyStateRepository = repositoryFactory.CreateRepository<ProjectLobbyState>();
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
@@ -72,7 +71,7 @@ namespace Synthesis.GuestService.Controllers
                 LobbyState = LobbyState.Normal
             };
 
-            await _cache.ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime);
+            await _cacheSelector[CacheConnection.General].ItemSetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), state, _expirationTime);
         }
 
         /// <inheritdoc />
@@ -136,7 +135,7 @@ namespace Synthesis.GuestService.Controllers
         {
             string key = LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId);
 
-            await _cache.ItemSetAsync(key, projectLobbyState, _expirationTime);
+            await _cacheSelector[CacheConnection.General].ItemSetAsync(key, projectLobbyState, _expirationTime);
 
             _eventService.Publish(EventNames.ProjectStatusUpdated, projectLobbyState);
 
@@ -172,7 +171,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _cache.ItemGetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), typeof(ProjectLobbyState));
+            var result = await _cacheSelector[CacheConnection.General].ItemGetAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId), typeof(ProjectLobbyState));
             if (result != null)
             {
                 return result as ProjectLobbyState;
@@ -184,7 +183,7 @@ namespace Synthesis.GuestService.Controllers
         /// <inheritdoc />
         public async Task DeleteProjectLobbyStateAsync(Guid projectId)
         {
-            await _cache.KeyDeleteAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId));
+            await _cacheSelector[CacheConnection.General].KeyDeleteAsync(LobbyStateKeyResolver.GetProjectLobbyStateKey(projectId));
         }
 
         private async Task<ProjectLobbyState> SetProjectLobbyStateToError(Guid projectId, bool saveState = true)

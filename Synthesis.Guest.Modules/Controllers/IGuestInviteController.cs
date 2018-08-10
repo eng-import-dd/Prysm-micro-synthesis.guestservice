@@ -11,7 +11,7 @@ namespace Synthesis.GuestService.Controllers
 
         Task<GuestInvite> GetGuestInviteAsync(Guid guestInviteId);
 
-        Task<IEnumerable<GuestInvite>> GetGuestInvitesByProjectIdAsync(Guid projectId);
+        Task<IEnumerable<GuestInvite>> GetValidGuestInvitesByProjectIdAsync(Guid projectId);
 
         Task<IEnumerable<GuestInvite>> GetGuestInvitesForUserAsync(GetGuestInvitesRequest request);
 
