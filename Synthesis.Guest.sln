@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synthesis.Guest", "Synthesis.Guest\Synthesis.Guest.csproj", "{4D402C50-0AC0-11E8-9A9F-5D7F4B792F52}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -45,6 +45,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
+		EnterpriseLibraryConfigurationToolBinariesPathV6 = packages\EnterpriseLibrary.TransientFaultHandling.6.0.1304.0\lib\portable-net45+win+wp8
 		SolutionGuid = {3BD16232-DFA6-43A1-862C-025B67A13622}
 	EndGlobalSection
 EndGlobal

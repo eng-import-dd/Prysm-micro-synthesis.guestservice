@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Retry;
 using Synthesis.Logging;
 using Synthesis.ProjectService.InternalApi.Models;
-using Microsoft.Practices.TransientFaultHandling;
 using Synthesis.Cache;
 using Synthesis.ExpirationNotifierService.InternalApi.Services;
 using Synthesis.GuestService.Enumerations;

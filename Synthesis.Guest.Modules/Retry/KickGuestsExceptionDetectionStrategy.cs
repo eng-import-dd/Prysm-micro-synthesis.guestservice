@@ -1,5 +1,5 @@
 ﻿using System;
-using Microsoft.Practices.TransientFaultHandling;
+using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
 
 namespace Synthesis.GuestService.Retry
 {
