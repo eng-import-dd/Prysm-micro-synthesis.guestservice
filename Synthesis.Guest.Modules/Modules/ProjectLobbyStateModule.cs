@@ -40,7 +40,7 @@ namespace Synthesis.GuestService.Modules
             var projectId = input.projectId;
 
             await RequiresAccess()
-                .WithPrincipalIdExpansion(ctx => projectId)
+                .WithProjectIdExpansion(ctx => projectId)
                 .ExecuteAsync(CancellationToken.None);
 
             try
