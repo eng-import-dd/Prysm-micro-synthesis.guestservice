@@ -58,7 +58,12 @@ namespace Synthesis.GuestService.Modules
                 .ResponseFormat(UpdateGuestSessionStateResponse.Example);
 
             CreateRoute("GetGuestSessions", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestSessionsPath}", GetGuestSessionsByProjectIdAsync)
-                .Description("Gets All GuestSessions for a specific Project")
+                .Description("Gets all valid GuestSessions for a specific project")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
+
+            CreateRoute("GetGuestSessionsByProjectByUser", HttpMethod.Get, $"{Routing.GetGuestSessionByProjectByUserRoute}", GetGuestSessionsByProjectIdByUserIdAsync)
+                .Description("Gets all valid GuestSessions for a specific project and user")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
@@ -67,7 +72,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
 
-            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
+            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{{accessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
@@ -145,6 +150,32 @@ namespace Synthesis.GuestService.Modules
             try
             {
                 return await _guestSessionController.GetMostRecentValidGuestSessionsByProjectIdAsync(projectId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+            }
+        }
+
+        private async Task<object> GetGuestSessionsByProjectIdByUserIdAsync(dynamic input)
+        {
+            var projectId = input.projectId;
+
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _guestSessionController.GetValidGuestSessionsByProjectIdByUserIdAsync(projectId, PrincipalId);
             }
             catch (NotFoundException)
             {
