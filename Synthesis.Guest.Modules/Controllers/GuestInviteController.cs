@@ -225,7 +225,7 @@ namespace Synthesis.GuestService.Controllers
 
             return new List<GuestInvite>();
         }
-        
+
         public async Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite guestInviteModel)
         {
             var guestInviteIdValidationResult = _validatorLocator.Validate<GuestInviteIdValidator>(guestInviteModel.Id);
@@ -253,6 +253,25 @@ namespace Synthesis.GuestService.Controllers
             _eventService.Publish(EventNames.GuestInviteUpdated, result);
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> IsGuestRegistrationRequired(string email, string accessCode)
+        {
+            var invite = await _guestInviteRepository.CreateItemQuery()
+                            .FirstOrDefaultAsync(i => i.GuestEmail == email && i.ProjectAccessCode == accessCode);
+            if (invite == null)
+            {
+                throw new NotFoundException("Guest not found");
+            }
+
+            var userResult = await _userApi.GetUserByUsernameAsync(email);
+
+            if (userResult.ResponseCode == HttpStatusCode.NotFound)
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

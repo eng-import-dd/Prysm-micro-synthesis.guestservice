@@ -59,6 +59,11 @@ namespace Synthesis.GuestService.Modules
                 .Description("Update a specific GuestInvite resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestInvite()));
+
+            CreateRoute("IsGuestRegistrationRequired", HttpMethod.Get, $"{Routing.GuestInvitesRoute}/{Routing.IsGuestRegistrationRequiredPath}", IsGuestRegistrationRequired)
+                .Description("Check if the guest user require registration.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(true));
         }
 
         private async Task<object> CreateGuestInviteAsync(dynamic input)
@@ -212,6 +217,25 @@ namespace Synthesis.GuestService.Modules
             try
             {
                 return await _guestInviteController.UpdateGuestInviteAsync(guestInviteModel);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Unhandled exception encountered while attempting to update a GuestInvite resource", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateGuestInvite);
+            }
+        }
+
+        private async Task<object> IsGuestRegistrationRequired(dynamic input)
+        {
+            try
+            {
+                var email = Request.Query.email;
+                var accessCode = Request.Query.accesscode;
+                return await _guestInviteController.IsGuestRegistrationRequired(email, accessCode);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGuestInvite);
             }
             catch (Exception ex)
             {
