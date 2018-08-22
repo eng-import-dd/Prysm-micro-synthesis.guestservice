@@ -320,7 +320,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task GetGuestSessionById_WhenValidationFails_ReturnsBadRequestValidationFailedException()
         {
             _guestSessionControllerMock
-                .Setup(x => x.GetValidGuestSessionsByProjectIdByUserIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Setup(x => x.GetValidGuestSessionsByProjectIdForCurrentUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await AuthenticatedBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.UsersPath}/{Routing.GuestSessionsPath}",  BuildRequest);

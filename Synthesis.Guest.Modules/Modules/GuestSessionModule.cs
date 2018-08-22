@@ -62,7 +62,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
-            CreateRoute("GetGuestSessionsByProjectByUser", HttpMethod.Get, $"{Routing.GetGuestSessionByProjectByUserRoute}", GetGuestSessionsByProjectIdByUserIdAsync)
+            CreateRoute("GetGuestSessionsByProjectForCurrentUser", HttpMethod.Get, $"{Routing.GetGuestSessionByProjectForCurrentUserRoute}", GetGuestSessionsByProjectIdForCurrentUserAsync)
                 .Description("Gets all valid GuestSessions for a specific project and user")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
@@ -166,7 +166,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> GetGuestSessionsByProjectIdByUserIdAsync(dynamic input)
+        private async Task<object> GetGuestSessionsByProjectIdForCurrentUserAsync(dynamic input)
         {
             var projectId = input.projectId;
 
@@ -175,7 +175,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.GetValidGuestSessionsByProjectIdByUserIdAsync(projectId, PrincipalId);
+                return await _guestSessionController.GetValidGuestSessionsByProjectIdForCurrentUserAsync(projectId, PrincipalId);
             }
             catch (NotFoundException)
             {

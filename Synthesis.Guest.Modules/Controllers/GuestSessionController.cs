@@ -212,7 +212,7 @@ namespace Synthesis.GuestService.Controllers
             return currentValidProjectGuestSessions;
         }
 
-        public async Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdByUserIdAsync(Guid projectId, Guid userId)
+        public async Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdForCurrentUserAsync(Guid projectId, Guid userId)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {

@@ -501,7 +501,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<NotFoundException>(async () =>
-                await _target.GetValidGuestSessionsByProjectIdByUserIdAsync(_defaultGuestSession.ProjectId, Guid.NewGuid()));
+                await _target.GetValidGuestSessionsByProjectIdForCurrentUserAsync(_defaultGuestSession.ProjectId, Guid.NewGuid()));
         }
 
         [Fact]
@@ -514,7 +514,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     .GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<GuestSession>());
 
-            var result = await _target.GetValidGuestSessionsByProjectIdByUserIdAsync(_defaultGuestSession.ProjectId, Guid.NewGuid());
+            var result = await _target.GetValidGuestSessionsByProjectIdForCurrentUserAsync(_defaultGuestSession.ProjectId, Guid.NewGuid());
 
             Assert.Empty(result);
         }
@@ -585,7 +585,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     return Task.FromResult(sublist);
                 });
 
-            var result = await _target.GetValidGuestSessionsByProjectIdByUserIdAsync(_defaultProject.Id, expectedUserId);
+            var result = await _target.GetValidGuestSessionsByProjectIdForCurrentUserAsync(_defaultProject.Id, expectedUserId);
             var resultList = result.ToList();
 
             Assert.Collection(resultList,

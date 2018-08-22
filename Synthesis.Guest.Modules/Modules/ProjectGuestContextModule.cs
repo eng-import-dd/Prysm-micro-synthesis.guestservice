@@ -30,7 +30,7 @@ namespace Synthesis.GuestService.Modules
         {
             _projectGuestContextController = projectGuestContextController;
 
-            CreateRoute("SetProjectGuestContext", HttpMethod.Post, Routing.SetProjectGuestContextRoute, SetProjectGuestContextAsync)
+            CreateRoute("SetProjectGuestContext", HttpMethod.Post, Routing.ProjectGuestContextRoute, SetProjectGuestContextAsync)
                 .Description("Sets the project guest context and creates guest sessions")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
