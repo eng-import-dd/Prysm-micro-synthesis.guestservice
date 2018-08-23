@@ -74,6 +74,7 @@ namespace Synthesis.GuestService
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
         public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceName}.EventHub");
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
+        public const string ServiceToServiceProjectAccessApiKey = "ServiceToServiceProjectAccessApiKey";
         public const string ServiceToServiceProjectApiKey = "ServiceToServiceProjectApiKey";
         public const string ServiceToServiceSettingApiKey = "ServiceToServiceSettingApiKey";
 
@@ -366,6 +367,7 @@ namespace Synthesis.GuestService
 
             // Apis
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
+
             builder.RegisterType<ProjectApi>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
@@ -373,6 +375,12 @@ namespace Synthesis.GuestService
                 .Keyed<IProjectApi>(ServiceToServiceProjectApiKey);
 
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
+
+            builder.RegisterType<ProjectAccessApi>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
+                .Keyed<IProjectAccessApi>(ServiceToServiceProjectAccessApiKey);
 
             builder.RegisterType<SettingApi>().As<ISettingApi>()
                 .WithParameter(new ResolvedParameter(
@@ -405,6 +413,9 @@ namespace Synthesis.GuestService
                 .As<IProjectLobbyStateController>();
 
             builder.RegisterType<ProjectGuestContextController>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceProjectAccessApi",
+                    (p, c) => c.ResolveKeyed<IProjectAccessApi>(ServiceToServiceProjectAccessApiKey)))
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceProjectApi",
                     (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
