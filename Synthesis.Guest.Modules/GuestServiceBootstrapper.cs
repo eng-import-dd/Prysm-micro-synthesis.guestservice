@@ -195,6 +195,7 @@ namespace Synthesis.GuestService
             builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
             builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
             builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
+            builder.RegisterType<GuestContextMiddleware>().InstancePerRequest();
             builder
                 .RegisterType<ImpersonateTenantMiddleware>()
                 .WithParameter(new ResolvedParameter(
