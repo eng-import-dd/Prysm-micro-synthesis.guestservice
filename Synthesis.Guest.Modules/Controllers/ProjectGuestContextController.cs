@@ -134,7 +134,10 @@ namespace Synthesis.GuestService.Controllers
 
             await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext()
             {
-                GuestSessionId = newSession.Id, ProjectId = project.Id, GuestState = Guest.ProjectContext.Enums.GuestState.InLobby
+                GuestSessionId = newSession.Id,
+                ProjectId = project.Id,
+                GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
+                TenantId = currentUserTenantId.GetValueOrDefault()
             });
 
             return await CreateCurrentProjectState(project, false);
