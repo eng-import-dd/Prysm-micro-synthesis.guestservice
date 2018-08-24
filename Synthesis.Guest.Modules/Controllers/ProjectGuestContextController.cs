@@ -137,7 +137,7 @@ namespace Synthesis.GuestService.Controllers
                 GuestSessionId = newSession.Id,
                 ProjectId = project.Id,
                 GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
-                TenantId = currentUserTenantId.GetValueOrDefault()
+                TenantId = project.TenantId
             });
 
             return await CreateCurrentProjectState(project, false);
