@@ -247,9 +247,7 @@ namespace Synthesis.GuestService.Controllers
                 return new List<GuestSession>();
             }
 
-            var currentValidProjectGuestSessions = validGuestSessions.OrderByDescending(x => x.CreatedDateTime);
-
-            return currentValidProjectGuestSessions;
+            return validGuestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
