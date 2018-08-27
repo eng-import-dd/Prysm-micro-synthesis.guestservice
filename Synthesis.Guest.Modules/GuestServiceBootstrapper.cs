@@ -341,8 +341,18 @@ namespace Synthesis.GuestService
         private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
         {
             builder.RegisterType<CacheSelector>().As<ICacheSelector>();
-            builder.RegisterType<CacheNotificationService>().As<ICacheNotificationService>();
-            
+            builder.RegisterType<CacheNotificationService>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "generalCache",
+                    (p, c) => c.ResolveKeyed<ICache>(CacheConnection.General)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "refreshCache",
+                    (p, c) => c.ResolveKeyed<ICache>(CacheConnection.Refresh)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "lockedCache",
+                    (p, c) => c.ResolveKeyed<ICache>(CacheConnection.ExpirationNotifier)))
+                .As<ICacheNotificationService>();
+
             // Service To Service Resolver
             builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()
                 .WithParameter(new ResolvedParameter(
