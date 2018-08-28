@@ -8,27 +8,60 @@ namespace Synthesis.GuestService.Modules.Test.Validators
     {
         private readonly EmailValidator _validator = new EmailValidator();
 
-        [Fact]
-        public void ShouldPassForValidEmail()
-        {
-            var result = _validator.Validate("abc@xyz.com");
-
-            Assert.True(result.IsValid);
-        }
-
+        /// <summary>
+        /// All test cases taken from https://gist.github.com/cjaoude/fd9910626629b53c4d25.
+        /// </summary>
+        /// <param name="emailAddressToTest"></param>
+        /// <param name="expected"></param>
         [Theory]
-        [ClassData(typeof(EmailAddressSource))]
-        public void ShouldFailOnInvalidEmailInAddressList(string emailAddress)
+        [InlineData("email@example.com", true)]
+        [InlineData("firstname.lastname@example.com", true)]
+        [InlineData("email@subdomain.example.com", true)]
+        [InlineData("firstname+lastname@example.com", true)]
+        [InlineData("email@123.123.123.123", true)]
+        [InlineData("email@[123.123.123.123]", true)]
+        [InlineData("\"email\"@example.com", true)]
+        [InlineData("1234567890@example.com", true)]
+        [InlineData("email@example-one.com", true)]
+        [InlineData("_______@example.com", true)]
+        [InlineData("email@example.name", true)]
+        [InlineData("email@example.museum", true)]
+        [InlineData("email@example.co.jp", true)]
+        [InlineData("firstname-lastname@example.com", true)]
+        [InlineData("much.”more\\ unusual”@example.com", true)]
+        [InlineData("very.unusual.”@”.unusual.com@example.com", true)]
+        [InlineData("very.”(),:;<>[]”.VERY.”very@\\ \"very\\”.unusual@strange.example.com", true)]
+        [InlineData("plainaddress", false)]
+        [InlineData("#@%^%#$@#$@#.com", false)]
+        [InlineData("@example.com", false)]
+        [InlineData("Joe Smith <email@example.com>", false)]
+        [InlineData("email.example.com", false)]
+        [InlineData("email@example@example.com", false)]
+        [InlineData(".email@example.com", false)]
+        [InlineData("email.@example.com", false)]
+        [InlineData("email..email@example.com", false)]
+        [InlineData("あいうえお@example.com", false)]
+        [InlineData("email@example.com (Joe Smith)", false)]
+        [InlineData("email@example", false)]
+        [InlineData("email@-example.com", false)]
+        [InlineData("email@example.web", false)]
+        [InlineData("email@111.222.333.44444", false)]
+        [InlineData("email@example..com", false)]
+        [InlineData("Abc..123@example.com", false)]
+        [InlineData("”(),:;<>[\\]@example.com", false)]
+        [InlineData("just”not”right@example.com", false)]
+        [InlineData("this\\ is\"really\"not\\allowed@example.com", false)]
+        public void ValidationTests(string emailAddressToTest, bool expected)
         {
-            // EmailAddressSource includes null as an invalid type.  This validator cannot handle a null object.  Only null properties on an object
-            if (emailAddress == null)
+            var result = _validator.Validate(emailAddressToTest);
+            if (expected)
             {
-                return;
+                Assert.True(expected);
             }
-
-            var result = _validator.Validate(emailAddress);
-
-            Assert.False(result.IsValid);
+            else
+            {
+                Assert.False(expected);
+            }
         }
     }
 }
