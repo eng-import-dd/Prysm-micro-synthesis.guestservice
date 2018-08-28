@@ -28,6 +28,7 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Xunit;
 using static Synthesis.GuestService.Modules.Test.Utilities.LoopUtilities;
+using Synthesis.GuestService.InternalApi.Models.Events;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
@@ -109,19 +110,20 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
         private readonly Mock<IObjectSerializer> _serializerMock = new Mock<IObjectSerializer>();
         private readonly GuestInvite _defaultGuestInvite;
+        private readonly Guid _defaultTenantId = Guid.NewGuid();
         private readonly Project _defaultProject;
 
         [Fact]
         public async Task CreateGuestInviteCallsCreate()
         {
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             _guestInviteRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestInvite>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task CreateGuestInviteCallsDeleteItemsToClearOldGuestInvitesForEmailAndProject()
         {
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             _guestInviteRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
@@ -132,7 +134,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultGuestInvite.InvitedBy = Guid.NewGuid();
             _defaultGuestInvite.ProjectId = Guid.NewGuid();
 
-            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             Assert.NotNull(result);
             Assert.Equal(_defaultGuestInvite.Id, result.Id);
             Assert.Equal(_defaultGuestInvite.InvitedBy, result.InvitedBy);
@@ -142,14 +144,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateNewGuestInviteBussesEvent()
         {
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestInvite>>()));
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
+            _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestInviteCreated>>()));
         }
 
         [Fact]
         public async Task CreateNewGuestInviteGetsProject()
         {
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             _projectApiMock.Verify(x => x.GetProjectByIdAsync(It.IsAny<Guid>()));
         }
 
@@ -159,7 +161,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
-            await Assert.ThrowsAsync<GetProjectException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite));
+            await Assert.ThrowsAsync<GetProjectException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId));
         }
 
         [Fact]
@@ -168,7 +170,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<User>(HttpStatusCode.NotFound, new ErrorResponse()));
 
-            await Assert.ThrowsAsync<GetUserException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite));
+            await Assert.ThrowsAsync<GetUserException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId));
         }
 
         [Fact]
@@ -182,13 +184,13 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
-            await Assert.ThrowsAsync<ResetAccessCodeException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite));
+            await Assert.ThrowsAsync<ResetAccessCodeException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId));
         }
 
         [Fact]
         public async Task CreateNewGuestInviteGetsUser()
         {
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             _userApiMock.Verify(x => x.GetUserAsync(It.Is<Guid>(id => id == _defaultGuestInvite.InvitedBy)));
         }
 
@@ -200,14 +202,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
 
-            await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             _projectApiMock.Verify(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()));
         }
 
         [Fact]
         public async Task CreateNewGuestInviteSetsInvitedBy()
         {
-            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             Assert.NotNull(result);
             Assert.NotEqual(Guid.Empty, result.InvitedBy);
             Assert.Equal(_defaultGuestInvite.InvitedBy, result.InvitedBy);
@@ -216,7 +218,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateNewGuestInviteSetsProjectId()
         {
-            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite, _defaultTenantId);
             Assert.NotNull(result);
             Assert.NotEqual(Guid.Empty, result.ProjectId);
             Assert.Equal(_defaultGuestInvite.ProjectId, result.ProjectId);

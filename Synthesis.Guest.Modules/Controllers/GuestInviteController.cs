@@ -10,6 +10,7 @@ using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Exceptions;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.InternalApi.Models.Events;
 using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
@@ -77,7 +78,7 @@ namespace Synthesis.GuestService.Controllers
             _serializer = serializer;
         }
 
-        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
+        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
             if (!validationResult.IsValid)
@@ -101,7 +102,7 @@ namespace Synthesis.GuestService.Controllers
                                                                x.GuestEmail == model.GuestEmail &&
                                                                x.Id != result.Id);
 
-            _eventService.Publish(EventNames.GuestInviteCreated, result);
+            _eventService.Publish(EventNames.GuestInviteCreated, new GuestInviteCreated { GuestInvite = result, TenantId = tenantId });
 
             // Send an invite email to the guest
             var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName);
