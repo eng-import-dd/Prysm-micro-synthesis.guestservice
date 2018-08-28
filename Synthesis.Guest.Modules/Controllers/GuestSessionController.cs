@@ -154,9 +154,9 @@ namespace Synthesis.GuestService.Controllers
 
             _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
 
-            await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
+            var newState = await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
 
-            _eventService.Publish(EventNames.ProjectStatusUpdated, new GuidEvent(projectId));
+            _eventService.Publish(EventNames.ProjectStatusUpdated, newState);
         }
 
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
@@ -527,7 +527,7 @@ namespace Synthesis.GuestService.Controllers
 
         private async Task UpdateProjectLobbyStateAsync(Guid projectId, LobbyState lobbyStatus)
         {
-            var projectLobbyState = new ProjectLobbyState { ProjectId = projectId,  LobbyState = lobbyStatus };
+            var projectLobbyState = new ProjectLobbyState { ProjectId = projectId, LobbyState = lobbyStatus };
 
             await _projectLobbyStateController.UpsertProjectLobbyStateAsync(projectId, projectLobbyState);
         }
