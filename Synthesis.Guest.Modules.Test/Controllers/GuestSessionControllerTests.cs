@@ -271,7 +271,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
 
-            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.ProjectStatusUpdated)));
+            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<ProjectLobbyState>>(y => y.Name == EventNames.ProjectStatusUpdated)));
         }
 
         [Fact]
@@ -492,7 +492,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             Assert.All(shouldBeReturned, session => Assert.Contains(session, result));
             Assert.All(shouldNotBeReturned, session => Assert.DoesNotContain(session, result));
         }
-
 
         [Fact]
         public async Task GetValidGuestSessionsByProjectIdForCurrentUser_WhenProjectNotFound_ThrowsNotFoundException()
