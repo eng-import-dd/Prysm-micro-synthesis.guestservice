@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation;
 using FluentValidation.Results;
@@ -10,8 +11,11 @@ using Synthesis.Cache;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.Modules.Test.Utilities;
+using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -30,6 +34,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
     {
         private readonly IProjectLobbyStateController _target;
         private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
+        private readonly Mock<ICacheSelector> _cacheSelectorMock = new Mock<ICacheSelector>();
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock = new Mock<IRepository<GuestSession>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ISessionService> _sessionServiceMock = new Mock<ISessionService>();
@@ -37,6 +42,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectApi> _projectApi = new Mock<IProjectApi>();
         private const int MaxNumberOfGuests = 10;
         private static ValidationResult SuccessfulValidationResult => new ValidationResult();
+
         private static ValidationResult FailedValidationResult => new ValidationResult(
             new List<ValidationFailure>
             {
@@ -46,14 +52,17 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         public ProjectLobbyStateControllerTests()
         {
+            _cacheSelectorMock.Setup(x => x[It.IsAny<CacheConnection>()])
+                .Returns(_cacheMock.Object);
+
             var repositoryFactoryMock = new Mock<IRepositoryFactory>();
             repositoryFactoryMock
                 .Setup(m => m.CreateRepository<GuestSession>())
                 .Returns(_guestSessionRepositoryMock.Object);
 
-             repositoryFactoryMock
-                .Setup(m => m.CreateRepository<GuestSession>())
-                .Returns(_guestSessionRepositoryMock.Object);
+            repositoryFactoryMock
+               .Setup(m => m.CreateRepository<GuestSession>())
+               .Returns(_guestSessionRepositoryMock.Object);
 
             _cacheMock
                 .Setup(c => c.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), It.IsAny<Reference<ProjectLobbyState>>()))
@@ -73,7 +82,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Returns(new Mock<ILogger>().Object);
 
             _target = new ProjectLobbyStateController(repositoryFactoryMock.Object,
-                _cacheMock.Object,
+                _cacheSelectorMock.Object,
                 validatorLocatorMock.Object,
                 _sessionServiceMock.Object,
                 _projectApi.Object,
@@ -119,7 +128,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _sessionServiceMock.Verify(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()));
+            _sessionServiceMock.Verify(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false));
         }
 
         [Fact]
@@ -135,7 +144,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _guestSessionRepositoryMock.Verify(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()));
+            _guestSessionRepositoryMock.Verify(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Theory]
@@ -152,14 +161,12 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Throws(new ApplicationException());
             var projectId = Guid.NewGuid();
-            var expectedResult = new ProjectLobbyState(){ProjectId = projectId, LobbyState = LobbyState.Error};
+            var expectedResult = new ProjectLobbyState() { ProjectId = projectId, LobbyState = LobbyState.Error };
 
             var result = await _target.RecalculateProjectLobbyStateAsync(projectId);
 
-
             Assert.Equal(projectId, result.ProjectId);
             Assert.Equal(LobbyState.Error, result.LobbyState);
-
         }
 
         [Fact]
@@ -176,18 +183,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
 
-            var stateRef1 = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
-            var stateRef2 = new Reference<ProjectLobbyState> { Value = ProjectLobbyState.Example() };
+            var stateRef = new Reference<ProjectLobbyState> { Value = ProjectLobbyState.Example() };
 
             _cacheMock
-                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef2))
+                .SetupSequence(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), stateRef))
                 .ReturnsAsync(false)
                 .ReturnsAsync(true);
 
             _cacheMock
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Returns(Task.FromResult<object>(null));
-
 
             var result = await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
@@ -196,7 +201,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task RecalculateProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
         {
-            SetupApisForRecalculate(HttpStatusCode.NotFound, false);
+            SetupApisForRecalculate(HttpStatusCode.NotFound);
             var stateRef = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
 
             _cacheMock
@@ -223,7 +228,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [InlineData(20, 11, LobbyState.GuestLimitReached)]
         public async Task RecalculateProjectLobbyStateAsyncReturnsExpectedLobbyState(int fullMemberParticipantCount, int guestSessionCount, LobbyState lobbyState)
         {
-
             var project = Project.Example();
             var projectId = project.Id;
 
@@ -232,12 +236,12 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             {
                 var participant = Participant.Example();
                 participant.ProjectId = projectId;
-                participant.GuestSessionId = (Guid?)null;
+                participant.GuestSessionId = null;
                 participant.IsGuest = false;
                 participants.Add(participant);
             }
 
-            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                 .ReturnsAsync(participants);
 
             var guestSessions = new List<GuestSession>();
@@ -263,11 +267,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 var guestSession3 = CloneGuestSession(guestSession);
                 guestSession3.CreatedDateTime = DateTime.UtcNow.AddHours(-2.0);
                 guestSessions.Add(guestSession3);
-
             }
 
             _guestSessionRepositoryMock
-                .Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>()))
+                .Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(guestSessions);
 
             _projectApi
@@ -276,12 +279,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _cacheMock
                 .SetupSequence(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
-                .ReturnsAsync(new List<ProjectLobbyState>(){default(ProjectLobbyState)});
+                .ReturnsAsync(new List<ProjectLobbyState>() { default(ProjectLobbyState) });
 
             _cacheMock
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Returns(Task.FromResult(ProjectLobbyState.Example()));
-
 
             var result = await _target.RecalculateProjectLobbyStateAsync(project.Id);
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
@@ -310,23 +312,21 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var participants = new List<Participant>();
             var participant = Participant.Example();
             participant.ProjectId = project.Id;
-            participant.GuestSessionId = (Guid?)null;
+            participant.GuestSessionId = null;
             participant.IsGuest = false;
             participants.Add(participant);
 
-            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                 .ReturnsAsync(participants);
 
             _cacheMock
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Returns(Task.FromResult(state));
 
-
             _cacheMock
                 .SetupSequence(m => m.ItemGetAsync(It.IsAny<List<string>>(), typeof(ProjectLobbyState)))
                 .ReturnsAsync(default(List<ProjectLobbyState>))
-                .ReturnsAsync(new List<ProjectLobbyState>(){ state });
-
+                .ReturnsAsync(new List<ProjectLobbyState>() { state });
 
             var result = await _target.GetProjectLobbyStateAsync(project.Id);
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
@@ -356,7 +356,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(m => m.ItemGetAsync(It.IsAny<IEnumerable<string>>(), typeof(ProjectLobbyState)))
                 .ReturnsAsync(new List<ProjectLobbyState>() { state });
 
-
             var result = await _target.GetProjectLobbyStateAsync(Guid.NewGuid());
             Assert.IsAssignableFrom<ProjectLobbyState>(result);
             Assert.Equal(state, result);
@@ -369,7 +368,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(1);
 
             await _target.DeleteProjectLobbyStateAsync(Guid.NewGuid());
-            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CacheCommandOptions>() ));
+            _cacheMock.Verify(m => m.KeyDeleteAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CacheCommandOptions>()));
         }
 
         private void SetupApisForRecalculate(HttpStatusCode projectStatusCode = HttpStatusCode.OK, bool participantRequestThrows = false, Project project = null)
@@ -378,12 +377,12 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             {
                 var taskSource = new TaskCompletionSource<IEnumerable<Participant>>();
                 taskSource.SetException(new Exception("participants failed"));
-                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                     .Returns(taskSource.Task);
             }
             else
             {
-                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                     .ReturnsAsync(default(IEnumerable<Participant>));
             }
 

@@ -19,8 +19,6 @@ using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka.Autofac;
-using Synthesis.GuestService.ApiWrappers;
-using Synthesis.GuestService.ApiWrappers.Interfaces;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
 using Synthesis.GuestService.Modules;
@@ -55,7 +53,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using Microsoft.Owin;
-using Synthesis.Common;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Email;
@@ -63,6 +60,7 @@ using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
+using Synthesis.GuestService.Enumerations;
 
 namespace Synthesis.GuestService
 {
@@ -76,6 +74,7 @@ namespace Synthesis.GuestService
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
         public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceName}.EventHub");
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
+        public const string ServiceToServiceProjectAccessApiKey = "ServiceToServiceProjectAccessApiKey";
         public const string ServiceToServiceProjectApiKey = "ServiceToServiceProjectApiKey";
         public const string ServiceToServiceSettingApiKey = "ServiceToServiceSettingApiKey";
 
@@ -169,6 +168,10 @@ namespace Synthesis.GuestService
         {
             var builder = new ContainerBuilder();
 
+            RegisterRedisKeyed(builder, "Redis.General.Key", "Redis.General.Endpoint", CacheConnection.General);
+            RegisterRedisKeyed(builder, "Redis.Refresh.Key", "Redis.Refresh.Endpoint", CacheConnection.Refresh);
+            RegisterRedisKeyed(builder, "Redis.ExpirationNotifier.Key", "Redis.ExpirationNotifier.Endpoint", CacheConnection.ExpirationNotifier);
+
             builder.RegisterType<DefaultAppSettingsReader>()
                 .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
 
@@ -192,6 +195,7 @@ namespace Synthesis.GuestService
             builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
             builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
             builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
+            builder.RegisterType<GuestContextMiddleware>().InstancePerRequest();
             builder
                 .RegisterType<ImpersonateTenantMiddleware>()
                 .WithParameter(new ResolvedParameter(
@@ -274,9 +278,9 @@ namespace Synthesis.GuestService
             // Policy Evaluator components
             builder.RegisterPolicyEvaluatorComponents();
 
-            // Redis cache
+            // Redis cache - this unkeyed instance is needed for the policy evaluator
             builder.RegisterType<RedisCache>()
-                .WithParameter(new ResolvedParameter(
+                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
                     (p, c) =>
                     {
@@ -293,10 +297,6 @@ namespace Synthesis.GuestService
                         return ConnectionMultiplexer.Connect(redisOptions);
                     }))
                 .As<ICache>()
-                .SingleInstance();
-
-            builder.RegisterType<SynthesisApi>()
-                .As<ISynthesisApi>()
                 .SingleInstance();
 
             // Validation
@@ -326,6 +326,29 @@ namespace Synthesis.GuestService
             return builder.Build();
         }
 
+        private static void RegisterRedisKeyed(ContainerBuilder builder, string passwordKey, string endpointKey, CacheConnection instanceKey)
+        {
+            builder.RegisterType<RedisCache>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
+                    (p, c) =>
+                    {
+                        var reader = c.Resolve<IAppSettingsReader>();
+                        var redisOptions = new ConfigurationOptions
+                        {
+                            Password = reader.GetValue<string>(passwordKey),
+                            AbortOnConnectFail = false,
+                            SyncTimeout = RedisSyncTimeoutInMilliseconds,
+                            ConnectTimeout = RedisConnectTimeoutInMilliseconds,
+                            ConnectRetry = RedisConnectRetryTimes
+                        };
+                        redisOptions.EndPoints.Add(reader.GetValue<string>(endpointKey));
+                        return ConnectionMultiplexer.Connect(redisOptions);
+                    }))
+                .Keyed<ICache>(instanceKey)
+                .SingleInstance();
+        }
+
         /// <summary>
         ///     The point of this method is to ease updating services.  Any registrations that a service needs can go into this
         ///     method and then when updating to the latest template, this can just be copied forward.
@@ -333,7 +356,7 @@ namespace Synthesis.GuestService
         /// <param name="builder"></param>
         private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
         {
-            // html files and png content files need to be set to copy to output directory
+            builder.RegisterType<CacheSelector>().As<ICacheSelector>().SingleInstance();
 
             // Service To Service Resolver
             builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()
@@ -345,6 +368,7 @@ namespace Synthesis.GuestService
 
             // Apis
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
+
             builder.RegisterType<ProjectApi>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
@@ -352,6 +376,12 @@ namespace Synthesis.GuestService
                 .Keyed<IProjectApi>(ServiceToServiceProjectApiKey);
 
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
+
+            builder.RegisterType<ProjectAccessApi>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
+                .Keyed<IProjectAccessApi>(ServiceToServiceProjectAccessApiKey);
 
             builder.RegisterType<SettingApi>().As<ISettingApi>()
                 .WithParameter(new ResolvedParameter(
@@ -385,6 +415,9 @@ namespace Synthesis.GuestService
 
             builder.RegisterType<ProjectGuestContextController>()
                 .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceProjectAccessApi",
+                    (p, c) => c.ResolveKeyed<IProjectAccessApi>(ServiceToServiceProjectAccessApiKey)))
+                .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceProjectApi",
                     (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
                 .As<IProjectGuestContextController>();
@@ -394,10 +427,6 @@ namespace Synthesis.GuestService
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
 
             builder.RegisterType<SessionService>().As<ISessionService>();
-
-            builder.RegisterType<DocumentDbRepositoryHealthReport>()
-                .As<IRepositoryHealthReport>()
-                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<GuestInvite>>().As<IHealthReporter>()
                 .SingleInstance()
