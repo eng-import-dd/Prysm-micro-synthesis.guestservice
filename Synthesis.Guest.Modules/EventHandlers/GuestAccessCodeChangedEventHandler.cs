@@ -1,13 +1,13 @@
 ﻿using System;
 using Synthesis.EventBus;
-using Synthesis.EventBus.Events;
-using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.Logging;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.EventHandlers
 {
-    public class GuestAccessCodeChangedEventHandler : IEventHandler<GuidEvent>
+    public class GuestAccessCodeChangedEventHandler : IEventHandler<GuestAccessCodeChanged>
     {
         private readonly ILogger _logger;
         private readonly IGuestSessionController _guestSessionController;
@@ -19,15 +19,15 @@ namespace Synthesis.GuestService.EventHandlers
         }
 
         /// <inheritdoc />
-        public async void HandleEvent(GuidEvent args)
+        public async void HandleEvent(GuestAccessCodeChanged args)
         {
             try
             {
-                await _guestSessionController.DeleteGuestSessionsForProjectAsync(args.Value, true);
+                await _guestSessionController.DeleteGuestSessionsForProjectAsync(args.ProjectId, true);
             }
             catch (Exception ex)
             {
-                _logger.Error($"Guests could not be kicked from project upon {EventNames.GuestAccessCodeChanged} event for project: {args.Value}", ex);
+                _logger.Error($"Guests could not be kicked from project upon {EventNames.GuestAccessCodeChanged} event for project: {args.ProjectId}", ex);
             }
         }
     }

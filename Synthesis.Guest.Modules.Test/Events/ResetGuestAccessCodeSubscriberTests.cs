@@ -1,9 +1,9 @@
-using Moq;
-using Synthesis.EventBus.Events;
-using Synthesis.GuestService.Controllers;
-using Synthesis.Logging;
 using System;
+using Moq;
+using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
+using Synthesis.Logging;
+using Synthesis.ProjectService.InternalApi.Models;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Events
@@ -26,8 +26,9 @@ namespace Synthesis.GuestService.Modules.Test.Events
         [Fact]
         public void HandleGuestAccessCodeChangedEventCallsDeleteGuestSessionsForProjectAsync()
         {
-            _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
-            _guestSessionControllerMock.Verify(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true));
+            var projectId = Guid.NewGuid();
+            _target.HandleEvent(new GuestAccessCodeChanged { ProjectId = projectId });
+            _guestSessionControllerMock.Verify(x => x.DeleteGuestSessionsForProjectAsync(It.Is<Guid>(v => v == projectId), true));
         }
     }
 }

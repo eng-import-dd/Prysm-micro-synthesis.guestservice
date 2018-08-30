@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
-using Synthesis.DocumentStorage;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Constants;
@@ -59,7 +58,12 @@ namespace Synthesis.GuestService.Modules
                 .ResponseFormat(UpdateGuestSessionStateResponse.Example);
 
             CreateRoute("GetGuestSessions", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestSessionsPath}", GetGuestSessionsByProjectIdAsync)
-                .Description("Gets All GuestSessions for a specific Project")
+                .Description("Gets all valid GuestSessions for a specific project")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
+
+            CreateRoute("GetGuestSessionsByProjectForCurrentUser", HttpMethod.Get, $"{Routing.GetGuestSessionByProjectForCurrentUserRoute}", GetGuestSessionsByProjectIdForCurrentUserAsync)
+                .Description("Gets all valid GuestSessions for a specific project and user")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
@@ -68,7 +72,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
 
-            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/accesscode/{{accdessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
+            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{{accessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
@@ -76,8 +80,6 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> CreateGuestSessionAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
-
             GuestSession newGuestSession;
             try
             {
@@ -88,6 +90,10 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error("Binding failed while attempting to create a GuestSession resource", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(context => newGuestSession.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -106,11 +112,11 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestSessionAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            GuestSession session;
 
             try
             {
-                return await _guestSessionController.GetGuestSessionAsync(input.id);
+                session = await _guestSessionController.GetGuestSessionAsync(input.id);
             }
             catch (NotFoundException)
             {
@@ -125,6 +131,12 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error($"Failed to get guestSession with id {input.id} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(context => session.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
+
+            return session;
         }
 
         private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input)
@@ -138,6 +150,33 @@ namespace Synthesis.GuestService.Modules
             try
             {
                 return await _guestSessionController.GetMostRecentValidGuestSessionsByProjectIdAsync(projectId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+            }
+        }
+
+        private async Task<object> GetGuestSessionsByProjectIdForCurrentUserAsync(dynamic input)
+        {
+            var projectId = input.projectId;
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _guestSessionController.GetValidGuestSessionsByProjectIdForCurrentUserAsync(projectId, PrincipalId);
             }
             catch (NotFoundException)
             {
@@ -226,8 +265,6 @@ namespace Synthesis.GuestService.Modules
 
         public async Task<object> VerifyGuestAsync()
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
-
             GuestVerificationRequest request;
 
             try
@@ -239,6 +276,10 @@ namespace Synthesis.GuestService.Modules
                 Logger.Error("Binding failed while attempting to verify a guest.", ex);
                 return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
             }
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => request.ProjectId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {

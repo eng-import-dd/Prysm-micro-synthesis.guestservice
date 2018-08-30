@@ -27,7 +27,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IGuestSessionController _guestSessionController;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
-        private readonly IProjectAccessApi _projectAccessApi;
+        private readonly IProjectAccessApi _serviceToServiceProjectAccessApi;
         private readonly IUserApi _userApi;
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace Synthesis.GuestService.Controllers
             IGuestSessionController guestSessionController,
             IProjectLobbyStateController projectLobbyStateController,
             IProjectGuestContextService projectGuestContextService,
-            IProjectAccessApi projectAccessApi,
+            IProjectAccessApi serviceToServiceProjectAccessApi,
             IProjectApi serviceToServiceProjectApi,
             IUserApi userApi)
         {
@@ -48,7 +48,7 @@ namespace Synthesis.GuestService.Controllers
             _projectLobbyStateController = projectLobbyStateController;
 
             _serviceToServiceProjectApi = serviceToServiceProjectApi;
-            _projectAccessApi = projectAccessApi;
+            _serviceToServiceProjectAccessApi = serviceToServiceProjectAccessApi;
             _userApi = userApi;
             _projectGuestContextService = projectGuestContextService;
         }
@@ -134,7 +134,10 @@ namespace Synthesis.GuestService.Controllers
 
             await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext()
             {
-                GuestSessionId = newSession.Id, ProjectId = project.Id, GuestState = Guest.ProjectContext.Enums.GuestState.InLobby
+                GuestSessionId = newSession.Id,
+                ProjectId = project.Id,
+                GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
+                TenantId = project.TenantId
             });
 
             return await CreateCurrentProjectState(project, false);
@@ -219,7 +222,7 @@ namespace Synthesis.GuestService.Controllers
             LoadData(Guid projectId)
         {
             var guestContextTask =  _projectGuestContextService.GetProjectGuestContextAsync();
-            var projectUsersTask =  _projectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser);
+            var projectUsersTask =  _serviceToServiceProjectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser);
             var projectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
 
             await Task.WhenAll(guestContextTask, projectUsersTask, projectTask);

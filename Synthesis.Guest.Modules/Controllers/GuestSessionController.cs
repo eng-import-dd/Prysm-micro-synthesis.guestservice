@@ -154,9 +154,9 @@ namespace Synthesis.GuestService.Controllers
 
             _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
 
-            await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
+            var newState = await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
 
-            _eventService.Publish(EventNames.ProjectStatusUpdated, new GuidEvent(projectId));
+            _eventService.Publish(EventNames.ProjectStatusUpdated, newState);
         }
 
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
@@ -210,6 +210,44 @@ namespace Synthesis.GuestService.Controllers
             var currentValidProjectGuestSessions = validGuestSessions.GroupBy(s => s.UserId).OrderBy(gs => gs.Key).Select(gs => gs.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault());
 
             return currentValidProjectGuestSessions;
+        }
+
+        public async Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdForCurrentUserAsync(Guid projectId, Guid userId)
+        {
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(ProjectIdValidator), projectId },
+                { typeof(UserIdValidator), userId }
+            });
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
+
+            if (!projectResult.IsSuccess() || projectResult.Payload == null)
+            {
+                var message = $"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}, StatusCode: {projectResult.ResponseCode}, ErrorResponse: {_synthesisObjectSerializer.SerializeToString(projectResult.ErrorResponse)}";
+                _logger.Error(message);
+                throw new NotFoundException(message);
+            }
+
+            var project = projectResult.Payload;
+
+            var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+                x.UserId == userId &&
+                x.ProjectAccessCode == project.GuestAccessCode &&
+                x.GuestSessionState != GuestState.PromotedToProjectMember);
+
+            if (validGuestSessions == null || !validGuestSessions.Any())
+            {
+                return new List<GuestSession>();
+            }
+
+            return validGuestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
@@ -489,7 +527,7 @@ namespace Synthesis.GuestService.Controllers
 
         private async Task UpdateProjectLobbyStateAsync(Guid projectId, LobbyState lobbyStatus)
         {
-            var projectLobbyState = new ProjectLobbyState { ProjectId = projectId,  LobbyState = lobbyStatus };
+            var projectLobbyState = new ProjectLobbyState { ProjectId = projectId, LobbyState = lobbyStatus };
 
             await _projectLobbyStateController.UpsertProjectLobbyStateAsync(projectId, projectLobbyState);
         }

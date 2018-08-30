@@ -128,7 +128,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _sessionServiceMock.Verify(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()));
+            _sessionServiceMock.Verify(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false));
         }
 
         [Fact]
@@ -241,7 +241,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 participants.Add(participant);
             }
 
-            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                 .ReturnsAsync(participants);
 
             var guestSessions = new List<GuestSession>();
@@ -316,7 +316,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             participant.IsGuest = false;
             participants.Add(participant);
 
-            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+            _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                 .ReturnsAsync(participants);
 
             _cacheMock
@@ -377,12 +377,12 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             {
                 var taskSource = new TaskCompletionSource<IEnumerable<Participant>>();
                 taskSource.SetException(new Exception("participants failed"));
-                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                     .Returns(taskSource.Task);
             }
             else
             {
-                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                _sessionServiceMock.Setup(m => m.GetParticipantsByGroupNameAsync(It.IsAny<string>(), It.IsAny<bool>(), false))
                     .ReturnsAsync(default(IEnumerable<Participant>));
             }
 
