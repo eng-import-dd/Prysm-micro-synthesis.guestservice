@@ -121,7 +121,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {
-                throw new InvalidOperationException($"Failed to verify guest for User.Id = {currentUserId}, Project.Id = {projectId}. ");
+                throw new InvalidOperationException($"Failed to verify guest for User.Id = {currentUserId}, Project.Id = {projectId}. ResponseCode = {guestVerifyResponse.ResultCode}. Reason = {guestVerifyResponse.Message}");
             }
 
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
