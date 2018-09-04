@@ -434,9 +434,9 @@ namespace Synthesis.GuestService
             builder.RegisterType<RepositoryHealthReporter<GuestSession>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceNameShort);
-            builder.RegisterType<RepositoryHealthReporter<ProjectLobbyState>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceNameShort);
+            //builder.RegisterType<RepositoryHealthReporter<ProjectLobbyState>>().As<IHealthReporter>()
+            //    .SingleInstance()
+            //    .WithParameter("serviceName", ServiceNameShort);
 
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>();
