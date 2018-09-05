@@ -16,5 +16,7 @@ namespace Synthesis.GuestService.Controllers
         Task<IEnumerable<GuestInvite>> GetGuestInvitesForUserAsync(GetGuestInvitesRequest request);
 
         Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite model);
+
+        Task<bool> IsGuestRegistrationRequired(string email, string accessCode);
     }
 }
