@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
@@ -213,7 +214,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.UpdateGuestSessionAsync(guestSessionModel);
+                return await _guestSessionController.UpdateGuestSessionAsync(guestSessionModel, PrincipalId);
             }
             catch (Exception ex)
             {
@@ -254,7 +255,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionStateRequest);
+                return await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionStateRequest, PrincipalId);
             }
             catch (Exception ex)
             {

@@ -69,7 +69,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(_defaultProjectGuestContext);
 
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionStateAsync(It.IsAny<UpdateGuestSessionStateRequest>()))
+                .Setup(x => x.UpdateGuestSessionStateAsync(It.IsAny<UpdateGuestSessionStateRequest>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new UpdateGuestSessionStateResponse());
 
             _guestSessionControllerMock
@@ -114,7 +114,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _guestSessionControllerMock
                 .Verify(x => x.UpdateGuestSessionStateAsync(It.Is<UpdateGuestSessionStateRequest>(y =>
                     y.GuestSessionId == _defaultProjectGuestContext.GuestSessionId &&
-                    y.GuestSessionState == GuestState.Ended)));
+                    y.GuestSessionState == GuestState.Ended), It.Is<Guid>(p => p == _currentUserId)));
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task InvalidOperationIsThrownIfGuestSessionCannotBeCleared()
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionStateAsync(It.IsAny<UpdateGuestSessionStateRequest>()))
+                .Setup(x => x.UpdateGuestSessionStateAsync(It.IsAny<UpdateGuestSessionStateRequest>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new UpdateGuestSessionStateResponse() { ResultCode = UpdateGuestSessionStateResultCodes.Failed });
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId, _userWithoutTenantTenantId));

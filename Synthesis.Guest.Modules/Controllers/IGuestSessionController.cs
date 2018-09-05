@@ -20,10 +20,10 @@ namespace Synthesis.GuestService.Controllers
         Task<GuestSession> GetGuestSessionAsync(Guid guestSessionId);
         Task<IEnumerable<GuestSession>> GetMostRecentValidGuestSessionsByProjectIdAsync(Guid projectId);
         Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdForCurrentUserAsync(Guid projectId, Guid userId);
-        Task<GuestSession> UpdateGuestSessionAsync(GuestSession model);
+        Task<GuestSession> UpdateGuestSessionAsync(GuestSession model, Guid principalId);
         Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId);
         Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject);
         Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId);
-        Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest guestSessionRequest);
+        Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest guestSessionRequest, Guid principalId);
     }
 }

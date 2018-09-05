@@ -250,7 +250,7 @@ namespace Synthesis.GuestService.Controllers
             return validGuestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
-        public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel)
+        public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel, Guid principalId)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
@@ -262,6 +262,19 @@ namespace Synthesis.GuestService.Controllers
             {
                 _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            switch (guestSessionModel.GuestSessionState)
+            {
+                case GuestState.Ended:
+                    guestSessionModel.AccessRevokedDateTime = DateTime.UtcNow;
+                    guestSessionModel.AccessRevokedBy = principalId;
+                    break;
+
+                case GuestState.InProject:
+                    guestSessionModel.AccessGrantedDateTime = DateTime.UtcNow;
+                    guestSessionModel.AccessGrantedBy = principalId;
+                    break;
             }
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
@@ -440,7 +453,7 @@ namespace Synthesis.GuestService.Controllers
             };
         }
 
-        public async Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest request)
+        public async Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest request, Guid principalId)
         {
             var result = new UpdateGuestSessionStateResponse
             {
@@ -507,7 +520,7 @@ namespace Synthesis.GuestService.Controllers
 
             currentGuestSession.GuestSessionState = request.GuestSessionState;
 
-            var guestSession = await UpdateGuestSessionAsync(currentGuestSession);
+            var guestSession = await UpdateGuestSessionAsync(currentGuestSession, principalId);
 
             if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
             {
