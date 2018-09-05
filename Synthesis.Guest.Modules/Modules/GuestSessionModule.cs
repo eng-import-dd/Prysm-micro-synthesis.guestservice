@@ -171,33 +171,26 @@ namespace Synthesis.GuestService.Modules
         {
             var projectId = input.projectId;
 
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                await RequiresAccess()
-                    .WithProjectIdExpansion(ctx => projectId)
-                    .ExecuteAsync(CancellationToken.None);
-
-                try
-                {
-                    return await _guestSessionController.GetValidGuestSessionsByProjectIdForCurrentUserAsync(projectId, PrincipalId);
-                }
-                catch (NotFoundException)
-                {
-                    return Response.NotFound(ResponseReasons.NotFoundGuestSession);
-                }
-                catch (ValidationFailedException ex)
-                {
-                    return Response.BadRequestValidationFailed(ex.Errors);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
-                    return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
-                }
+                return await _guestSessionController.GetValidGuestSessionsByProjectIdForCurrentUserAsync(projectId, PrincipalId);
             }
-            catch (RouteExecutionEarlyExitException)
+            catch (NotFoundException)
             {
-                throw;
+                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
             }
         }
 
