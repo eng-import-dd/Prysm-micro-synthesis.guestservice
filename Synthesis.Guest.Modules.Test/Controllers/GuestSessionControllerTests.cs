@@ -344,20 +344,20 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), _defaultGuestSession, It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException("Message"));
 
-            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession));
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>()));
         }
 
         [Fact]
         public async Task UpdateGuestSession_CallsRepositoryUpdateItem()
         {
-            await _target.UpdateGuestSessionAsync(_defaultGuestSession);
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
             _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task UpdateGuestSession_BussesEvent()
         {
-            await _target.UpdateGuestSessionAsync(_defaultGuestSession);
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestSession>>()));
         }
 
@@ -379,7 +379,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             {
                 GuestSessionId = _defaultGuestSession.Id,
                 GuestSessionState = GuestState.Ended
-            }));
+            }, It.IsAny<Guid>()));
         }
 
         [Fact]

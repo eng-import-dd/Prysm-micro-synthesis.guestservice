@@ -65,7 +65,7 @@ namespace Synthesis.GuestService.Controllers
         {
             if (projectId.Equals(Guid.Empty))
             {
-                return await ClearGuestSessionState();
+                return await ClearGuestSessionState(currentUserId);
             }
 
             (ProjectGuestContext guestContext,
@@ -143,7 +143,7 @@ namespace Synthesis.GuestService.Controllers
             return await CreateCurrentProjectState(project, false);
         }
 
-        private async Task<CurrentProjectState> ClearGuestSessionState()
+        private async Task<CurrentProjectState> ClearGuestSessionState(Guid principalId)
         {
             var guestContext = await _projectGuestContextService.GetProjectGuestContextAsync();
 
@@ -161,7 +161,7 @@ namespace Synthesis.GuestService.Controllers
                 GuestSessionState = InternalApi.Enums.GuestState.Ended
             };
 
-            var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest);
+            var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, principalId);
 
             await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
 

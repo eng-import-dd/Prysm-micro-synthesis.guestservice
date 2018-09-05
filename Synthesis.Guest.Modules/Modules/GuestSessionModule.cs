@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
@@ -170,26 +171,33 @@ namespace Synthesis.GuestService.Modules
         {
             var projectId = input.projectId;
 
-            await RequiresAccess()
-                .WithProjectIdExpansion(ctx => projectId)
-                .ExecuteAsync(CancellationToken.None);
-
             try
             {
-                return await _guestSessionController.GetValidGuestSessionsByProjectIdForCurrentUserAsync(projectId, PrincipalId);
+                await RequiresAccess()
+                    .WithProjectIdExpansion(ctx => projectId)
+                    .ExecuteAsync(CancellationToken.None);
+
+                try
+                {
+                    return await _guestSessionController.GetValidGuestSessionsByProjectIdForCurrentUserAsync(projectId, PrincipalId);
+                }
+                catch (NotFoundException)
+                {
+                    return Response.NotFound(ResponseReasons.NotFoundGuestSession);
+                }
+                catch (ValidationFailedException ex)
+                {
+                    return Response.BadRequestValidationFailed(ex.Errors);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
+                    return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+                }
             }
-            catch (NotFoundException)
+            catch (RouteExecutionEarlyExitException)
             {
-                return Response.NotFound(ResponseReasons.NotFoundGuestSession);
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"GuestSessions could not be retrieved for projectId {projectId}", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestInvite);
+                throw;
             }
         }
 
@@ -213,7 +221,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.UpdateGuestSessionAsync(guestSessionModel);
+                return await _guestSessionController.UpdateGuestSessionAsync(guestSessionModel, PrincipalId);
             }
             catch (Exception ex)
             {
@@ -254,7 +262,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionStateRequest);
+                return await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionStateRequest, PrincipalId);
             }
             catch (Exception ex)
             {
