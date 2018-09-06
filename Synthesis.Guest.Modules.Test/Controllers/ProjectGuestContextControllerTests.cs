@@ -66,6 +66,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetProjectGuestContextAsync())
                 .ReturnsAsync(_defaultProjectGuestContext);
 
+            _projectAccessApiMock
+                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+
             _guestSessionControllerMock
                 .Setup(x => x.UpdateGuestSessionStateAsync(It.IsAny<UpdateGuestSessionStateRequest>()))
                 .ReturnsAsync(new UpdateGuestSessionStateResponse());
