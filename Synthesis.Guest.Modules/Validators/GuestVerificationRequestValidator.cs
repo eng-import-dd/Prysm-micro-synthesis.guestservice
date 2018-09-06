@@ -1,5 +1,4 @@
 ﻿using System;
-using Castle.Core.Internal;
 using FluentValidation;
 using Synthesis.GuestService.InternalApi.Requests;
 
@@ -23,9 +22,10 @@ namespace Synthesis.GuestService.Validators
                 .NotEmpty().When(request => request.ProjectId == Guid.Empty)
                 .WithMessage($"{nameof(GuestVerificationRequest.ProjectAccessCode)} cannot be empty or whitespace when {nameof(GuestVerificationRequest.ProjectId)} is empty.");
 
-            RuleFor(request => request.ProjectAccessCode)
-                .SetValidator(new ProjectAccessCodeValidator())
-                .When(request => !string.IsNullOrWhiteSpace(request.ProjectAccessCode));
+            // TODO: Victor is going to get this with CU-1226
+            //RuleFor(request => request.ProjectAccessCode)
+            //    .SetValidator(new ProjectAccessCodeValidator())
+            //    .When(request => !string.IsNullOrWhiteSpace(request.ProjectAccessCode));
         }
     }
 }
