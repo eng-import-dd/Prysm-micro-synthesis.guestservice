@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using log4net.Repository.Hierarchy;
 using Synthesis.DocumentStorage;
 using Synthesis.Guest.ProjectContext.Enums;
 using Synthesis.Guest.ProjectContext.Models;
@@ -100,12 +101,12 @@ namespace Synthesis.GuestService.Controllers
 
             if (userHasAccess)
             {
-                return await CreateCurrentProjectState(project, userHasAccess);
+                return await CreateCurrentProjectState(project, true);
             }
 
             if (isProjectGuest && guestContext?.ProjectId == project?.Id)
             {
-                return await CreateCurrentProjectState(project, userHasAccess);
+                return await CreateCurrentProjectState(project, false);
             }
 
             var userResponse = await _userApi.GetUserAsync(currentUserId);
@@ -122,6 +123,12 @@ namespace Synthesis.GuestService.Controllers
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {
                 throw new InvalidOperationException($"Failed to verify guest for User.Id = {currentUserId}, Project.Id = {projectId}. ResponseCode = {guestVerifyResponse.ResultCode}. Reason = {guestVerifyResponse.Message}");
+            }
+
+            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
+            if (!grantUserResponse.IsSuccess())
+            {
+                throw new InvalidOperationException("Failed to add user to project");
             }
 
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
@@ -173,7 +180,7 @@ namespace Synthesis.GuestService.Controllers
                 };
             }
 
-            throw new InvalidOperationException($"Could not clear the current project or end the guest session. {guestSessionStateResponse?.Message}");
+            throw new InvalidOperationException($"Could not clear the current project or end the guest session. {guestSessionStateResponse.Message}");
         }
 
         private async Task<CurrentProjectState> CreateCurrentProjectState(Project project, bool userHasAccess)
