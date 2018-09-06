@@ -126,7 +126,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsUnauthorizedRequest()
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestSession());
             var response = await UnauthenticatedBrowser.Put($"{Routing.GuestSessionsRoute}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
 
@@ -225,7 +225,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsOk()
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new GuestSession());
 
             var response = await AuthenticatedBrowser.Put($"{Routing.GuestSessionsRoute}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
@@ -237,7 +237,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task UpdateGuestSessionReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestSessionControllerMock
-                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>()))
+                .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
                 .Throws<Exception>();
 
             var response = await AuthenticatedBrowser.Put($"{Routing.GuestSessionsRoute}/{_guestSession.Id}", ctx => BuildRequest(ctx, _guestSession));
