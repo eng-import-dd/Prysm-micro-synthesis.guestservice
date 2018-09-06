@@ -5,10 +5,8 @@ using System.Net;
 using System.Threading.Tasks;
 using Moq;
 using Synthesis.DocumentStorage;
-using Synthesis.Guest.ProjectContext;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
-using Synthesis.GuestService;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
@@ -73,7 +71,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(new UpdateGuestSessionStateResponse());
 
             _guestSessionControllerMock
-                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), It.IsAny<Guid>()))
+                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), It.IsAny<Guid?>()))
                 .ReturnsAsync(new GuestVerificationResponse() {ResultCode = VerifyGuestResponseCode.Success});
 
             _guestSessionControllerMock
@@ -199,7 +197,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(new ProjectGuestContext()
                 {
                     GuestSessionId = Guid.NewGuid(),
-                    GuestState = Synthesis.Guest.ProjectContext.Enums.GuestState.InLobby,
+                    GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                     ProjectId = _defaultProjectId,
                     TenantId = _userWithTenantTenantId
                 });
@@ -210,6 +208,25 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Verify(y => y.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(x =>
                     x.ProjectId == Guid.Empty &&
                     x.GuestSessionId == Guid.Empty)));
+        }
+
+        [Fact]
+        public async Task GuestsLandingInLobbyAreGivenMembershipIntoProject()
+        {
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null);
+
+            _projectAccessApiMock
+                .Verify(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>()));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContextThrowsInvalidOperationExceptionWhenMembershipCallFails()
+        {
+            _projectAccessApiMock
+                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.InternalServerError));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null));
         }
 
         [Fact]
