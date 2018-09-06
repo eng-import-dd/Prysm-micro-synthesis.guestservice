@@ -15,7 +15,7 @@ namespace Synthesis.GuestService.Modules.Test.Validators
         {
             var request = new GuestVerificationRequest
             {
-                ProjectAccessCode = "0123456789",
+                ProjectAccessCode = Guid.NewGuid().ToString(),
                 ProjectId = Guid.NewGuid(),
                 Username = "name@domain.com"
             };
@@ -80,9 +80,9 @@ namespace Synthesis.GuestService.Modules.Test.Validators
 
         [Theory]
         [InlineData("0123456789")]
-        [InlineData("012-345-6789")]
-        [InlineData(" 012- 345- 6789 ")]
-        public void ShouldPassWithEmptyProjectIdAndValidAccessCode(string accessCode)
+        [InlineData("1053D337 - BA8E - 43D6 - 9AFC - EB2A04BA4A33")]
+        [InlineData("1053D337-BA8E-43D6-9AFC-EB2A04BA4A33")]
+        public void ShouldPassWithValidProjectAndAccessCode(string accessCode)
         {
             var request = new GuestVerificationRequest
             {

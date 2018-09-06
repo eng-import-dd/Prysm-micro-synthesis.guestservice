@@ -48,7 +48,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultProject = new Project
             {
                 Id = Guid.NewGuid(),
-                GuestAccessCode = "0123456789"
+                GuestAccessCode = Guid.NewGuid().ToString()
             };
 
             _userApiMock.Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
