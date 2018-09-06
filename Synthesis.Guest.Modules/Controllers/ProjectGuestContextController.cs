@@ -128,7 +128,7 @@ namespace Synthesis.GuestService.Controllers
             var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
             if (!grantUserResponse.IsSuccess())
             {
-                throw new InvalidOperationException("Could not add user to project");
+                throw new InvalidOperationException("Failed to add user to project");
             }
 
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
