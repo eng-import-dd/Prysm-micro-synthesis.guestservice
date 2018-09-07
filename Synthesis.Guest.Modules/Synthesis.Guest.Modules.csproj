@@ -209,7 +209,7 @@
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta007\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ExpirationNotifierService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ExpirationNotifierService.InternalApi.1.0.0-beta005\lib\net452\Synthesis.ExpirationNotifierService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ExpirationNotifierService.InternalApi.1.0.0-beta006\lib\net452\Synthesis.ExpirationNotifierService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta003\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>

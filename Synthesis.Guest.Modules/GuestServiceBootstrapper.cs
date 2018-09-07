@@ -353,7 +353,7 @@ namespace Synthesis.GuestService
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "lockedCache",
                     (p, c) => c.ResolveKeyed<ICache>(CacheConnection.ExpirationNotifier)))
-                .As<ICacheNotificationService>().SingleInstance();
+                .As<INotificationService>().SingleInstance();
 
             // Service To Service Resolver
             builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()

@@ -13,7 +13,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
     {
         private readonly KickGuestsFromProjectHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
-        private readonly Mock<ICacheNotificationService> _cacheNotificationMock = new Mock<ICacheNotificationService>();
+        private readonly Mock<INotificationService> _cacheNotificationMock = new Mock<INotificationService>();
 
         public KickGuestsFromProjectHandlerTests()
         {

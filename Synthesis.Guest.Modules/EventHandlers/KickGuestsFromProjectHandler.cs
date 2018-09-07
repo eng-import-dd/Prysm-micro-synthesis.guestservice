@@ -14,10 +14,10 @@ namespace Synthesis.GuestService.EventHandlers
     {
         private readonly ILogger _logger;
         private readonly IGuestSessionController _guestSessionController;
-        private readonly ICacheNotificationService _cacheNotificationService;
+        private readonly INotificationService _cacheNotificationService;
 
         public KickGuestsFromProjectHandler(
-            ICacheNotificationService cacheNotificationService,
+            INotificationService cacheNotificationService,
             ILoggerFactory loggerFactory,
             IGuestSessionController guestSessionController)
         {
@@ -40,7 +40,7 @@ namespace Synthesis.GuestService.EventHandlers
             {
                 _logger.Error($"Errors occurred while kicking guests for ProjectId={args.Value}.", ex);
 
-                await _cacheNotificationService.RetryScheduleKickGuestsNotification(args.Value);
+                await _cacheNotificationService.RetryScheduleKickGuestsNotificationAsync(args.Value);
             }
         }
 
