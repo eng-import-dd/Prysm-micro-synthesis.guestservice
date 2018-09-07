@@ -26,14 +26,14 @@ namespace Synthesis.GuestService.Modules.Test.Events
         }
 
         [Fact]
-        public void HandleTriggerKickGuestsFromProjectEventDeletesGuestSessionsForProject()
+        public void HandleTriggerKickGuestsFromProject_ForValidEvent_DeletesGuestSessionsForProject()
         {
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
             _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true));
         }
 
         [Fact]
-        public void HandleTriggerKickGuestsFromProjectEventRetriesToDeletesGuestSessionsForProject()
+        public void HandleTriggerKickGuestsFromProject_OnException_RetriesDeletingGuestSessionsForProject()
         {
             _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ThrowsAsync(new Exception());
@@ -41,17 +41,6 @@ namespace Synthesis.GuestService.Modules.Test.Events
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
 
             _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true), Times.Exactly(2));
-        }
-
-        [Fact]
-        public void HandleTriggerKickGuestsFromProjectEventSetsKickKeyOnKickFailure()
-        {
-            _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
-                .ThrowsAsync(new Exception());
-
-            _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
-
-            _cacheNotificationMock.Verify(x => x.CancelKickGuestsNotification(It.IsAny<Guid>()));
         }
     }
 }
