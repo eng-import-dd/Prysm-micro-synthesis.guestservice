@@ -1,7 +1,6 @@
 ﻿using System;
 using Moq;
 using Synthesis.EventBus.Events;
-using Synthesis.ExpirationNotifierService.InternalApi.Api;
 using Synthesis.ExpirationNotifierService.InternalApi.Services;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
