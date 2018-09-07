@@ -22,10 +22,9 @@ namespace Synthesis.GuestService.Validators
                 .NotEmpty().When(request => request.ProjectId == Guid.Empty)
                 .WithMessage($"{nameof(GuestVerificationRequest.ProjectAccessCode)} cannot be empty or whitespace when {nameof(GuestVerificationRequest.ProjectId)} is empty.");
 
-            // TODO: Victor is going to get this with CU-1226
-            //RuleFor(request => request.ProjectAccessCode)
-            //    .SetValidator(new ProjectAccessCodeValidator())
-            //    .When(request => !string.IsNullOrWhiteSpace(request.ProjectAccessCode));
+            RuleFor(request => request.ProjectAccessCode)
+                .SetValidator(new ProjectAccessCodeValidator())
+                .When(request => !string.IsNullOrWhiteSpace(request.ProjectAccessCode));
         }
     }
 }
