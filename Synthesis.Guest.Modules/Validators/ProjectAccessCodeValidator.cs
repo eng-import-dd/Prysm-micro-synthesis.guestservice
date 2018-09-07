@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using System;
+using FluentValidation;
 
 namespace Synthesis.GuestService.Validators
 {
@@ -6,13 +7,13 @@ namespace Synthesis.GuestService.Validators
     {
         public ProjectAccessCodeValidator()
         {
-            RuleFor(request => request)
-                .Length(10).WithMessage("The project access code must be 10 characters in length");
+            RuleFor(str => str)
+                .NotEmpty()
+                .WithMessage("The ProjectAccessCode must not be empty");
 
-            // TODCO: CU-598: Figure why this is causing a null ref exception
-            RuleFor(request => request)
-                .Must(x => long.TryParse(x, out var _))
-                .WithMessage("The project access code must be a number");
+            RuleFor(str => str)
+                .Must(x => (x.Length == 10 && long.TryParse(x, out var _)) || (x.Length == Guid.Empty.ToString().Length && Guid.TryParse(x, out var _) && x != Guid.Empty.ToString()))
+                .WithMessage("The ProjectAccessCode must be a 10 digit number or a valid non-empty GUID");
         }
     }
 }

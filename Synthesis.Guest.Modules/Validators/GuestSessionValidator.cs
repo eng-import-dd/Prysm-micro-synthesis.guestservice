@@ -12,10 +12,11 @@ namespace Synthesis.GuestService.Validators
                 .NotEqual(Guid.Empty).WithMessage("The UserId field must not be empty");
 
             RuleFor(request => request.ProjectId)
-                .NotEqual(Guid.Empty).WithMessage("The ProjectId field must not be empty");
+                .NotEqual(Guid.Empty)
+                .WithMessage("The ProjectId field must not be empty");
 
             RuleFor(request => request.ProjectAccessCode)
-                .NotEqual(string.Empty).WithMessage("The ProjectAccessCode fiels must not be empty.");
+                .SetValidator(new ProjectAccessCodeValidator());
         }
     }
 }

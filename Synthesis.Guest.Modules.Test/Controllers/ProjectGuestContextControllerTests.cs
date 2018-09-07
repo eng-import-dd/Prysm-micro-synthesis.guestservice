@@ -40,7 +40,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly ProjectGuestContext _defaultProjectGuestContext;
         private readonly ProjectLobbyState _defaultProjectLobbyState;
         private readonly User _defaultUser;
-        private readonly string _defaultAccessCode = "9999999999";
+        private readonly string _defaultAccessCode = Guid.NewGuid().ToString();
         private readonly GuestSession _defaultGuestSession;
 
         public ProjectGuestContextControllerTests()
