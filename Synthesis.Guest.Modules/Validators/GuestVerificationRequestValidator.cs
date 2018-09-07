@@ -12,15 +12,20 @@ namespace Synthesis.GuestService.Validators
                 .SetValidator(new EmailValidator());
 
             RuleFor(request => request.ProjectId)
-                .SetValidator(new ProjectIdValidator())
-                .When(request => string.IsNullOrWhiteSpace(request.ProjectAccessCode))
-                .WithMessage($"{nameof(GuestVerificationRequest.ProjectId)} cannot be empty when {nameof(GuestVerificationRequest.ProjectAccessCode)} is not provided.");
+                .NotNull().When(request => string.IsNullOrWhiteSpace(request.ProjectAccessCode))
+                .WithMessage($"{nameof(GuestVerificationRequest.ProjectId)} cannot be null when {nameof(GuestVerificationRequest.ProjectAccessCode)} is empty or whitespace.")
+                .NotEmpty().When(request => string.IsNullOrWhiteSpace(request.ProjectAccessCode))
+                .WithMessage($"{nameof(GuestVerificationRequest.ProjectId)} cannot be empty when {nameof(GuestVerificationRequest.ProjectAccessCode)} is empty or whitespace.");
 
             RuleFor(request => request.ProjectAccessCode)
                 .NotNull().When(request => request.ProjectId == Guid.Empty)
                 .WithMessage($"{nameof(GuestVerificationRequest.ProjectAccessCode)} cannot be null when {nameof(GuestVerificationRequest.ProjectId)} is empty.")
                 .NotEmpty().When(request => request.ProjectId == Guid.Empty)
                 .WithMessage($"{nameof(GuestVerificationRequest.ProjectAccessCode)} cannot be empty or whitespace when {nameof(GuestVerificationRequest.ProjectId)} is empty.");
+
+            RuleFor(request => request.ProjectId)
+                .SetValidator(new ProjectIdValidator())
+                .When(request => request.ProjectId != Guid.Empty);
 
             RuleFor(request => request.ProjectAccessCode)
                 .SetValidator(new ProjectAccessCodeValidator())

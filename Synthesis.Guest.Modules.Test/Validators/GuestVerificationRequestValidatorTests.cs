@@ -82,12 +82,12 @@ namespace Synthesis.GuestService.Modules.Test.Validators
         [InlineData("0123456789")]
         [InlineData("1053D337 - BA8E - 43D6 - 9AFC - EB2A04BA4A33")]
         [InlineData("1053D337-BA8E-43D6-9AFC-EB2A04BA4A33")]
-        public void ShouldPassWithValidProjectAndAccessCode(string accessCode)
+        public void ShouldPassWithEmptyProjectIdAndValidAccessCode(string accessCode)
         {
             var request = new GuestVerificationRequest
             {
                 ProjectAccessCode = accessCode,
-                ProjectId = Guid.NewGuid(),
+                ProjectId = Guid.Empty,
                 Username = "name@domain.com"
             };
 
