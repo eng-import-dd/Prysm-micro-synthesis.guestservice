@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Controllers
 {

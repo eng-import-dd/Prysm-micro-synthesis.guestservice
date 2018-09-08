@@ -22,6 +22,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Synthesis.Http.Microservice;
 using Synthesis.ParticipantService.InternalApi.Services;
+using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 
 namespace Synthesis.GuestService.Controllers
@@ -286,6 +287,11 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId)
         {
+            return await VerifyGuestImplemenationAsync(request, null, guestTenantId);
+        }
+
+        internal async Task<GuestVerificationResponse> VerifyGuestImplemenationAsync(GuestVerificationRequest request, Project project, Guid? guestTenantId)
+        {
             var validationResult = _validatorLocator.Validate<GuestVerificationRequestValidator>(request);
             if (!validationResult.IsValid)
             {
@@ -294,30 +300,33 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            ProjectService.InternalApi.Models.Project project;
-            if (request.ProjectId != Guid.Empty)
+            
+            if(project == null)
             {
-                var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
-                if (!projectResponse.IsSuccess())
+                if (request.ProjectId != Guid.Empty)
                 {
-                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    response.Message = $"Could not find a project with that project Id.";
-                    return response;
-                }
+                    var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
+                    if (!projectResponse.IsSuccess())
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                        response.Message = $"Could not find a project with that project Id.";
+                        return response;
+                    }
 
-                project = projectResponse.Payload;
-            }
-            else
-            {
-                var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
-                if (!projectResponse.IsSuccess())
+                    project = projectResponse.Payload;
+                }
+                else
                 {
-                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    response.Message = $"Could not find a project with that project access code.";
-                    return response;
-                }
+                    var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
+                    if (!projectResponse.IsSuccess())
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                        response.Message = $"Could not find a project with that project access code.";
+                        return response;
+                    }
 
-                project = projectResponse.Payload;
+                    project = projectResponse.Payload;
+                }
             }
 
             if (project.TenantId == Guid.Empty)
@@ -396,6 +405,7 @@ namespace Synthesis.GuestService.Controllers
             response.Message = "The user may join as a guest";
             return response;
         }
+
 
         public async Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId)
         {

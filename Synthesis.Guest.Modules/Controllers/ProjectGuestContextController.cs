@@ -12,6 +12,7 @@ using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.Http.Microservice;
+using Synthesis.Http.Microservice.Constants;
 using Synthesis.Nancy.MicroService;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -69,14 +70,18 @@ namespace Synthesis.GuestService.Controllers
                 return await ClearGuestSessionState(currentUserId);
             }
 
-            (ProjectGuestContext guestContext,
-             MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
-             MicroserviceResponse<Project> projectResponse) = await LoadData(projectId);
-
+            var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
             if (!projectResponse.IsSuccess() || projectResponse.Payload == null)
             {
                 throw new InvalidOperationException($"Error fetching project {projectId} with service to service client, {projectResponse?.ResponseCode} - {projectResponse?.ReasonPhrase}");
             }
+
+            var projectTenantId = projectResponse.Payload.TenantId;
+
+            (ProjectGuestContext guestContext,
+             MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse) = await LoadData(projectId, projectTenantId);
+
+
             if (!projectUsersResponse.IsSuccess() || projectUsersResponse.Payload == null)
             {
                 throw new InvalidOperationException($"Error fetching project users {projectId}, {projectUsersResponse.ResponseCode} - {projectUsersResponse.ReasonPhrase}");
@@ -86,17 +91,17 @@ namespace Synthesis.GuestService.Controllers
             var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
             var userHasSameTenant = project.TenantId == currentUserTenantId;
             var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
-            var isProjectGuest = guestContext != null && guestContext.IsGuest();
+            var isProjectGuestCurrently = guestContext != null && guestContext.IsGuest();
 
-            if (isProjectGuest && userIsProjectMemberInSameTenant)
+            if (isProjectGuestCurrently && userIsProjectMemberInSameTenant)
             {
                 //User is in project's account and was a guest who was promoted to a full
                 //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
                 await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
             }
 
-            var userHasAccess = isProjectGuest ?
-                await DetermineGuestAccessAsync(currentUserId, projectId) :
+            var userHasAccess = isProjectGuestCurrently ?
+                await IsGuestCurrentlyAdmittedToProjectAsync(currentUserId, projectId) :
                 userIsProjectMemberInSameTenant;
 
             if (userHasAccess)
@@ -104,7 +109,7 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, true);
             }
 
-            if (isProjectGuest && guestContext?.ProjectId == project?.Id)
+            if (isProjectGuestCurrently && guestContext?.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, false);
             }
@@ -213,7 +218,7 @@ namespace Synthesis.GuestService.Controllers
             };
         }
 
-        private async Task<bool> DetermineGuestAccessAsync(Guid userId, Guid projectId)
+        private async Task<bool> IsGuestCurrentlyAdmittedToProjectAsync(Guid userId, Guid projectId)
         {
             var guestSessions = await _guestSessionRepository.GetItemsAsync(g => g.UserId == userId && g.ProjectId == projectId);
 
@@ -224,21 +229,18 @@ namespace Synthesis.GuestService.Controllers
 
         private async Task<(
                 ProjectGuestContext guestContext,
-                MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse,
-                MicroserviceResponse<Project> projectResponse)>
-            LoadData(Guid projectId)
+                MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse)>
+            LoadData(Guid projectId, Guid impersonateTenantId)
         {
             var guestContextTask =  _projectGuestContextService.GetProjectGuestContextAsync();
-            var projectUsersTask =  _serviceToServiceProjectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser);
-            var projectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
+            var projectUsersTask =  _serviceToServiceProjectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser, new List<KeyValuePair<string, string>>(){new KeyValuePair<string, string>(HeaderKeys.ImpersonateTenant, impersonateTenantId.ToString())});
 
-            await Task.WhenAll(guestContextTask, projectUsersTask, projectTask);
+            await Task.WhenAll(guestContextTask, projectUsersTask);
 
             var guestContext = await guestContextTask;
-            var projectResponse = await projectTask;
             var projectUsersResponse = await projectUsersTask;
 
-            return (guestContext, projectUsersResponse, projectResponse);
+            return (guestContext, projectUsersResponse);
         }
     }
 }
