@@ -93,16 +93,17 @@ namespace Synthesis.GuestService.Controllers
             var userHasSameTenant = project.TenantId == currentUserTenantId;
             var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
             var userHasActiveProjectGuestContext = guestContext != null && guestContext.GuestState != GuestState.Ended;
-            var userIsProjectGuestCurrently = guestContext != null && guestContext.IsGuest();
 
             if (userHasActiveProjectGuestContext && userIsProjectMemberInSameTenant)
             {
                 //User is in project's account and was a guest who was promoted to a full
                 //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
-                await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
+                guestContext = new ProjectGuestContext();
+                await _projectGuestContextService.SetProjectGuestContextAsync(guestContext);
+                userHasActiveProjectGuestContext = guestContext.IsGuest();
             }
 
-            var userHasAccess = userIsProjectGuestCurrently ?
+            var userHasAccess = userHasActiveProjectGuestContext ?
                 await IsGuestCurrentlyAdmittedToProjectAsync(currentUserId, projectId) :
                 userIsProjectMemberInSameTenant;
 
@@ -111,7 +112,7 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, true);
             }
 
-            if (userIsProjectGuestCurrently && guestContext?.ProjectId == project?.Id)
+            if (userHasActiveProjectGuestContext && guestContext?.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, false);
             }
