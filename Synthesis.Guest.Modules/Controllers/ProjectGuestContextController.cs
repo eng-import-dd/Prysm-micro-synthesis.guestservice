@@ -18,6 +18,7 @@ using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
+using GuestState = Synthesis.Guest.ProjectContext.Enums.GuestState;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -91,16 +92,17 @@ namespace Synthesis.GuestService.Controllers
             var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
             var userHasSameTenant = project.TenantId == currentUserTenantId;
             var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
-            var isProjectGuestCurrently = guestContext != null && guestContext.IsGuest();
+            var userHasActiveProjectGuestContext = guestContext != null && guestContext.GuestState != GuestState.Ended;
+            var userIsProjectGuestCurrently = guestContext != null && guestContext.IsGuest();
 
-            if (isProjectGuestCurrently && userIsProjectMemberInSameTenant)
+            if (userHasActiveProjectGuestContext && userIsProjectMemberInSameTenant)
             {
                 //User is in project's account and was a guest who was promoted to a full
                 //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
                 await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
             }
 
-            var userHasAccess = isProjectGuestCurrently ?
+            var userHasAccess = userIsProjectGuestCurrently ?
                 await IsGuestCurrentlyAdmittedToProjectAsync(currentUserId, projectId) :
                 userIsProjectMemberInSameTenant;
 
@@ -109,7 +111,7 @@ namespace Synthesis.GuestService.Controllers
                 return await CreateCurrentProjectState(project, true);
             }
 
-            if (isProjectGuestCurrently && guestContext?.ProjectId == project?.Id)
+            if (userIsProjectGuestCurrently && guestContext?.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, false);
             }
