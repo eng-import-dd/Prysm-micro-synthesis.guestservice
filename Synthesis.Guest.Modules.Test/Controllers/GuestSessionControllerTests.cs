@@ -58,11 +58,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         public GuestSessionControllerTests()
         {
-            _defaultProject = new Project
-            {
-                GuestAccessCode = Guid.NewGuid().ToString(),
-                Id = Guid.NewGuid()
-            };
+            _defaultProject = Project.Example();
 
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();

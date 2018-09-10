@@ -21,6 +21,8 @@ using System.Runtime.InteropServices;
 
 // Make internal methods visible to other assemblies for unit tests
 [assembly: InternalsVisibleTo("Synthesis.GuestService.Modules.Test")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+[assembly: InternalsVisibleTo("Castle.Core")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("4D402C51-0AC0-11E8-9A9F-5D7F4B792F52")]

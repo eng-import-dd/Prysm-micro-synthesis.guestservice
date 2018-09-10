@@ -264,7 +264,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        public async Task<object> VerifyGuestAsync()
+        private async Task<object> VerifyGuestAsync()
         {
             GuestVerificationRequest request;
 
@@ -301,7 +301,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        public async Task<object> EmailHostAsync(dynamic input)
+        private async Task<object> EmailHostAsync(dynamic input)
         {
             await RequiresAccess().ExecuteAsync(CancellationToken.None);
 
