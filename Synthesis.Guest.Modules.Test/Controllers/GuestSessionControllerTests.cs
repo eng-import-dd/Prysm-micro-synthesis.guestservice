@@ -60,7 +60,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             _defaultProject = new Project
             {
-                GuestAccessCode = "0123456789",
+                GuestAccessCode = Guid.NewGuid().ToString(),
                 Id = Guid.NewGuid()
             };
 
@@ -408,7 +408,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 new GuestSession
                 {
                     ProjectId = _defaultProject.Id,
-                    ProjectAccessCode = "5555555555",
+                    ProjectAccessCode = Guid.NewGuid().ToString(),
                     UserId = Guid.NewGuid()
                 },
                 new GuestSession
@@ -553,7 +553,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 new GuestSession
                 {
                     ProjectId = _defaultProject.Id,
-                    ProjectAccessCode = "5555555555",
+                    ProjectAccessCode = Guid.NewGuid().ToString(),
                     UserId = Guid.NewGuid()
                 },
                 new GuestSession

@@ -26,7 +26,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
     public class GuestSessionModuleTests
     {
         private readonly ValidationFailure _expectedValidationFailure = new ValidationFailure("theprop", "thereason");
-        private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = "0123456789" };
+        private readonly GuestSession _guestSession = new GuestSession { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), ProjectAccessCode = Guid.NewGuid().ToString() };
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
         private readonly Mock<ITokenValidator> _tokenValidatorMock = new Mock<ITokenValidator>();

@@ -20,7 +20,7 @@ namespace Synthesis.GuestService.Modules.Test.TestData
                 var request = new object[] {
                     new GuestVerificationRequest
                     {
-                        ProjectAccessCode = "0123456789",
+                        ProjectAccessCode = "9F4AC529-8860-42CB-ACFB-722BB668BC06",     // needs to be a constant access code value
                         ProjectId = Guid.NewGuid(),
                         Username = emailAddress.ToString()
                     }

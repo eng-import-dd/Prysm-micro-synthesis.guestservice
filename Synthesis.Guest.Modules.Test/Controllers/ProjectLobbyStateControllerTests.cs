@@ -246,7 +246,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var guestSessions = new List<GuestSession>();
 
-            project.GuestAccessCode = "0123456789";
+            project.GuestAccessCode = Guid.NewGuid().ToString();
             for (int i = 1; i <= guestSessionCount; i++)
             {
                 var guestSession = GuestSession.Example();

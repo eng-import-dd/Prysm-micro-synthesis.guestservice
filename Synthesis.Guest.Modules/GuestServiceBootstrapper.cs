@@ -54,6 +54,8 @@ using System.Net.Sockets;
 using System.Reflection;
 using Microsoft.Owin;
 using Synthesis.EmailService.InternalApi.Api;
+using Synthesis.ExpirationNotifierService.InternalApi.Api;
+using Synthesis.ExpirationNotifierService.InternalApi.Services;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.InternalApi.Models;
@@ -168,9 +170,9 @@ namespace Synthesis.GuestService
         {
             var builder = new ContainerBuilder();
 
-            RegisterRedisKeyed(builder, "Redis.General.Key", "Redis.General.Endpoint", CacheConnection.General);
-            RegisterRedisKeyed(builder, "Redis.Refresh.Key", "Redis.Refresh.Endpoint", CacheConnection.Refresh);
-            RegisterRedisKeyed(builder, "Redis.ExpirationNotifier.Key", "Redis.ExpirationNotifier.Endpoint", CacheConnection.ExpirationNotifier);
+            RegisterRedisKeyed(builder, "Redis.General.Key", "Redis.General.Endpoint", CacheConnection.General, true);
+            RegisterRedisKeyed(builder, "Redis.Refresh.Key", "Redis.Refresh.Endpoint", CacheConnection.Refresh, false);
+            RegisterRedisKeyed(builder, "Redis.ExpirationNotifier.Key", "Redis.ExpirationNotifier.Endpoint", CacheConnection.ExpirationNotifier, false);
 
             builder.RegisterType<DefaultAppSettingsReader>()
                 .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
@@ -278,27 +280,6 @@ namespace Synthesis.GuestService
             // Policy Evaluator components
             builder.RegisterPolicyEvaluatorComponents();
 
-            // Redis cache - this unkeyed instance is needed for the policy evaluator
-            builder.RegisterType<RedisCache>()
-                 .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
-                    (p, c) =>
-                    {
-                        var reader = c.Resolve<IAppSettingsReader>();
-                        var redisOptions = new ConfigurationOptions
-                        {
-                            Password = reader.GetValue<string>("Redis.General.Key"),
-                            AbortOnConnectFail = false,
-                            SyncTimeout = RedisSyncTimeoutInMilliseconds,
-                            ConnectTimeout = RedisConnectTimeoutInMilliseconds,
-                            ConnectRetry = RedisConnectRetryTimes
-                        };
-                        redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
-                        return ConnectionMultiplexer.Connect(redisOptions);
-                    }))
-                .As<ICache>()
-                .SingleInstance();
-
             // Validation
             RegisterValidation(builder);
 
@@ -326,9 +307,9 @@ namespace Synthesis.GuestService
             return builder.Build();
         }
 
-        private static void RegisterRedisKeyed(ContainerBuilder builder, string passwordKey, string endpointKey, CacheConnection instanceKey)
+        private static void RegisterRedisKeyed(ContainerBuilder builder, string passwordKey, string endpointKey, CacheConnection instanceKey, bool defaultInstance)
         {
-            builder.RegisterType<RedisCache>()
+            var builderP2 = builder.RegisterType<RedisCache>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(IConnectionMultiplexer),
                     (p, c) =>
@@ -347,6 +328,11 @@ namespace Synthesis.GuestService
                     }))
                 .Keyed<ICache>(instanceKey)
                 .SingleInstance();
+
+            if (defaultInstance)
+            {
+                builderP2.As<ICache>().As<ITimeService>();
+            }
         }
 
         /// <summary>
@@ -357,6 +343,17 @@ namespace Synthesis.GuestService
         private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
         {
             builder.RegisterType<CacheSelector>().As<ICacheSelector>().SingleInstance();
+            builder.RegisterType<CacheNotificationService>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "generalCache",
+                    (p, c) => c.ResolveKeyed<ICache>(CacheConnection.General)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "refreshCache",
+                    (p, c) => c.ResolveKeyed<ICache>(CacheConnection.Refresh)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "lockedCache",
+                    (p, c) => c.ResolveKeyed<ICache>(CacheConnection.ExpirationNotifier)))
+                .As<INotificationService>().SingleInstance();
 
             // Service To Service Resolver
             builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()
@@ -437,6 +434,7 @@ namespace Synthesis.GuestService
 
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>();
+            builder.RegisterType<ExpirationNotifierApi>().As<IExpirationNotifierApi>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)

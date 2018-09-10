@@ -1,11 +1,9 @@
 ﻿using System;
 using Moq;
-using Synthesis.Cache;
 using Synthesis.EventBus.Events;
+using Synthesis.ExpirationNotifierService.InternalApi.Services;
 using Synthesis.GuestService.Controllers;
-using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.EventHandlers;
-using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Logging;
 using Xunit;
 
@@ -15,30 +13,26 @@ namespace Synthesis.GuestService.Modules.Test.Events
     {
         private readonly KickGuestsFromProjectHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
-        private readonly Mock<ICache> _cacheMock = new Mock<ICache>();
-        private readonly Mock<ICacheSelector> _cacheSelectorMock = new Mock<ICacheSelector>();
+        private readonly Mock<INotificationService> _cacheNotificationMock = new Mock<INotificationService>();
 
         public KickGuestsFromProjectHandlerTests()
         {
-            _cacheSelectorMock.Setup(x => x[It.IsAny<CacheConnection>()])
-                .Returns(_cacheMock.Object);
-
             var loggerFactoryMock = new Mock<ILoggerFactory>();
             loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new KickGuestsFromProjectHandler(loggerFactoryMock.Object, _guestSessionControllerMock.Object, _cacheSelectorMock.Object);
+            _target = new KickGuestsFromProjectHandler(_cacheNotificationMock.Object, loggerFactoryMock.Object, _guestSessionControllerMock.Object);
         }
 
         [Fact]
-        public void HandleTriggerKickGuestsFromProjectEventDeletesGuestSessionsForProject()
+        public void HandleTriggerKickGuestsFromProject_ForValidEvent_DeletesGuestSessionsForProject()
         {
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
             _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true));
         }
 
         [Fact]
-        public void HandleTriggerKickGuestsFromProjectEventRetriesToDeletesGuestSessionsForProject()
+        public void HandleTriggerKickGuestsFromProject_OnException_RetriesDeletingGuestSessionsForProject()
         {
             _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ThrowsAsync(new Exception());
@@ -46,17 +40,6 @@ namespace Synthesis.GuestService.Modules.Test.Events
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
 
             _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true), Times.Exactly(2));
-        }
-
-        [Fact]
-        public void HandleTriggerKickGuestsFromProjectEventSetsKickKeyOnKickFailure()
-        {
-            _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
-                .ThrowsAsync(new Exception());
-
-            _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
-
-            _cacheMock.Verify(x => x.ItemSet(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan?>(), It.IsAny<CacheCommandOptions>()));
         }
     }
 }
