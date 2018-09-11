@@ -122,6 +122,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                                                  _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object);
         }
 
+        //TODO: Improve UpdateGuestSessionAsync unit test coverage
+        //TODO: Add UpdateGuestSessionStateAsync tests
+        //TODO: Add VerifyGuestAsync tests
+
         [Fact]
         public async Task CreateGuestSession_CallsCreate()
         {

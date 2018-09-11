@@ -126,7 +126,7 @@ namespace Synthesis.GuestService.Controllers
             var userName = !string.IsNullOrEmpty(userResponse.Payload.Email) ? userResponse.Payload.Email : userResponse.Payload.Username;
             var verifyRequest = new GuestVerificationRequest() { Username = userName, ProjectAccessCode = accessCode, ProjectId = projectId };
 
-            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest, currentUserTenantId);
+            var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest, project, currentUserTenantId);
 
             if (guestVerifyResponse.ResultCode != VerifyGuestResponseCode.Success)
             {

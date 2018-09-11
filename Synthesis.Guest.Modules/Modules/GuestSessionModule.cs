@@ -68,7 +68,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
-            CreateRoute("VerifyGuest", HttpMethod.Post, Routing.VerifyGuestRoute, async _ => await VerifyGuestAsync())
+            CreateRoute("VerifyGuest", HttpMethod.Post, Routing.VerifyGuestRoute, VerifyGuestAsync)
                 .Description("Verify guest resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
@@ -264,7 +264,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> VerifyGuestAsync()
+        private async Task<object> VerifyGuestAsync(dynamic input)
         {
             GuestVerificationRequest request;
 

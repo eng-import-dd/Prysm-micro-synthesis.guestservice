@@ -71,6 +71,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             _defaultGuestVerificationRequest = new GuestVerificationRequest() { ProjectAccessCode = _defaultProject.GuestAccessCode, ProjectId = _defaultProject.Id, Username = _defaultGuestUser.Username };
         }
 
+        //TODO: Add UpdateGuestSessionState route tests
+
         private Browser GetBrowser(bool isAuthenticated = true, bool hasAccess = true)
         {
             _policyEvaluatorMock
@@ -228,7 +230,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task UpdateGuestSessionReturnsUnauthorizedRequest()
+        public async Task UpdateGuestSession_WithoutAuthorization_ReturnsUnauthorized()
         {
             _guestSessionControllerMock
                 .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
@@ -327,7 +329,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task UpdateGuestSessionReturnsOk()
+        public async Task UpdateGuestSession_OnHappyPath_ReturnsOk()
         {
             _guestSessionControllerMock
                 .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
@@ -339,7 +341,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task UpdateGuestSessionReturnsInternalServerErrorOnUnexpectedException()
+        public async Task UpdateGuestSession_OnUnexpectedException_ReturnsInternalServerError()
         {
             _guestSessionControllerMock
                 .Setup(x => x.UpdateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
@@ -401,7 +403,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task UpdateGuestSessionAsyncWithoutAccessReturnsForbidden()
+        public async Task UpdateGuestSession_WithoutAccess_ReturnsForbidden()
         {
             var response = await ForbiddenBrowser.Put($"{Routing.GuestSessionsRoute}/{Guid.NewGuid()}", BuildRequest);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);

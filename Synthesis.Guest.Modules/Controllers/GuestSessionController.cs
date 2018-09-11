@@ -287,10 +287,20 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId)
         {
-            return await VerifyGuestImplemenationAsync(request, null, guestTenantId);
+            return await VerifyGuestAsync(request, null, guestTenantId);
         }
 
-        internal async Task<GuestVerificationResponse> VerifyGuestImplemenationAsync(GuestVerificationRequest request, Project project, Guid? guestTenantId)
+        /// <summary>
+        /// Verifies the eligibility of a guest to enter a project lobby and potentially join the project.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="project"></param>
+        /// <param name="guestTenantId"></param>
+        /// <returns></returns>
+        /// <remarks>This method is not intended for external use. It is a public interface member to make it available to
+        /// the ProjectGuestContextController and for unit tests. The project argument on this method is a optimization to eliminate
+        /// a redundant retrieval of the project when this method is invoked by the ProjectGuestContextController.SetProjectGuestContext method.</remarks>
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Project project, Guid? guestTenantId)
         {
             var validationResult = _validatorLocator.Validate<GuestVerificationRequestValidator>(request);
             if (!validationResult.IsValid)

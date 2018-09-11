@@ -16,6 +16,7 @@ using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Constants;
+using Synthesis.Nancy.MicroService;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -147,6 +148,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
         #endregion
 
+        #region LoadCriticalData
         [Theory]
         [InlineData(HttpStatusCode.BadRequest)]
         [InlineData(HttpStatusCode.InternalServerError)]
@@ -156,10 +158,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [InlineData(HttpStatusCode.Unauthorized)]
         public async Task SetProjectGuestContext_IfProjectCannotBeFetchedByServiceToServiceClientForGuest_ThrowsInvalidOperationException(HttpStatusCode statusCode)
         {
-            _projectGuestContextServiceMock
-                .Setup(x => x.IsGuestAsync())
-                .ReturnsAsync(true);
-
             _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(_defaultProjectId, null))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
@@ -208,19 +206,237 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectGuestContextServiceMock
                 .Verify(y => y.GetProjectGuestContextAsync());
         }
+        #endregion LoadCriticalData
 
         [Fact]
-        public async Task SetProjectGuestContext_IfUserIsAGuestInTheSameAccountAndHasBeenPromoted_ClearsProjectGuestContext()
+        public async Task SetProjectGuestContext_WhenUserIsNotFullProjectMemberAndRequestingLobbyEntry_UserHasAccessIsFalse()
         {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
+
+            Assert.False(response.UserHasAccess);
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenUserFromSameTenantIsProjectMemberAndRequestsLobbyEntry_UserHasAccessIsTrue()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
+
+            Assert.True(response.UserHasAccess);
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_IfUserHasDifferentTenantHasBeenAdmittedToProject_UserHasAccessIsTrue()
+        {
+            var guestSessionId = Guid.NewGuid();
+
             _projectGuestContextServiceMock
                 .Setup(x => x.GetProjectGuestContextAsync())
                 .ReturnsAsync(new ProjectGuestContext()
                 {
-                    GuestSessionId = Guid.NewGuid(),
+                    GuestSessionId = guestSessionId,
+                    GuestState = Guest.ProjectContext.Enums.GuestState.InProject,
+                    ProjectId = _defaultProjectId,
+                    TenantId = _projectTenantId
+                });
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            var guestSession = new GuestSession { Id = guestSessionId, ProjectId = _defaultProjectId, UserId = _currentUserId, ProjectAccessCode = _defaultAccessCode, GuestSessionState = GuestState.InProject };
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemAsync(It.Is<Guid>(g => g == guestSessionId), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(guestSession);
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession> { guestSession });
+
+            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
+
+            Assert.True(response.UserHasAccess);
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobby_CallsGetUser()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
+
+            _userApiMock.Verify(x => x.GetUserAsync(It.Is<Guid>(id => id == _currentUserId)));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndGetUserCallReturnsNotOK_ThrowsInvalidOperationException()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            _userApiMock
+                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
+                .Throws<InvalidOperationException>();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobby_CallsVerifyGuest()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
+
+            _guestSessionControllerMock.Verify(x => x.VerifyGuestAsync(It.Is<GuestVerificationRequest>(props =>
+                props.ProjectAccessCode == null
+                && props.ProjectId == _defaultProjectId
+                && props.Username == _defaultUser.Username)
+                , _projectTenantId));
+        }
+
+        [Theory]
+        [InlineData(VerifyGuestResponseCode.InvalidCode)]
+        [InlineData(VerifyGuestResponseCode.EmailVerificationNeeded)]
+        [InlineData(VerifyGuestResponseCode.Failed)]
+        [InlineData(VerifyGuestResponseCode.InvalidEmail)]
+        [InlineData(VerifyGuestResponseCode.InvalidNoInvite)]
+        [InlineData(VerifyGuestResponseCode.UserIsLocked)]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndVerifyGuestResultIsNotSuccess_ThrowsInvalidOperationException(VerifyGuestResponseCode code)
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            _guestSessionControllerMock
+                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), _projectTenantId))
+                .ReturnsAsync(new GuestVerificationResponse() { ResultCode = code, Username = _defaultUser.Username});
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndVerifyGuestReturnsSuccess_CallsCreateGuestSessionToPutUserOfficiallInLobby()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+             await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
+
+            _guestSessionControllerMock
+                .Verify(x => x.CreateGuestSessionAsync(It.Is<GuestSession>(props => props.UserId == _currentUserId
+                && props.ProjectId == _defaultProjectId
+                && props.ProjectAccessCode == _defaultProject.GuestAccessCode
+                && props.GuestSessionState == GuestState.InLobby)));
+        }
+
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndVerifyGuestReturnsSuccess_CachesProjectGuestContextRecord()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
+
+            _projectGuestContextServiceMock
+                .Verify(x => x.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(props => props.GuestSessionId == _defaultGuestSession.Id
+                    && props.ProjectId == _defaultProjectId
+                    && props.TenantId == _defaultProject.TenantId
+                    && props.GuestState == Synthesis.Guest.ProjectContext.Enums.GuestState.InLobby)));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndVerifyGuestReturnsSuccess_ReturnsCurrentProjectState()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext));
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            var result = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
+
+            Assert.IsAssignableFrom<CurrentProjectState>(result);
+            Assert.IsAssignableFrom<GuestSession>(result.GuestSession);
+            Assert.False(result.UserHasAccess);
+            Assert.Equal(_defaultGuestSession.Id, result.GuestSession.Id);
+            Assert.Equal(_defaultAccessCode, result.GuestSession.ProjectAccessCode);
+            Assert.Equal(_defaultProjectId, result.GuestSession.ProjectId);
+            Assert.Equal(_currentUserId, result.GuestSession.UserId);
+            Assert.Equal(GuestState.InLobby, result.GuestSession.GuestSessionState);
+            Assert.Equal(_defaultProject, result.Project);
+            Assert.Equal(LobbyState.Normal, result.LobbyState);
+        }
+
+
+        [Fact]
+        public async Task SetProjectGuestContext_IfUserIsAGuestInTheSameAccountAndWhenAdmittedFromLobbyWasPromotedToMember_ClearsProjectGuestContext()
+        {
+            var guestSessionId = Guid.NewGuid();
+
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(new ProjectGuestContext()
+                {
+                    GuestSessionId = guestSessionId,
                     GuestState = Guest.ProjectContext.Enums.GuestState.PromotedToProjectMember,
                     ProjectId = _defaultProjectId,
                     TenantId = _projectTenantId
                 });
+
+            var guestSession = new GuestSession { Id = guestSessionId, ProjectId = _defaultProjectId, UserId = _currentUserId, ProjectAccessCode = _defaultAccessCode, GuestSessionState = GuestState.PromotedToProjectMember };
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemAsync(It.Is<Guid>(g => g == guestSessionId), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(guestSession);
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession> { guestSession });
 
             await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
 
@@ -231,10 +447,55 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task SetProjectGuestContext_WhenUserIsAGuestInLobby_CallsGuestSessionRepositoryGetItems()
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGetProjectGuestContextWhenCreatingCurrentProjectState()
         {
             _projectGuestContextServiceMock
-            .Setup(x => x.GetProjectGuestContextAsync())
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(new ProjectGuestContext()
+                {
+                    GuestSessionId = Guid.NewGuid(),
+                    GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
+                    ProjectId = _defaultProjectId,
+                    TenantId = _projectTenantId
+                });
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession> { _defaultGuestSession });
+
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, Guid.NewGuid(), _noTenantId);
+
+            _projectGuestContextServiceMock.Verify(y => y.GetProjectGuestContextAsync(), Times.Exactly(2));
+        }
+
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGetProjectLobbyStateWhenCreatingCurrentProjectState()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(new ProjectGuestContext()
+                {
+                    GuestSessionId = Guid.NewGuid(),
+                    GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
+                    ProjectId = _defaultProjectId,
+                    TenantId = _projectTenantId
+                });
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession> { _defaultGuestSession });
+
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, Guid.NewGuid(), _noTenantId);
+
+            _projectLobbyStateControllerMock.Verify(y => y.GetProjectLobbyStateAsync(It.Is<Guid>(id => id == _defaultProjectId)));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGuestSessionRepositoryGetItemsWhenCreatingCurrentProjectState()
+        {
+            _projectGuestContextServiceMock
+                .Setup(x => x.GetProjectGuestContextAsync())
                 .ReturnsAsync(new ProjectGuestContext()
                 {
                     GuestSessionId = Guid.NewGuid(),
@@ -252,55 +513,30 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _guestSessionRepositoryMock.Verify(y => y.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
+
         [Fact]
-        public async Task SetProjectGuestContext_WhenUserFromSameTenantIsNotProjectMemberAndEntersLobby_UserHasAccessIsFalse()
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobbyAndGetProjectLobbyStateAsyncThrowsNotFound_ThrowsNotFoundException()
         {
             _projectGuestContextServiceMock
                 .Setup(x => x.GetProjectGuestContextAsync())
-                .ReturnsAsync(default(ProjectGuestContext));
+                .ReturnsAsync(new ProjectGuestContext()
+                {
+                    GuestSessionId = Guid.NewGuid(),
+                    GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
+                    ProjectId = _defaultProjectId,
+                    TenantId = _projectTenantId
+                });
 
-            _projectAccessApiMock
-                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession> { _defaultGuestSession });
 
-            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
+            _projectLobbyStateControllerMock
+                .Setup(y => y.GetProjectLobbyStateAsync(It.IsAny<Guid>()))
+                .Throws<NotFoundException>();
 
-            Assert.False(response.UserHasAccess);
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, Guid.NewGuid(), _noTenantId));
         }
-
-        [Fact]
-        public async Task SetProjectGuestContext_WhenUserFromSameTenantIsProjectMemberAndEntersLobby_UserHasAccessIsTrue()
-        {
-            _projectGuestContextServiceMock
-                .Setup(x => x.GetProjectGuestContextAsync())
-                .ReturnsAsync(default(ProjectGuestContext));
-
-            var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
-
-            Assert.True(response.UserHasAccess);
-        }
-
-        //[Fact]
-        //public async Task SetProjectGuestContext_WhenUserFromSameTenantIsProjectMemberIsAdmittedFromTheLobby_UserHasAccessIsTrue()
-        //{
-        //    _projectGuestContextServiceMock
-        //        .Setup(x => x.GetProjectGuestContextAsync())
-        //        .ReturnsAsync(new ProjectGuestContext()
-        //        {
-        //            GuestSessionId = Guid.NewGuid(),
-        //            GuestState = Guest.ProjectContext.Enums.GuestState.PromotedToProjectMember,
-        //            ProjectId = _defaultProjectId,
-        //            TenantId = _projectTenantId
-        //        });
-
-        //    _guestSessionRepositoryMock
-        //        .Setup()
-
-        //    var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
-
-        //    Assert.True(response.UserHasAccess);
-        //}
-
 
         [Fact]
         public async Task SetProjectGuestContext_WhenGuestsReachLobbyAndAreGrantedGuestSession_AreGivenMembershipIntoProject()
