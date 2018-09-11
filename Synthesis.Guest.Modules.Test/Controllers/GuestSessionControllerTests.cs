@@ -154,17 +154,26 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSession_DeletesProjectGuestContextKeysForOldGuestSessionsForUserAndProject()
         {
-            var oldGuestSession1 = _defaultGuestSession;
-            oldGuestSession1.Id = Guid.NewGuid();
+            var projectId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
 
-            var oldGuestSession2 = _defaultGuestSession;
-            oldGuestSession1.Id = Guid.NewGuid();
+            var newGuestSession = new GuestSession { Id = Guid.NewGuid(), ProjectId = projectId, UserId = userId };
+
+            var oldGuestSession1 = new GuestSession{Id = Guid.NewGuid(), ProjectId = projectId, UserId = userId};
+            var oldGuestSession2 = new GuestSession { Id = Guid.NewGuid(), ProjectId = projectId, UserId = userId };
+
+            var guestSessions = new List<GuestSession> { oldGuestSession1, oldGuestSession2, _defaultGuestSession};
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<GuestSession> { oldGuestSession1, oldGuestSession2 });
+                .Returns<Expression<Func<GuestSession, bool>>, BatchOptions, CancellationToken>((predicate, bo, ct) =>
+                {
+                    var expression = predicate.Compile();
+                    IEnumerable<GuestSession> sublist = guestSessions.Where(expression).ToList();
+                    return Task.FromResult(sublist);
+                });
 
-            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            await _target.CreateGuestSessionAsync(newGuestSession);
 
             _projectGuestContextServiceMock.Verify(x => x.RemoveProjectGuestContextAsync(It.IsAny<string>()), Times.Exactly(2));
         }
