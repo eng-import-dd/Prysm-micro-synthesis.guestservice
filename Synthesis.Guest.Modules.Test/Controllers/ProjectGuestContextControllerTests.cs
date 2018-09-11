@@ -82,7 +82,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(new UpdateGuestSessionStateResponse());
 
             _guestSessionControllerMock
-                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), It.IsAny<Guid?>()))
+                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), It.IsAny<Project>(), It.IsAny<Guid?>()))
                 .ReturnsAsync(new GuestVerificationResponse() {ResultCode = VerifyGuestResponseCode.Success});
 
             _guestSessionControllerMock
@@ -320,7 +320,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 props.ProjectAccessCode == null
                 && props.ProjectId == _defaultProjectId
                 && props.Username == _defaultUser.Username)
-                , _projectTenantId));
+                , It.Is<Project>(p => p == _defaultProject)
+                , It.Is<Guid>(t => t == _projectTenantId)));
         }
 
         [Theory]
@@ -341,7 +342,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
 
             _guestSessionControllerMock
-                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), _projectTenantId))
+                .Setup(x => x.VerifyGuestAsync(It.IsAny<GuestVerificationRequest>(), It.IsAny<Project>(),  _projectTenantId))
                 .ReturnsAsync(new GuestVerificationResponse() { ResultCode = code, Username = _defaultUser.Username});
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId));
@@ -392,12 +393,17 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndVerifyGuestReturnsSuccess_ReturnsCurrentProjectState()
         {
             _projectGuestContextServiceMock
-                .Setup(x => x.GetProjectGuestContextAsync())
-                .ReturnsAsync(default(ProjectGuestContext));
+                .SetupSequence(x => x.GetProjectGuestContextAsync())
+                .ReturnsAsync(default(ProjectGuestContext))
+                .ReturnsAsync(_defaultProjectGuestContext);
 
             _projectAccessApiMock
                 .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultImpersonateProjectTenantHeaders))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemAsync(It.Is<Guid>(g => g == _defaultGuestSession.Id), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_defaultGuestSession);
 
             var result = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _projectTenantId);
 
@@ -447,7 +453,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGetProjectGuestContextWhenCreatingCurrentProjectState()
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGetProjectGuestContextToCreateResponse()
         {
             _projectGuestContextServiceMock
                 .Setup(x => x.GetProjectGuestContextAsync())
@@ -470,7 +476,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
 
         [Fact]
-        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGetProjectLobbyStateWhenCreatingCurrentProjectState()
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGetProjectLobbyStateToCreateResponse()
         {
             _projectGuestContextServiceMock
                 .Setup(x => x.GetProjectGuestContextAsync())
@@ -492,7 +498,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGuestSessionRepositoryGetItemsWhenCreatingCurrentProjectState()
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGuestSessionRepositoryGetItemsToCreateResponse()
         {
             _projectGuestContextServiceMock
                 .Setup(x => x.GetProjectGuestContextAsync())
