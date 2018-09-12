@@ -212,7 +212,7 @@
       <HintPath>..\packages\Synthesis.ExpirationNotifierService.InternalApi.1.0.0-beta006\lib\net452\Synthesis.ExpirationNotifierService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta003\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta038\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
