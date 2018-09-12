@@ -177,15 +177,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 UserId = userId,
                 GuestSessionState = GuestState.InLobby
             };
-            var endedGuestSession = new GuestSession
-            {
-                Id = Guid.NewGuid(),
-                ProjectId = Guid.NewGuid(),
-                UserId = userId,
-                GuestSessionState = GuestState.Ended
-            };
 
-            var guestSessions = new List<GuestSession> { existingGuestSession1, existingGuestSession2, endedGuestSession };
+            var guestSessions = new List<GuestSession> { existingGuestSession1, existingGuestSession2 };
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
