@@ -152,17 +152,40 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateGuestSession_DeletesProjectGuestContextKeysForOldGuestSessionsForUserAndProject()
+        public async Task CreateGuestSession_DeletesProjectGuestContextKeysForExistingGuestSessionsForUser()
         {
-            var projectId = Guid.NewGuid();
             var userId = Guid.NewGuid();
 
-            var newGuestSession = new GuestSession { Id = Guid.NewGuid(), ProjectId = projectId, UserId = userId };
+            var newGuestSession = new GuestSession
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                UserId = userId
+            };
 
-            var oldGuestSession1 = new GuestSession{Id = Guid.NewGuid(), ProjectId = projectId, UserId = userId};
-            var oldGuestSession2 = new GuestSession { Id = Guid.NewGuid(), ProjectId = projectId, UserId = userId };
+            var existingGuestSession1 = new GuestSession
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                UserId = userId,
+                GuestSessionState = GuestState.InProject
+            };
+            var existingGuestSession2 = new GuestSession
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                UserId = userId,
+                GuestSessionState = GuestState.InLobby
+            };
+            var endedGuestSession = new GuestSession
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                UserId = userId,
+                GuestSessionState = GuestState.Ended
+            };
 
-            var guestSessions = new List<GuestSession> { oldGuestSession1, oldGuestSession2, _defaultGuestSession};
+            var guestSessions = new List<GuestSession> { existingGuestSession1, existingGuestSession2, endedGuestSession };
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
