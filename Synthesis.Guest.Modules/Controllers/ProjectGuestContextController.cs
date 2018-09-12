@@ -133,12 +133,6 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Failed to verify guest for User.Id = {currentUserId}, Project.Id = {projectId}. ResponseCode = {guestVerifyResponse.ResultCode}. Reason = {guestVerifyResponse.Message}");
             }
 
-            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
-            if (!grantUserResponse.IsSuccess())
-            {
-                throw new InvalidOperationException("Failed to add user to project");
-            }
-
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
             {
                 UserId = currentUserId,
@@ -154,6 +148,14 @@ namespace Synthesis.GuestService.Controllers
                 GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                 TenantId = project.TenantId
             });
+
+            // WARNING: Order of operations is significant here. Project membership call must be made only after the 
+            // the guest session has been successfully created. Otherwise the user may be given the wrong kind of membership.
+            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
+            if (!grantUserResponse.IsSuccess())
+            {
+                throw new InvalidOperationException("Failed to add user to project");
+            }
 
             return await CreateCurrentProjectState(project, false);
         }

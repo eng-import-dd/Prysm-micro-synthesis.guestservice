@@ -310,7 +310,27 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            
+
+            if (project != null)
+            {
+
+                if (request.ProjectId != Guid.Empty && request.ProjectId != project.Id)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                    response.Message = $"Could not find a project with that project Id.";
+                    return response;
+                }
+                else
+                {
+                    if (request.ProjectAccessCode != project.GuestAccessCode)
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                        response.Message = $"Could not find a project with that project access code.";
+                        return response;
+                    }
+                }
+            }
+
             if(project == null)
             {
                 if (request.ProjectId != Guid.Empty)
