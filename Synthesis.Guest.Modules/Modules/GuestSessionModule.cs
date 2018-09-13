@@ -59,17 +59,17 @@ namespace Synthesis.GuestService.Modules
                 .ResponseFormat(UpdateGuestSessionStateResponse.Example);
 
             CreateRoute("GetGuestSessions", HttpMethod.Get, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.GuestSessionsPath}", GetGuestSessionsByProjectIdAsync)
-                .Description("Gets all valid GuestSessions for a specific project")
+                .Description("Gets all valid GuestSessions for a specific project, excluding those with a GuestState of PromotedToProjectMember.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
             CreateRoute("GetGuestSessionsByProjectForCurrentUser", HttpMethod.Get, $"{Routing.GetGuestSessionsByProjectForCurrentUserRoute}", GetGuestSessionsByProjectIdForCurrentUserAsync)
-                .Description("Gets all valid GuestSessions for a specific project and user")
+                .Description("Gets all valid GuestSessions for a specific project and the requesting user, excluding those with a GuestState of PromotedToProjectMember.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
             CreateRoute("GetGuestSessionsByProjectForUser", HttpMethod.Get, $"{Routing.GetGuestSessionsByProjectForUserRoute}", GetGuestSessionsByProjectIdForUserAsync)
-                .Description("Gets all valid GuestSessions for a specific project and user")
+                .Description("Gets all valid GuestSessions for a specific project and user.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new List<GuestSession> { new GuestSession() }));
 
