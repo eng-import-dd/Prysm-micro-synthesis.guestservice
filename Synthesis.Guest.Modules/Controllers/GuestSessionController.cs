@@ -313,21 +313,18 @@ namespace Synthesis.GuestService.Controllers
 
             if (project != null)
             {
-
                 if (request.ProjectId != Guid.Empty && request.ProjectId != project.Id)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
                     response.Message = $"Could not find a project with that project Id.";
                     return response;
                 }
-                else
+
+                if (request.ProjectAccessCode != project.GuestAccessCode)
                 {
-                    if (request.ProjectAccessCode != project.GuestAccessCode)
-                    {
-                        response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                        response.Message = $"Could not find a project with that project access code.";
-                        return response;
-                    }
+                    response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                    response.Message = $"Could not find a project with that project access code.";
+                    return response;
                 }
             }
 

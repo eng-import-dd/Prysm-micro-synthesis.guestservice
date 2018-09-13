@@ -80,7 +80,7 @@ namespace Synthesis.GuestService.Controllers
             var projectTenantId = projectResponse.Payload.TenantId;
 
             (ProjectGuestContext guestContext,
-             MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse) = await LoadData(projectId, projectTenantId);
+             MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse) = await LoadDataAsync(projectId, projectTenantId);
 
 
             if (!projectUsersResponse.IsSuccess() || projectUsersResponse.Payload == null)
@@ -151,7 +151,7 @@ namespace Synthesis.GuestService.Controllers
 
             // WARNING: Order of operations is significant here. Project membership call must be made only after the 
             // the guest session has been successfully created. Otherwise the user may be given the wrong kind of membership.
-            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
+            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id, new List<KeyValuePair<string, string>>() { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
             if (!grantUserResponse.IsSuccess())
             {
                 throw new InvalidOperationException("Failed to add user to project");
@@ -235,10 +235,10 @@ namespace Synthesis.GuestService.Controllers
         private async Task<(
                 ProjectGuestContext guestContext,
                 MicroserviceResponse<IEnumerable<Guid>> projectUsersResponse)>
-            LoadData(Guid projectId, Guid impersonateTenantId)
+            LoadDataAsync(Guid projectId, Guid projectTenantId)
         {
             var guestContextTask =  _projectGuestContextService.GetProjectGuestContextAsync();
-            var projectUsersTask =  _serviceToServiceProjectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser, new List<KeyValuePair<string, string>>(){new KeyValuePair<string, string>(HeaderKeys.ImpersonateTenant, impersonateTenantId.ToString())});
+            var projectUsersTask =  _serviceToServiceProjectAccessApi.GetProjectMemberUserIdsAsync(projectId, MemberRoleFilter.FullUser, new List<KeyValuePair<string, string>>(){HeaderKeys.CreateTenantHeaderKey(projectTenantId)});
 
             await Task.WhenAll(guestContextTask, projectUsersTask);
 
