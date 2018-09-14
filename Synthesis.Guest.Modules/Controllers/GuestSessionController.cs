@@ -249,7 +249,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to retrieve a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -287,7 +287,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to retrieve a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
