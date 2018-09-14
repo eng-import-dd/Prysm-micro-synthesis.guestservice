@@ -63,7 +63,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Returns(_guestSessionRepositoryMock.Object);
 
             _projectGuestContextServiceMock
-                .Setup(x => x.GetProjectGuestContextAsync())
+                .Setup(x => x.GetProjectGuestContextAsync(It.IsAny<string>()))
                 .ReturnsAsync(_defaultProjectGuestContext);
 
             _projectAccessApiMock
@@ -127,7 +127,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectGuestContextServiceMock
                 .Verify(y => y.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(x =>
                     x.ProjectId == Guid.Empty &&
-                    x.GuestSessionId == Guid.Empty)));
+                    x.GuestSessionId == Guid.Empty), It.IsAny<string>()));
         }
 
         [Fact]
@@ -178,7 +178,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task InvalidOperationIsThrownForGuestIfProjectCannotBeFetchedByServiceToServiceClient(HttpStatusCode statusCode)
         {
             _projectGuestContextServiceMock
-                .Setup(x => x.IsGuestAsync())
+                .Setup(x => x.IsGuestAsync(It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             _serviceToServiceProjectApiMock
@@ -193,11 +193,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task ProjectIsClearedIfUserIsAGuestInTheSameAccountAndHasBeenPromoted()
         {
             _projectGuestContextServiceMock
-                .Setup(x => x.IsGuestAsync())
+                .Setup(x => x.IsGuestAsync(It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             _projectGuestContextServiceMock
-                .Setup(x => x.GetProjectGuestContextAsync())
+                .Setup(x => x.GetProjectGuestContextAsync(It.IsAny<string>()))
                 .ReturnsAsync(new ProjectGuestContext()
                 {
                     GuestSessionId = Guid.NewGuid(),
@@ -211,7 +211,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _projectGuestContextServiceMock
                 .Verify(y => y.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(x =>
                     x.ProjectId == Guid.Empty &&
-                    x.GuestSessionId == Guid.Empty)));
+                    x.GuestSessionId == Guid.Empty), It.IsAny<string>()));
         }
 
         [Fact]
@@ -237,7 +237,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task NonGuestsAreGivenAccessIfTheyHaveAccessToProject()
         {
             _projectGuestContextServiceMock
-                .Setup(x => x.IsGuestAsync())
+                .Setup(x => x.IsGuestAsync(It.IsAny<string>()))
                 .ReturnsAsync(false);
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, null, _currentUserId, _userWithTenantTenantId);
@@ -247,9 +247,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         [Fact]
         public async Task NonGuestsAreDeniedAccessIfTheyHaveInsufficientProjectAccess()
-        {
+        { 
             _projectGuestContextServiceMock
-                .Setup(x => x.IsGuestAsync())
+                .Setup(x => x.IsGuestAsync(It.IsAny<string>()))
                 .ReturnsAsync(false);
 
             _projectAccessApiMock
