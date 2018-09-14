@@ -369,6 +369,7 @@
     <Compile Include="Email\InviteGuestEmail.cs" />
     <Compile Include="Enumerations\CacheConnection.cs" />
     <Compile Include="EventHandlers\EventSubscriber.cs" />
+    <Compile Include="EventHandlers\GuestModeToggledEventHandler.cs" />
     <Compile Include="EventHandlers\GuestAccessCodeChangedEventHandler.cs" />
     <Compile Include="EventHandlers\KickGuestsFromProjectHandler.cs" />
     <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />

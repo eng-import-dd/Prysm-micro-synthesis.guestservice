@@ -54,10 +54,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.GuestUserExample()));
 
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
 
-            _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
 
             _emailServiceMock.Setup(x => x.SendGuestInviteEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -150,13 +150,13 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task CreateNewGuestInviteGetsProject()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _projectApiMock.Verify(x => x.GetProjectByIdAsync(It.IsAny<Guid>()));
+            _projectApiMock.Verify(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()));
         }
 
         [Fact]
         public async Task CreateNewGuestInviteThrowsGetProjectExceptionWhenGetProjectFails()
         {
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<GetProjectException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite));
@@ -176,10 +176,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var project = Project.Example();
             project.GuestAccessCode = null;
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
 
-            _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<ResetAccessCodeException>(async () => await _target.CreateGuestInviteAsync(_defaultGuestInvite));
@@ -197,11 +197,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             var project = Project.Example();
             project.GuestAccessCode = null;
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
 
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
-            _projectApiMock.Verify(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>()));
+            _projectApiMock.Verify(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()));
         }
 
         [Fact]
@@ -283,7 +283,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetValidGuestInvitesByProjectIdThrowsNotFoundExceptionIfProjectIsNotFound()
         {
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _target.GetValidGuestInvitesByProjectIdAsync(Guid.NewGuid()));
@@ -295,7 +295,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var inviteForProjectCount = 3;
             var invites = MakeTestInviteList(_defaultProject.Id, "test@test.com", 0, inviteForProjectCount, 2, 2);
 
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
@@ -318,7 +318,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var secondEmailInvites = MakeTestInviteList(_defaultProject.Id, "secondEmail@test.com", 2, 0, 0, 0);
             var thirdEmailInvites = MakeTestInviteList(_defaultProject.Id, "thirdEmail@test.com", 2, 0, 0, 0);
 
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestInviteRepositoryMock.Setup(m => m

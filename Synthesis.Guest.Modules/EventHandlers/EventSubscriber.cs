@@ -13,6 +13,7 @@ namespace Synthesis.GuestService.EventHandlers
         {
             // project events
             eventHandlerLocator.SubscribeEventHandler<GuestAccessCodeChangedEventHandler, GuestAccessCodeChanged>(EventNamespaces.ProjectService, EventNames.GuestAccessCodeChanged);
+            eventHandlerLocator.SubscribeEventHandler<GuestModeToggledEventHandler, GuestModeToggledEvent>(EventNamespaces.ProjectService, ProjectEventNames.GuestModeToggled);
             eventHandlerLocator.SubscribeEventHandler<ProjectCreatedEventHandler, Project>(EventNamespaces.ProjectService, ProjectEventNames.ProjectCreated);
 
             // message hub events

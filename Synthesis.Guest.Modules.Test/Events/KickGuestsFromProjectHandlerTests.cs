@@ -28,18 +28,18 @@ namespace Synthesis.GuestService.Modules.Test.Events
         public void HandleTriggerKickGuestsFromProject_ForValidEvent_DeletesGuestSessionsForProject()
         {
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
-            _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true));
+            _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), true));
         }
 
         [Fact]
         public void HandleTriggerKickGuestsFromProject_OnException_RetriesDeletingGuestSessionsForProject()
         {
-            _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+            _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ThrowsAsync(new Exception());
 
             _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
 
-            _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), true), Times.Exactly(2));
+            _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), true), Times.Exactly(2));
         }
     }
 }
