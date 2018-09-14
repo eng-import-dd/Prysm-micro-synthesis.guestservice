@@ -249,7 +249,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to retrieve a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -275,6 +275,43 @@ namespace Synthesis.GuestService.Controllers
             }
 
             return validGuestSessions.OrderByDescending(x => x.CreatedDateTime);
+        }
+
+        public async Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdForUserAsync(Guid projectId, Guid userId)
+        {
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(ProjectIdValidator), projectId },
+                { typeof(UserIdValidator), userId }
+            });
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to retrieve a GuestSession resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
+
+            if (!projectResult.IsSuccess() || projectResult.Payload == null)
+            {
+                var message = $"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}, StatusCode: {projectResult.ResponseCode}, ErrorResponse: {_synthesisObjectSerializer.SerializeToString(projectResult.ErrorResponse)}";
+                _logger.Error(message);
+                throw new NotFoundException(message);
+            }
+
+            var project = projectResult.Payload;
+
+            var guestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+                x.UserId == userId &&
+                x.ProjectAccessCode == project.GuestAccessCode);
+
+            if (guestSessions == null || !guestSessions.Any())
+            {
+                return new List<GuestSession>();
+            }
+
+            return guestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel, Guid principalId)
