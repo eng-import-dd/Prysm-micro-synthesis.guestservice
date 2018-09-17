@@ -17,9 +17,12 @@ using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.SettingService.InternalApi.Api;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Synthesis.Guest.ProjectContext.Models;
+using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.Http.Microservice;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Models;
@@ -45,6 +48,8 @@ namespace Synthesis.GuestService.Controllers
         private readonly IValidatorLocator _validatorLocator;
         private readonly IProjectLobbyStateController _projectLobbyStateController;
         private readonly IObjectSerializer _synthesisObjectSerializer;
+        private readonly IProjectGuestContextService _projectGuestContextService;
+        private readonly IRequestHeaders _requestHeaders;
 
         private const int GuestSessionLimit = 10;
 
@@ -62,6 +67,8 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="emailUtility"></param>
         /// <param name="serviceToServiceAccountSettingsApi">The API for Account/Tenant specific settings</param>
         /// <param name="synthesisObjectSerializer">The Synthesis object serializer</param>
+        /// <param name="projectGuestContextService"></param>
+        /// <param name="requestHeaders"></param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -73,7 +80,9 @@ namespace Synthesis.GuestService.Controllers
             IUserApi userApi,
             IProjectLobbyStateController projectLobbyStateController,
             ISettingApi serviceToServiceAccountSettingsApi,
-            IObjectSerializer synthesisObjectSerializer)
+            IObjectSerializer synthesisObjectSerializer,
+            IProjectGuestContextService projectGuestContextService,
+            IRequestHeaders requestHeaders)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
@@ -89,6 +98,8 @@ namespace Synthesis.GuestService.Controllers
             _userApi = userApi;
             _serviceToServiceAccountSettingsApi = serviceToServiceAccountSettingsApi;
             _synthesisObjectSerializer = synthesisObjectSerializer;
+            _projectGuestContextService = projectGuestContextService;
+            _requestHeaders = requestHeaders;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
@@ -104,6 +115,20 @@ namespace Synthesis.GuestService.Controllers
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
+
+            if (_requestHeaders.Keys.Contains("SessionIdString"))
+            {
+                model.SessionId = _requestHeaders["SessionIdString"].FirstOrDefault();
+            }
+            else if (_requestHeaders.Keys.Contains("SessionId"))
+            {
+                model.SessionId = _requestHeaders["SessionId"].FirstOrDefault();
+            }
+            else
+            {
+                throw new BadRequestException("Request headers do not contain a SessionId");
+            }
+
             var result = await _guestSessionRepository.CreateItemAsync(model);
 
             // Delete all prior guest sessions with the same UserId and ProjectId as the session just created.
@@ -132,6 +157,7 @@ namespace Synthesis.GuestService.Controllers
             var endSessionTasks = openSessions.Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
+                    _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                 });
 
@@ -148,6 +174,7 @@ namespace Synthesis.GuestService.Controllers
                 .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
+                    _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                 });
 
@@ -223,7 +250,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a GuestSession resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to retrieve a GuestSession resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -249,6 +276,43 @@ namespace Synthesis.GuestService.Controllers
             }
 
             return validGuestSessions.OrderByDescending(x => x.CreatedDateTime);
+        }
+
+        public async Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdForUserAsync(Guid projectId, Guid userId)
+        {
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(ProjectIdValidator), projectId },
+                { typeof(UserIdValidator), userId }
+            });
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to retrieve a GuestSession resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var projectResult = await _serviceToServiceProjectApi.GetProjectByIdAsync(projectId);
+
+            if (!projectResult.IsSuccess() || projectResult.Payload == null)
+            {
+                var message = $"Failed to retrieve project: {projectId}. Message: {projectResult.ReasonPhrase}, StatusCode: {projectResult.ResponseCode}, ErrorResponse: {_synthesisObjectSerializer.SerializeToString(projectResult.ErrorResponse)}";
+                _logger.Error(message);
+                throw new NotFoundException(message);
+            }
+
+            var project = projectResult.Payload;
+
+            var guestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+                x.UserId == userId &&
+                x.ProjectAccessCode == project.GuestAccessCode);
+
+            if (guestSessions == null || !guestSessions.Any())
+            {
+                return new List<GuestSession>();
+            }
+
+            return guestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel, Guid principalId)
@@ -279,6 +343,18 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
+
+            var existingProjectGuestContext = await _projectGuestContextService.GetProjectGuestContextAsync(result.SessionId);
+
+            var guestState = (Guest.ProjectContext.Enums.GuestState)result.GuestSessionState;
+
+            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext
+            {
+                GuestSessionId = existingProjectGuestContext.GuestSessionId,
+                ProjectId = existingProjectGuestContext.ProjectId,
+                GuestState = guestState,
+                TenantId = existingProjectGuestContext.TenantId
+            }, result.SessionId);
 
             _eventService.Publish(EventNames.GuestSessionUpdated, result);
 

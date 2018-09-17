@@ -21,6 +21,7 @@ namespace Synthesis.GuestService.Controllers
         Task<GuestSession> GetGuestSessionAsync(Guid guestSessionId);
         Task<IEnumerable<GuestSession>> GetMostRecentValidGuestSessionsByProjectIdAsync(Guid projectId);
         Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdForCurrentUserAsync(Guid projectId, Guid userId);
+        Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdForUserAsync(Guid projectId, Guid userId);
         Task<GuestSession> UpdateGuestSessionAsync(GuestSession model, Guid principalId);
         Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId);
         Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Project project, Guid? guestTenantId);
