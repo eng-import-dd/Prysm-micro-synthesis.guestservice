@@ -28,7 +28,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
         {
             var projectId = Guid.NewGuid();
             _target.HandleEvent(new GuestAccessCodeChanged { ProjectId = projectId });
-            _guestSessionControllerMock.Verify(x => x.DeleteGuestSessionsForProjectAsync(It.Is<Guid>(v => v == projectId), true));
+            _guestSessionControllerMock.Verify(x => x.DeleteGuestSessionsForProjectAsync(It.Is<Guid>(v => v == projectId), It.IsAny<Guid>(), false));
         }
     }
 }
