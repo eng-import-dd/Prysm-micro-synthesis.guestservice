@@ -7,23 +7,26 @@ using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.EventHandlers
 {
-    public class GuestAccessCodeChangedEventHandler : IEventHandler<GuestAccessCodeChanged>
+    public class GuestModeToggledEventHandler : IEventHandler<GuestModeToggledEvent>
     {
         private readonly ILogger _logger;
         private readonly IGuestSessionController _guestSessionController;
 
-        public GuestAccessCodeChangedEventHandler(ILoggerFactory loggerFactory, IGuestSessionController guestSessionController)
+        public GuestModeToggledEventHandler(ILoggerFactory loggerFactory, IGuestSessionController guestSessionController)
         {
             _logger = loggerFactory.GetLogger(this);
             _guestSessionController = guestSessionController;
         }
 
         /// <inheritdoc />
-        public async void HandleEvent(GuestAccessCodeChanged args)
+        public async void HandleEvent(GuestModeToggledEvent args)
         {
             try
             {
-                await _guestSessionController.DeleteGuestSessionsForProjectAsync(args.ProjectId, args.UserId, false);
+                if (!args.GuestModeEnabled)
+                {
+                    await _guestSessionController.DeleteGuestSessionsForProjectAsync(args.ProjectId, args.UserId, false);
+                }
             }
             catch (Exception ex)
             {

@@ -163,7 +163,7 @@ namespace Synthesis.GuestService.Controllers
             await Task.WhenAll(endSessionTasks);
         }
 
-        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject)
+        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
@@ -173,6 +173,9 @@ namespace Synthesis.GuestService.Controllers
                 .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
+                    session.AccessRevokedBy = principalId;
+                    session.AccessRevokedDateTime = DateTime.UtcNow;
+
                     _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                 });
@@ -562,8 +565,8 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
-            var projectResponse = await _projectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
-            if (projectResponse.ResponseCode == System.Net.HttpStatusCode.NotFound)
+            var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
+            if (projectResponse.ResponseCode == HttpStatusCode.NotFound)
             {
                 _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session.");
                 result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";

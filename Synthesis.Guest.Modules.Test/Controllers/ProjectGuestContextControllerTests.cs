@@ -67,7 +67,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(_defaultProjectGuestContext);
 
             _projectAccessApiMock
-                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
             _guestSessionControllerMock
@@ -87,11 +87,11 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultUser));
 
             _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId, null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _projectAccessApiMock
-                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser))
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>() { _currentUserId}).AsEnumerable()));
 
             _projectLobbyStateControllerMock
@@ -147,7 +147,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task InvalidOperationIsThrownIfProjectCannotBeFetched(HttpStatusCode statusCode)
         {
             _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId, null))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -160,7 +160,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task InvalidOperationIsThrownIfProjectAccessCannotBeFetched(HttpStatusCode statusCode)
         {
             _projectAccessApiMock
-                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser))
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, null))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(IEnumerable<Guid>)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -182,7 +182,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(true);
 
             _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId))
+                .Setup(x => x.GetProjectByIdAsync(_defaultProjectId, null))
                 .ReturnsAsync(MicroserviceResponse.Create(statusCode, default(Project)));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -220,14 +220,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null);
 
             _projectAccessApiMock
-                .Verify(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>()));
+                .Verify(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()));
         }
 
         [Fact]
         public async Task SetProjectGuestContextThrowsInvalidOperationExceptionWhenMembershipCallFails()
         {
             _projectAccessApiMock
-                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.InternalServerError));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null));
@@ -253,7 +253,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(false);
 
             _projectAccessApiMock
-                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser))
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
 
             var response = await _target.SetProjectGuestContextAsync(_defaultProjectId, "code", _currentUserId, Guid.NewGuid());
