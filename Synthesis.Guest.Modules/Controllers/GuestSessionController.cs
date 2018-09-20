@@ -163,7 +163,7 @@ namespace Synthesis.GuestService.Controllers
             await Task.WhenAll(endSessionTasks);
         }
 
-        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid initiateUserId, bool onlyKickGuestsInProject)
+        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
@@ -173,7 +173,7 @@ namespace Synthesis.GuestService.Controllers
                 .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
-                    session.AccessRevokedBy = initiateUserId;
+                    session.AccessRevokedBy = principalId;
                     session.AccessRevokedDateTime = DateTime.UtcNow;
 
                     _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);

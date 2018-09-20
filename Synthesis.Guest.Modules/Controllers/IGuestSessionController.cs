@@ -23,7 +23,7 @@ namespace Synthesis.GuestService.Controllers
         Task<IEnumerable<GuestSession>> GetGuestSessionsByProjectIdForUserAsync(Guid projectId, Guid userId);
         Task<GuestSession> UpdateGuestSessionAsync(GuestSession model, Guid principalId);
         Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId);
-        Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid initiateUserId, bool onlyKickGuestsInProject);
+        Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject);
         Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId);
         Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest guestSessionRequest, Guid principalId);
     }
