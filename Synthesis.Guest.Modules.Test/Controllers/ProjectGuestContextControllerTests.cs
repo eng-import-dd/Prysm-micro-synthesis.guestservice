@@ -499,25 +499,27 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGuestSessionRepositoryGetItemsToCreateResponse()
+        public async Task SetProjectGuestContext_WhenUserIsAlreadyInLobby_CallsGuestSessionRepositoryGetItemToCreateResponse()
         {
+            var GuestSessionId = Guid.NewGuid();
+
             _projectGuestContextServiceMock
                 .Setup(x => x.GetProjectGuestContextAsync(It.IsAny<string>()))
                 .ReturnsAsync(new ProjectGuestContext()
                 {
-                    GuestSessionId = Guid.NewGuid(),
+                    GuestSessionId = GuestSessionId,
                     GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                     ProjectId = _defaultProjectId,
                     TenantId = _projectTenantId
                 });
 
             _guestSessionRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<GuestSession> { _defaultGuestSession });
+                .Setup(x => x.GetItemAsync(GuestSessionId, It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync( _defaultGuestSession );
 
             await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, Guid.NewGuid(), _noTenantId);
 
-            _guestSessionRepositoryMock.Verify(y => y.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
+            _guestSessionRepositoryMock.Verify(y => y.GetItemAsync(GuestSessionId, It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
 
@@ -546,7 +548,29 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task SetProjectGuestContext_WhenGuestsReachLobbyAndAreGrantedGuestSession_AreGivenMembershipIntoProject()
+        public async Task SetProjectGuestContext_WhenNonMemberIsPermittedIntoLobby_IsGrantedGuestMembershipToProject()
+        {
+            _projectGuestContextServiceMock
+                .SetupSequence(x => x.GetProjectGuestContextAsync(It.IsAny<string>()))
+                .Returns(Task.FromResult(default(ProjectGuestContext)))
+                .Returns(Task.FromResult(_defaultProjectGuestContext));
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_defaultGuestSession);
+
+            _projectAccessApiMock
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
+
+            await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null);
+
+            _projectAccessApiMock
+                .Verify(x => x.GrantProjectMembershipAsync(_currentUserId, _defaultProjectId, _defaultProjectTenantHeaders));
+        }
+
+        [Fact]
+        public async Task SetProjectGuestContext_WhenNonMemberIsPermittedIntoLobbyAndGrantMembershipCallFails_ThrowsInvalidOperationException()
         {
             _projectGuestContextServiceMock
                 .SetupSequence(x => x.GetProjectGuestContextAsync(It.IsAny<string>()))
@@ -557,18 +581,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetItemAsync(_defaultGuestSession.Id, It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_defaultGuestSession);
 
-            await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null);
-
             _projectAccessApiMock
-                .Verify(x => x.GrantProjectMembershipAsync(_currentUserId, _defaultProjectId, _defaultProjectTenantHeaders));
-        }
-
-        [Fact]
-        public async Task SetProjectGuestContext_WhenGrantMembershipCallFails_ThrowsInvalidOperationException()
-        {
-            _projectGuestContextServiceMock
-                .Setup(x => x.GetProjectGuestContextAsync(It.IsAny<string>()))
-                .ReturnsAsync(default(ProjectGuestContext));
+                .Setup(x => x.GetProjectMemberUserIdsAsync(_defaultProjectId, MemberRoleFilter.FullUser, _defaultProjectTenantHeaders))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
 
             _projectAccessApiMock
                 .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), _defaultProjectTenantHeaders))

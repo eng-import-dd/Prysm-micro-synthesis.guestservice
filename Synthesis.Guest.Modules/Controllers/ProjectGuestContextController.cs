@@ -89,30 +89,26 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var project = projectResponse?.Payload;
-            var userIsProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
-            var userHasSameTenant = project.TenantId == currentUserTenantId;
-            var userIsProjectMemberInSameTenant = userIsProjectMember & userHasSameTenant;
-            var userHasActiveProjectGuestContext = guestContext != null && guestContext.GuestState != GuestState.Ended;
+            var userIsFullProjectMember = projectUsersResponse.Payload.Any(userId => userId == currentUserId);
 
-            if (userHasActiveProjectGuestContext && userIsProjectMemberInSameTenant)
+            if (UserHasActiveProjectGuestContext(guestContext) && userIsFullProjectMember)
             {
                 //User is in project's account and was a guest who was promoted to a full
                 //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
                 guestContext = new ProjectGuestContext();
                 await _projectGuestContextService.SetProjectGuestContextAsync(guestContext);
-                userHasActiveProjectGuestContext = guestContext.IsGuest();
             }
 
-            var userHasAccess = userHasActiveProjectGuestContext ?
-                await IsGuestCurrentlyAdmittedToProjectAsync(currentUserId, projectId) :
-                userIsProjectMemberInSameTenant;
+            var userHasAccess = UserHasActiveProjectGuestContext(guestContext) ?
+                await IsGuestCurrentlyAdmittedToProjectAsync(guestContext.GuestSessionId) :
+                userIsFullProjectMember;
 
             if (userHasAccess)
             {
                 return await CreateCurrentProjectState(project, true);
             }
 
-            if (userHasActiveProjectGuestContext && guestContext?.ProjectId == project?.Id)
+            if (UserHasActiveProjectGuestContext(guestContext) && guestContext?.ProjectId == project?.Id)
             {
                 return await CreateCurrentProjectState(project, false);
             }
@@ -149,12 +145,17 @@ namespace Synthesis.GuestService.Controllers
                 TenantId = project.TenantId
             });
 
-            // WARNING: Order of operations is significant here. Project membership call must be made only after the 
-            // the guest session has been successfully created. Otherwise the user may be given the wrong kind of membership.
-            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id, new List<KeyValuePair<string, string>>() { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
-            if (!grantUserResponse.IsSuccess())
+
+            if (!userIsFullProjectMember)
             {
-                throw new InvalidOperationException("Failed to add user to project");
+                // Add the user as a guest member to the project.
+                // WARNING: Order of operations is significant here. Project membership call must be made only after the 
+                // the guest session has been successfully created. Otherwise the user may be given the wrong kind of membership.
+                var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id, new List<KeyValuePair<string, string>>() { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
+                if (!grantUserResponse.IsSuccess())
+                {
+                    throw new InvalidOperationException("Failed to add user to project");
+                }
             }
 
             return await CreateCurrentProjectState(project, false);
@@ -223,13 +224,17 @@ namespace Synthesis.GuestService.Controllers
             };
         }
 
-        private async Task<bool> IsGuestCurrentlyAdmittedToProjectAsync(Guid userId, Guid projectId)
+        private async Task<bool> IsGuestCurrentlyAdmittedToProjectAsync(Guid guestSessionId)
         {
-            var guestSessions = await _guestSessionRepository.GetItemsAsync(g => g.UserId == userId && g.ProjectId == projectId);
-
-            var guestSession = guestSessions.OrderByDescending(x => x.CreatedDateTime).FirstOrDefault();
+            var guestSession = await _guestSessionRepository.GetItemAsync(guestSessionId);
 
             return guestSession?.GuestSessionState == InternalApi.Enums.GuestState.InProject || guestSession?.GuestSessionState == InternalApi.Enums.GuestState.PromotedToProjectMember;
+        }
+
+        private bool UserHasActiveProjectGuestContext(ProjectGuestContext context)
+        {
+            return context != null && context.ProjectId != Guid.Empty && context.TenantId != Guid.Empty
+                && context.GuestSessionId != Guid.Empty && context.GuestState != GuestState.Ended;
         }
 
         private async Task<(
