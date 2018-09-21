@@ -136,7 +136,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
-            _projectApi.Verify(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()));
+            _projectApi.Verify(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), null));
         }
 
         [Fact]
@@ -274,7 +274,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(guestSessions);
 
             _projectApi
-                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
 
             _cacheMock
@@ -342,7 +342,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(false);
 
             _projectApi
-                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, default(Project)));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _target.GetProjectLobbyStateAsync(Guid.NewGuid()));
@@ -388,7 +388,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var projectPayload = projectStatusCode == HttpStatusCode.OK ? project ?? Project.Example() : default(Project);
             _projectApi
-                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .Setup(m => m.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(projectStatusCode, projectPayload));
         }
 
