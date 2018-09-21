@@ -84,7 +84,7 @@ namespace Synthesis.GuestService.Modules
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
         }
 
-        private async Task<object> CreateGuestSessionAsync(dynamic input)
+        private async Task<object> CreateGuestSessionAsync(dynamic input, CancellationToken cancellationToken)
         {
             GuestSession newGuestSession;
             try
@@ -99,7 +99,7 @@ namespace Synthesis.GuestService.Modules
 
             await RequiresAccess()
                 .WithProjectIdExpansion(context => newGuestSession.ProjectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -116,7 +116,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> GetGuestSessionAsync(dynamic input)
+        private async Task<object> GetGuestSessionAsync(dynamic input, CancellationToken cancellationToken)
         {
             GuestSession session;
 
@@ -140,18 +140,18 @@ namespace Synthesis.GuestService.Modules
 
             await RequiresAccess()
                 .WithProjectIdExpansion(context => session.ProjectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             return session;
         }
 
-        private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input)
+        private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input, CancellationToken cancellationToken)
         {
             var projectId = input.projectId;
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => projectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -172,13 +172,13 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> GetGuestSessionsByProjectIdForCurrentUserAsync(dynamic input)
+        private async Task<object> GetGuestSessionsByProjectIdForCurrentUserAsync(dynamic input, CancellationToken cancellationToken)
         {
             var projectId = input.projectId;
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => projectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -199,14 +199,14 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> GetGuestSessionsByProjectIdForUserAsync(dynamic input)
+        private async Task<object> GetGuestSessionsByProjectIdForUserAsync(dynamic input, CancellationToken cancellationToken)
         {
             var projectId = input.projectId;
             var userId = input.userId;
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => projectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -227,7 +227,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> UpdateGuestSessionAsync(dynamic input)
+        private async Task<object> UpdateGuestSessionAsync(dynamic input, CancellationToken cancellationToken)
         {
             GuestSession guestSessionModel;
 
@@ -243,7 +243,7 @@ namespace Synthesis.GuestService.Modules
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => guestSessionModel.ProjectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -256,7 +256,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> UpdateGuestSessionStateAsync(dynamic input)
+        private async Task<object> UpdateGuestSessionStateAsync(dynamic input, CancellationToken cancellationToken)
         {
             UpdateGuestSessionStateRequest guestSessionStateRequest;
 
@@ -284,7 +284,7 @@ namespace Synthesis.GuestService.Modules
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => projectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -297,7 +297,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> VerifyGuestAsync(dynamic input)
+        private async Task<object> VerifyGuestAsync(dynamic input, CancellationToken cancellationToken)
         {
             GuestVerificationRequest request;
 
@@ -313,7 +313,7 @@ namespace Synthesis.GuestService.Modules
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => request.ProjectId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -334,9 +334,9 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> EmailHostAsync(dynamic input)
+        private async Task<object> EmailHostAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess().ExecuteAsync(cancellationToken);
 
             try
             {
