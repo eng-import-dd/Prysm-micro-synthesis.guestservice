@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.GuestService.Constants;
@@ -34,6 +35,11 @@ namespace Synthesis.GuestService.Modules
                 .Description("Sets the project guest context and creates guest sessions")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
+
+            CreateRoute("AddUserToProject", HttpMethod.Post, $"{Routing.ProjectsRoute}/{{projectId:guid}}/add", AddUserToProject)
+                .Description("Adds a user to the project so that can enter the lobby.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
         }
 
         private async Task<object> SetProjectGuestContextAsync(dynamic input)
@@ -46,6 +52,46 @@ namespace Synthesis.GuestService.Modules
             try
             {
                 return await _projectGuestContextController.SetProjectGuestContextAsync(projectId, accesscode, PrincipalId, TenantId);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to set {nameof(ProjectGuestContext)} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestSession, ex.Message);
+            }
+        }
+
+        private async Task<object> AddUserToProject(dynamic input)
+        {
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            var projectId = Guid.Empty;
+            var userToAdd = Guid.Empty;
+
+            try
+            {
+                projectId = input.projectId;
+                userToAdd = this.Bind<Guid>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Binding failed while attempting to add userId={userToAdd} to projectId={projectId}.", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                await _projectGuestContextController.AddUserToProject(userToAdd, projectId, PrincipalId, TenantId);
+
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    ReasonPhrase = "Resource has been updated"
+                };
             }
             catch (ValidationFailedException ex)
             {

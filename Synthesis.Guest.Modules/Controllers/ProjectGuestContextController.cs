@@ -2,21 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using log4net.Repository.Hierarchy;
 using Synthesis.DocumentStorage;
-using Synthesis.Guest.ProjectContext.Enums;
+using Synthesis.EventBus;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
+using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
+using GuestState = Synthesis.Guest.ProjectContext.Enums.GuestState;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -31,6 +33,8 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectAccessApi _serviceToServiceProjectAccessApi;
         private readonly IUserApi _userApi;
 
+        private readonly IValidatorLocator _validatorLocator;
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
         /// </summary>
@@ -41,8 +45,11 @@ namespace Synthesis.GuestService.Controllers
             IProjectGuestContextService projectGuestContextService,
             IProjectAccessApi serviceToServiceProjectAccessApi,
             IProjectApi serviceToServiceProjectApi,
-            IUserApi userApi)
+            IUserApi userApi,
+            IValidatorLocator validatorLocator)
         {
+            _validatorLocator = validatorLocator;
+
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
 
             _guestSessionController = guestSessionController;
@@ -54,14 +61,55 @@ namespace Synthesis.GuestService.Controllers
             _projectGuestContextService = projectGuestContextService;
         }
 
-        /// <summary>
-        /// Assigns the guest
-        /// </summary>
-        /// <param name="projectId"></param>
-        /// <param name="accessCode"></param>
-        /// <param name="currentUserId"></param>
-        /// <param name="currentUserTenantId"></param>
-        /// <returns></returns>
+        public async Task AddUserToProject(Guid userToAddId, Guid projectId, Guid currentUserId, Guid? currentUserTenantId)
+        {
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(UserIdValidator), userToAddId },
+                { typeof(ProjectIdValidator), projectId }
+            });
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            // Grant membership?
+            await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(userToAddId, projectId);
+            
+            // send participant email? - the prod cloud does this
+
+            var guestSession = await GetGuestSessionForUser(userToAddId, projectId);
+
+            var guestSessionRequest = new UpdateGuestSessionStateRequest
+            {
+                GuestSessionId = guestSession.Id,
+                GuestSessionState = InternalApi.Enums.GuestState.PromotedToProjectMember
+            };
+            var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, userToAddId);
+            if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Failed)
+            {
+                throw new Exception($"Failed to update the guest session state for SessionId={guestSession.Id}. Message={guestSessionStateResponse.Message}");
+            }
+
+            //guestSession.GuestSessionState = InternalApi.Enums.GuestState.PromotedToProjectMember;
+            //await _guestSessionController.UpdateGuestSessionAsync(guestSession, userToAddId);
+
+            // UpdateGuestSessionState(newState, userProjectDTO.UserId);
+            // DeleteGuestSession(guestSession.GuestSessionId);
+            // BroadcastGuestListChanged(userProjectDTO.ProjectId);
+        }
+
+        private async Task<GuestSession> GetGuestSessionForUser(Guid userId, Guid projectId)
+        {
+            var guestSessions = await _guestSessionController.GetGuestSessionsByProjectIdForUserAsync(projectId, userId);
+            if (!guestSessions.Any())
+            {
+                throw new Exception($"Failed to get guest session for userId={userId} and projectId={projectId}");
+            }
+
+            return guestSessions.FirstOrDefault();
+        }
+        
         public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId, Guid? currentUserTenantId)
         {
             if (projectId.Equals(Guid.Empty))
@@ -125,12 +173,6 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Failed to verify guest for User.Id = {currentUserId}, Project.Id = {projectId}. ResponseCode = {guestVerifyResponse.ResultCode}. Reason = {guestVerifyResponse.Message}");
             }
 
-            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
-            if (!grantUserResponse.IsSuccess())
-            {
-                throw new InvalidOperationException("Failed to add user to project");
-            }
-
             var newSession = await _guestSessionController.CreateGuestSessionAsync(new GuestSession
             {
                 UserId = currentUserId,
@@ -146,6 +188,12 @@ namespace Synthesis.GuestService.Controllers
                 GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                 TenantId = project.TenantId
             });
+
+            var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id);
+            if (!grantUserResponse.IsSuccess())
+            {
+                throw new InvalidOperationException("Failed to add user to project");
+            }
 
             return await CreateCurrentProjectState(project, false);
         }
@@ -170,7 +218,7 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, principalId);
 
-            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
+            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext{ GuestState = GuestState.Ended });
 
             if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Success)
             {

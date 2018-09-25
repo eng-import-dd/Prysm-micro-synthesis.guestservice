@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using FluentValidation;
 using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.Guest.ProjectContext.Models;
@@ -13,6 +14,7 @@ using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
 using Synthesis.Http.Microservice;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -42,6 +44,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly User _defaultUser;
         private readonly string _defaultAccessCode = Guid.NewGuid().ToString();
         private readonly GuestSession _defaultGuestSession;
+        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
 
         public ProjectGuestContextControllerTests()
         {
@@ -98,13 +101,19 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetProjectLobbyStateAsync(_defaultProjectId))
                 .ReturnsAsync(_defaultProjectLobbyState);
 
+            var validatorLocatorMock = new Mock<IValidatorLocator>();
+            validatorLocatorMock
+                .Setup(m => m.GetValidator(It.IsAny<Type>()))
+                .Returns(_validatorMock.Object);
+
             _target = new ProjectGuestContextController(repositoryFactoryMock.Object,
                 _guestSessionControllerMock.Object,
                 _projectLobbyStateControllerMock.Object,
                 _projectGuestContextServiceMock.Object,
                 _projectAccessApiMock.Object,
                 _serviceToServiceProjectApiMock.Object,
-                _userApiMock.Object);
+                _userApiMock.Object,
+                validatorLocatorMock.Object);
         }
 
         #region Clear Session
