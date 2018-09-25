@@ -61,11 +61,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         public GuestSessionControllerTests()
         {
-            _defaultProject = new Project
-            {
-                GuestAccessCode = Guid.NewGuid().ToString(),
-                Id = Guid.NewGuid()
-            };
+            _defaultProject = Project.Example();
 
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();
@@ -135,6 +131,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                                                  _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object,
                                                  _projectGuestContextServiceMock.Object,headersWithSession);
         }
+
+        //TODO: Improve UpdateGuestSessionAsync unit test coverage
+        //TODO: Add UpdateGuestSessionStateAsync tests
+        //TODO: Add VerifyGuestAsync tests
 
         [Fact]
         public async Task CreateGuestSession_CallsCreate()
@@ -267,7 +267,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.Ended }
                 });
 
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, false);
             _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -283,7 +283,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.Ended }
                 });
 
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, true);
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, true);
             _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -298,7 +298,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.InProject }
                 });
 
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, false);
 
             _projectGuestContextServiceMock.Verify(x => x.RemoveProjectGuestContextAsync(It.IsAny<string>()), Times.Exactly(2));
         }
@@ -315,7 +315,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.Ended }
                 });
 
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, true);
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, true);
             _projectLobbyStateController.Verify(x => x.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
         }
 
@@ -326,7 +326,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<GuestSession>());
 
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, false);
 
             _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.GuestSessionsForProjectDeleted)));
         }
@@ -338,7 +338,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<GuestSession>());
 
-            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, false);
+            await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, false);
 
             _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<ProjectLobbyState>>(y => y.Name == EventNames.ProjectStatusUpdated)));
         }
@@ -365,7 +365,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
 
             _projectApiMock
-                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>()))
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), null))
                 .ThrowsAsync(new NotFoundException("Project could not be found"));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
@@ -470,7 +470,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(v => v.Validate(It.IsAny<object>()))
                 .Returns(FailedValidationResult);
 
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(_defaultGuestSession.ProjectId))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(_defaultGuestSession.ProjectId, null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project
                 {
                     Id = _defaultGuestSession.ProjectId,
@@ -487,7 +487,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetMostRecentValidGuestSessionsByProjectId_IfProjectNotFound_ThrowsNotFoundException()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<NotFoundException>(async () =>
@@ -528,7 +528,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 }
             };
 
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
@@ -549,7 +549,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetMostRecentValidGuestSessionsByProjectId_IfNoSessionsFoundReturns_EmptyList()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(x => x
@@ -582,7 +582,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 new GuestSession { CreatedDateTime = new DateTime(2018, 7, 25), UserId = userId3 }
             };
 
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(x => x
@@ -598,7 +598,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetValidGuestSessionsByProjectIdForCurrentUser_WhenProjectNotFound_ThrowsNotFoundException()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<NotFoundException>(async () =>
@@ -608,7 +608,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetValidGuestSessionsByProjectIdForCurrentUser_WhenNoSessionsFound_ReturnsEmpty()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(x => x
@@ -675,7 +675,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var guestSessions = notExpectedGuestSessions.Concat(guestExpectedGuestSessions).ToList();
 
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
@@ -699,7 +699,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetGuestSessionsByProjectIdForUser_WhenProjectNotFound_ThrowsNotFoundException()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
             await Assert.ThrowsAsync<NotFoundException>(async () =>
@@ -709,7 +709,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetGuestSessionsByProjectIdForUser_WhenNoSessionsFound_ReturnsEmpty()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(x => x
@@ -779,7 +779,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var guestSessions = notExpectedGuestSessions.Concat(guestExpectedGuestSessions).ToList();
 
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))

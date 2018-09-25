@@ -25,6 +25,7 @@ using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.Http.Microservice;
 using Synthesis.ParticipantService.InternalApi.Services;
+using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 
 namespace Synthesis.GuestService.Controllers
@@ -163,7 +164,7 @@ namespace Synthesis.GuestService.Controllers
             await Task.WhenAll(endSessionTasks);
         }
 
-        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, bool onlyKickGuestsInProject)
+        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
@@ -173,6 +174,9 @@ namespace Synthesis.GuestService.Controllers
                 .Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
+                    session.AccessRevokedBy = principalId;
+                    session.AccessRevokedDateTime = DateTime.UtcNow;
+
                     _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
                     return _guestSessionRepository.UpdateItemAsync(session.Id, session);
                 });
@@ -362,6 +366,21 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId)
         {
+            return await VerifyGuestAsync(request, null, guestTenantId);
+        }
+
+        /// <summary>
+        /// Verifies the eligibility of a guest to enter a project lobby and potentially join the project.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="project"></param>
+        /// <param name="guestTenantId"></param>
+        /// <returns></returns>
+        /// <remarks>This method is not intended for external use. It is a public interface member to make it available to
+        /// the ProjectGuestContextController and for unit tests. The project argument on this method is a optimization to eliminate
+        /// a redundant retrieval of the project when this method is invoked by the ProjectGuestContextController.SetProjectGuestContext method.</remarks>
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Project project, Guid? guestTenantId)
+        {
             var validationResult = _validatorLocator.Validate<GuestVerificationRequestValidator>(request);
             if (!validationResult.IsValid)
             {
@@ -370,30 +389,50 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var response = new GuestVerificationResponse();
-            ProjectService.InternalApi.Models.Project project;
-            if (request.ProjectId != Guid.Empty)
+
+            if (project != null)
             {
-                var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
-                if (!projectResponse.IsSuccess())
+                if (request.ProjectId != Guid.Empty && request.ProjectId != project.Id)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
                     response.Message = $"Could not find a project with that project Id.";
                     return response;
                 }
 
-                project = projectResponse.Payload;
-            }
-            else
-            {
-                var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
-                if (!projectResponse.IsSuccess())
+                if (request.ProjectAccessCode != project.GuestAccessCode)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
                     response.Message = $"Could not find a project with that project access code.";
                     return response;
                 }
+            }
 
-                project = projectResponse.Payload;
+            if(project == null)
+            {
+                if (request.ProjectId != Guid.Empty)
+                {
+                    var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(request.ProjectId);
+                    if (!projectResponse.IsSuccess())
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                        response.Message = $"Could not find a project with that project Id.";
+                        return response;
+                    }
+
+                    project = projectResponse.Payload;
+                }
+                else
+                {
+                    var projectResponse = await _serviceToServiceProjectApi.GetProjectByAccessCodeAsync(request.ProjectAccessCode);
+                    if (!projectResponse.IsSuccess())
+                    {
+                        response.ResultCode = VerifyGuestResponseCode.InvalidCode;
+                        response.Message = $"Could not find a project with that project access code.";
+                        return response;
+                    }
+
+                    project = projectResponse.Payload;
+                }
             }
 
             if (project.TenantId == Guid.Empty)
@@ -472,6 +511,7 @@ namespace Synthesis.GuestService.Controllers
             response.Message = "The user may join as a guest";
             return response;
         }
+
 
         public async Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId)
         {
@@ -562,8 +602,8 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
-            var projectResponse = await _projectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
-            if (projectResponse.ResponseCode == System.Net.HttpStatusCode.NotFound)
+            var projectResponse = await _serviceToServiceProjectApi.GetProjectByIdAsync(currentGuestSession.ProjectId);
+            if (projectResponse.ResponseCode == HttpStatusCode.NotFound)
             {
                 _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not find the project associated with this guest session.");
                 result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";

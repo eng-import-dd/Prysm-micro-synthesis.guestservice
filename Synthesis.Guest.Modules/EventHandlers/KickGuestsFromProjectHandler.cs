@@ -46,7 +46,7 @@ namespace Synthesis.GuestService.EventHandlers
 
         private async Task KickGuestsInternal(Guid projectId)
         {
-            await _guestSessionController.DeleteGuestSessionsForProjectAsync(projectId, true);
+            await _guestSessionController.DeleteGuestSessionsForProjectAsync(projectId, Guid.Empty, true);
         }
     }
 }
