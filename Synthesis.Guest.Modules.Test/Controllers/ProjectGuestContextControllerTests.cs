@@ -62,7 +62,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultProjectGuestContext = new ProjectGuestContext()
             {
                 GuestSessionId = _defaultGuestSession.Id,
-                GuestState = Synthesis.Guest.ProjectContext.Enums.GuestState.InLobby,
+                GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                 ProjectId =_defaultProjectId,
                 TenantId = _projectTenantId
             };
@@ -395,7 +395,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Verify(x => x.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(props => props.GuestSessionId == _defaultGuestSession.Id
                     && props.ProjectId == _defaultProjectId
                     && props.TenantId == _defaultProject.TenantId
-                    && props.GuestState == Synthesis.Guest.ProjectContext.Enums.GuestState.InLobby), It.IsAny<string>()));
+                    && props.GuestState == Guest.ProjectContext.Enums.GuestState.InLobby), It.IsAny<string>()));
         }
 
         [Fact]
@@ -599,7 +599,5 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null));
         }
-
-
     }
 }

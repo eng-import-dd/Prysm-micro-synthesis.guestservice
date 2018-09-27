@@ -47,6 +47,10 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized,HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
 
+            CreateRoute("DeleteGuestSession", HttpMethod.Delete, $"{Routing.GuestSessionsRoute}/{{id:guid}}", DeleteGuestSessionAsync)
+                .Description("Delete a specific GuestSession resource.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+
             CreateRoute("UpdateGuestSession", HttpMethod.Put, $"{Routing.GuestSessionsRoute}/{{id:guid}}", UpdateGuestSessionAsync)
                 .Description("Update a specific GuestSession resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
@@ -143,6 +147,37 @@ namespace Synthesis.GuestService.Modules
                 .ExecuteAsync(cancellationToken);
 
             return session;
+        }
+
+        private async Task<object> DeleteGuestSessionAsync(dynamic input, CancellationToken cancellationToken)
+        {
+            await RequiresAccess()
+                .WithProjectIdExpansion(async (ctx, ct) =>
+                {
+                    var resource = await _guestSessionController.GetGuestSessionAsync(input.id);
+                    return resource.ProjectId;
+                })
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                await _guestSessionController.DeleteGuestSessionAsync(input.id);
+                return new Response
+                {
+                    ContentType = "application/json",
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Resource has been deleted"
+                };
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to delete guestSession with id {input.id} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteGuestSession);
+            }
         }
 
         private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input, CancellationToken cancellationToken)
