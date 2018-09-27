@@ -24,7 +24,6 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
-using Synthesis.ProjectService.InternalApi.Constants;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
@@ -78,7 +77,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(_defaultProjectGuestContext);
 
             _projectAccessApiMock
-                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), _defaultProjectTenantHeaders))
+                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<GrantProjectMembershipRequest>(), _defaultProjectTenantHeaders))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
             _guestSessionControllerMock
@@ -575,7 +574,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null);
 
             _projectAccessApiMock
-                .Verify(x => x.GrantProjectMembershipAsync(_currentUserId, _defaultProjectId, _defaultProjectTenantHeaders));
+                .Verify(x => x.GrantProjectMembershipAsync(It.IsAny<GrantProjectMembershipRequest>(), _defaultProjectTenantHeaders));//_currentUserId, _defaultProjectId, _defaultProjectTenantHeaders));
         }
 
         [Fact]
@@ -595,7 +594,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>()).AsEnumerable()));
 
             _projectAccessApiMock
-                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), _defaultProjectTenantHeaders))
+                .Setup(x => x.GrantProjectMembershipAsync(It.IsAny<GrantProjectMembershipRequest>(), _defaultProjectTenantHeaders))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.InternalServerError));
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _target.SetProjectGuestContextAsync(_defaultProjectId, _defaultAccessCode, _currentUserId, null));

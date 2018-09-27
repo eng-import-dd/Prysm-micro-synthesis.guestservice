@@ -47,9 +47,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly GuestInvite _defaultGuestInvite = new GuestInvite();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<IValidatorLocator> _validatorLocator = new Mock<IValidatorLocator>();
-        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateController = new Mock<IProjectLobbyStateController>();
+        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
         private readonly Mock<IProjectGuestContextService> _projectGuestContextServiceMock = new Mock<IProjectGuestContextService>();
+        
         private readonly Project _defaultProject;
 
         private static ValidationResult FailedValidationResult => new ValidationResult(
@@ -77,6 +78,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_defaultGuestSession);
+
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<GuestSession> {_defaultGuestSession});
 
             _guestSessionRepositoryMock
                 .Setup(x => x.CreateItemAsync(It.IsAny<GuestSession>(), It.IsAny<CancellationToken>()))
@@ -128,7 +133,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
                                                  loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
-                                                 _userApiMock.Object, _projectLobbyStateController.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object,
+                                                 _userApiMock.Object, _projectLobbyStateControllerMock.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object,
                                                  _projectGuestContextServiceMock.Object,headersWithSession);
         }
 
@@ -316,7 +321,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 });
 
             await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, true);
-            _projectLobbyStateController.Verify(x => x.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
+            _projectLobbyStateControllerMock.Verify(x => x.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]
@@ -341,6 +346,58 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await _target.DeleteGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, false);
 
             _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<ProjectLobbyState>>(y => y.Name == EventNames.ProjectStatusUpdated)));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_WithInvalidGuestSessionId_ThrowsValidationException()
+        {
+            _validatorMock.Setup(v => v.Validate(It.IsAny<Guid>()))
+                .Returns(FailedValidationResult);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(async () => await _target.DeleteGuestSessionAsync(Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_GuestSessionDoesNotExist_DoesNotThrowNotFoundException()
+        {
+            _guestSessionRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DocumentNotFoundException());
+
+            var ex = await Record.ExceptionAsync(async () => await _target.DeleteGuestSessionAsync(Guid.NewGuid()));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_RemovesProjectGuestContext()
+        {
+            await _target.DeleteGuestSessionAsync(Guid.NewGuid());
+
+            _projectGuestContextServiceMock.Verify(x => x.RemoveProjectGuestContextAsync(It.IsAny<string>()));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_DeletesSession()
+        {
+            await _target.DeleteGuestSessionAsync(Guid.NewGuid());
+
+            _guestSessionRepositoryMock.Verify(x => x.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_PublishesSessionDeleted()
+        {
+            await _target.DeleteGuestSessionAsync(Guid.NewGuid());
+
+            _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuidEvent>>()));
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_RecalculatesProjectLobbyState()
+        {
+            await _target.DeleteGuestSessionAsync(Guid.NewGuid());
+
+            _projectLobbyStateControllerMock.Verify(x => x.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()));
         }
 
         [Fact]

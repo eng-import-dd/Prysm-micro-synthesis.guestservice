@@ -26,6 +26,7 @@ namespace Synthesis.GuestService.Controllers
         Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Guid? guestTenantId);
         Task<GuestVerificationResponse> VerifyGuestAsync(GuestVerificationRequest request, Project project, Guid? guestTenantId);
         Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject);
+        Task DeleteGuestSessionAsync(Guid id);
         Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId);
         Task<UpdateGuestSessionStateResponse> UpdateGuestSessionStateAsync(UpdateGuestSessionStateRequest guestSessionRequest, Guid principalId);
     }

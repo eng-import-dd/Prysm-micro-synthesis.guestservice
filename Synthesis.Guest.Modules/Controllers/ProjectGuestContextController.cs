@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
-using Synthesis.EventBus;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Constants;
@@ -75,8 +74,14 @@ namespace Synthesis.GuestService.Controllers
             }
 
             // Grant membership?
-            await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(userToAddId, projectId);
-            
+            var request = new GrantProjectMembershipRequest
+            {
+                UserId = userToAddId,
+                ProjectId = projectId,
+                MembershipRole = MemberRole.FullUser
+            };
+            await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(request);
+
             // send participant email? - the prod cloud does this
 
             var guestSession = await GetGuestSessionForUser(userToAddId, projectId);
@@ -92,12 +97,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new Exception($"Failed to update the guest session state for SessionId={guestSession.Id}. Message={guestSessionStateResponse.Message}");
             }
 
-            //guestSession.GuestSessionState = InternalApi.Enums.GuestState.PromotedToProjectMember;
-            //await _guestSessionController.UpdateGuestSessionAsync(guestSession, userToAddId);
-
-            // UpdateGuestSessionState(newState, userProjectDTO.UserId);
-            // DeleteGuestSession(guestSession.GuestSessionId);
-            // BroadcastGuestListChanged(userProjectDTO.ProjectId);
+            await _guestSessionController.DeleteGuestSessionAsync(guestSession.Id);
         }
 
         private async Task<GuestSession> GetGuestSessionForUser(Guid userId, Guid projectId)
@@ -167,7 +167,7 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var userName = !string.IsNullOrEmpty(userResponse.Payload.Email) ? userResponse.Payload.Email : userResponse.Payload.Username;
-            var verifyRequest = new GuestVerificationRequest() { Username = userName, ProjectAccessCode = accessCode, ProjectId = projectId };
+            var verifyRequest = new GuestVerificationRequest { Username = userName, ProjectAccessCode = accessCode, ProjectId = projectId };
 
             var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest, project, currentUserTenantId);
 
@@ -195,10 +195,13 @@ namespace Synthesis.GuestService.Controllers
 
             if (!userIsFullProjectMember)
             {
-                // Add the user as a guest member to the project.
-                // WARNING: Order of operations is significant here. Project membership call must be made only after the 
-                // the guest session has been successfully created. Otherwise the user may be given the wrong kind of membership.
-                var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id, new List<KeyValuePair<string, string>>() { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
+                var request = new GrantProjectMembershipRequest
+                {
+                    UserId = currentUserId,
+                    ProjectId = project.Id,
+                    MembershipRole = MemberRole.GuestUser
+                };
+                var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(request, new List<KeyValuePair<string, string>> { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
                 if (!grantUserResponse.IsSuccess())
                 {
                     throw new InvalidOperationException("Failed to add user to project");
@@ -214,13 +217,13 @@ namespace Synthesis.GuestService.Controllers
 
             if (guestContext == null || guestContext.GuestSessionId == Guid.Empty)
             {
-                return new CurrentProjectState()
+                return new CurrentProjectState
                 {
                     Message = "No guest session from which to clear the current project."
                 };
             }
 
-            var guestSessionRequest = new UpdateGuestSessionStateRequest()
+            var guestSessionRequest = new UpdateGuestSessionStateRequest
             {
                 GuestSessionId = guestContext.GuestSessionId,
                 GuestSessionState = InternalApi.Enums.GuestState.Ended
