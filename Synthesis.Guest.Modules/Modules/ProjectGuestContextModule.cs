@@ -36,8 +36,8 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
 
-            CreateRoute("AddUserToProject", HttpMethod.Post, $"{Routing.ProjectsRoute}/{{projectId:guid}}/add", AddUserToProject)
-                .Description("Adds a user to the project so that can enter the lobby.")
+            CreateRoute("PromoteGuestUserToProjectMember", HttpMethod.Post, $"{Routing.ProjectsRoute}/{{projectId:guid}}/promote", PromoteGuestUserToProjectMember)
+                .Description("Promotes a guest user to a full project member.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
         }
@@ -64,7 +64,7 @@ namespace Synthesis.GuestService.Modules
             }
         }
 
-        private async Task<object> AddUserToProject(dynamic input)
+        private async Task<object> PromoteGuestUserToProjectMember(dynamic input)
         {
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
@@ -79,13 +79,13 @@ namespace Synthesis.GuestService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error($"Binding failed while attempting to add userId={userToAdd} to projectId={projectId}.", ex);
+                Logger.Error($"Binding failed while attempting to promote userId={userToAdd} to full member of projectId={projectId}.", ex);
                 return Response.BadRequestBindingException();
             }
 
             try
             {
-                await _projectGuestContextController.AddUserToProject(userToAdd, projectId, PrincipalId, TenantId);
+                await _projectGuestContextController.PromoteGuestUserToProjectMember(userToAdd, projectId, PrincipalId, TenantId);
 
                 return new Response
                 {

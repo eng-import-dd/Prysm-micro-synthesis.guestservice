@@ -61,11 +61,11 @@ namespace Synthesis.GuestService.Controllers
             _projectGuestContextService = projectGuestContextService;
         }
 
-        public async Task AddUserToProject(Guid userToAddId, Guid projectId, Guid currentUserId, Guid? currentUserTenantId)
+        public async Task PromoteGuestUserToProjectMember(Guid userIdToPromote, Guid projectId, Guid currentUserId, Guid? currentUserTenantId)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
-                { typeof(UserIdValidator), userToAddId },
+                { typeof(UserIdValidator), userIdToPromote },
                 { typeof(ProjectIdValidator), projectId }
             });
             if (!validationResult.IsValid)
@@ -73,31 +73,42 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            // Grant membership?
+            await GrantUserFullMembershipToProject(userIdToPromote, projectId);
+
+            var updatedSession = await SetGuestSessionStateToPromotedToProjectMember(userIdToPromote, projectId);
+
+            await _guestSessionController.DeleteGuestSessionAsync(updatedSession.Id);
+
+            //TODO: Send participant email - CU-602
+        }
+
+        private async Task GrantUserFullMembershipToProject(Guid userId, Guid projectId)
+        {
             var request = new GrantProjectMembershipRequest
             {
-                UserId = userToAddId,
+                UserId = userId,
                 ProjectId = projectId,
-                MembershipRole = MemberRole.FullUser
+                Role = MemberRole.FullUser
             };
             await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(request);
+        }
 
-            // send participant email? - the prod cloud does this
-
-            var guestSession = await GetGuestSessionForUser(userToAddId, projectId);
+        private async Task<GuestSession> SetGuestSessionStateToPromotedToProjectMember(Guid userId, Guid projectId)
+        {
+            var guestSession = await GetGuestSessionForUser(userId, projectId);
 
             var guestSessionRequest = new UpdateGuestSessionStateRequest
             {
                 GuestSessionId = guestSession.Id,
                 GuestSessionState = InternalApi.Enums.GuestState.PromotedToProjectMember
             };
-            var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, userToAddId);
+            var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, userId);
             if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Failed)
             {
                 throw new Exception($"Failed to update the guest session state for SessionId={guestSession.Id}. Message={guestSessionStateResponse.Message}");
             }
 
-            await _guestSessionController.DeleteGuestSessionAsync(guestSession.Id);
+            return guestSession;
         }
 
         private async Task<GuestSession> GetGuestSessionForUser(Guid userId, Guid projectId)
@@ -199,7 +210,7 @@ namespace Synthesis.GuestService.Controllers
                 {
                     UserId = currentUserId,
                     ProjectId = project.Id,
-                    MembershipRole = MemberRole.GuestUser
+                    Role = MemberRole.GuestUser
                 };
                 var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(request, new List<KeyValuePair<string, string>> { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
                 if (!grantUserResponse.IsSuccess())

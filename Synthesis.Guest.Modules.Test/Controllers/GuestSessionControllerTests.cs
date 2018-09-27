@@ -103,6 +103,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestInvite>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Guid id, GuestInvite session, UpdateOptions o, CancellationToken c) => session);
 
+            _projectApiMock
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), null))
+                .ThrowsAsync(new NotFoundException("Project could not be found"));
+
             repositoryFactoryMock
 #pragma warning disable 612
                 .Setup(x => x.CreateRepository<GuestSession>())
@@ -408,7 +412,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
 
             _guestSessionRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new NotFoundException("GuestSession could not be found."));
 
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
@@ -421,7 +425,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
 
-            _projectApiMock
+            _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), null))
                 .ThrowsAsync(new NotFoundException("Project could not be found"));
 
