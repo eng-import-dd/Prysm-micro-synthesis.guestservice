@@ -108,19 +108,13 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetProjectLobbyStateAsync(_defaultProjectId))
                 .ReturnsAsync(_defaultProjectLobbyState);
 
-            var validatorLocatorMock = new Mock<IValidatorLocator>();
-            validatorLocatorMock
-                .Setup(m => m.GetValidator(It.IsAny<Type>()))
-                .Returns(_validatorMock.Object);
-
             _target = new ProjectGuestContextController(repositoryFactoryMock.Object,
                 _guestSessionControllerMock.Object,
                 _projectLobbyStateControllerMock.Object,
                 _projectGuestContextServiceMock.Object,
                 _projectAccessApiMock.Object,
                 _serviceToServiceProjectApiMock.Object,
-                _userApiMock.Object,
-                validatorLocatorMock.Object);
+                _userApiMock.Object);
         }
 
         #region Clear Session

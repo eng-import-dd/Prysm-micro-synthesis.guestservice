@@ -35,11 +35,6 @@ namespace Synthesis.GuestService.Modules
                 .Description("Sets the project guest context and creates guest sessions")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
-
-            CreateRoute("PromoteGuestUserToProjectMember", HttpMethod.Post, $"{Routing.ProjectsRoute}/{{projectId:guid}}/promote", PromoteGuestUserToProjectMember)
-                .Description("Promotes a guest user to a full project member.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .ResponseFormat(JsonConvert.SerializeObject(ProjectGuestContext.Example));
         }
 
         private async Task<object> SetProjectGuestContextAsync(dynamic input)
@@ -52,46 +47,6 @@ namespace Synthesis.GuestService.Modules
             try
             {
                 return await _projectGuestContextController.SetProjectGuestContextAsync(projectId, accesscode, PrincipalId, TenantId);
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Failed to set {nameof(ProjectGuestContext)} due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestSession, ex.Message);
-            }
-        }
-
-        private async Task<object> PromoteGuestUserToProjectMember(dynamic input)
-        {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
-            var projectId = Guid.Empty;
-            var userToAdd = Guid.Empty;
-
-            try
-            {
-                projectId = input.projectId;
-                userToAdd = this.Bind<Guid>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Binding failed while attempting to promote userId={userToAdd} to full member of projectId={projectId}.", ex);
-                return Response.BadRequestBindingException();
-            }
-
-            try
-            {
-                await _projectGuestContextController.PromoteGuestUserToProjectMember(userToAdd, projectId, PrincipalId, TenantId);
-
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    ReasonPhrase = "Resource has been updated"
-                };
             }
             catch (ValidationFailedException ex)
             {

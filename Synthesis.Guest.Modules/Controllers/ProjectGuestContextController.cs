@@ -33,8 +33,6 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectAccessApi _serviceToServiceProjectAccessApi;
         private readonly IUserApi _userApi;
 
-        private readonly IValidatorLocator _validatorLocator;
-
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
         /// </summary>
@@ -45,11 +43,8 @@ namespace Synthesis.GuestService.Controllers
             IProjectGuestContextService projectGuestContextService,
             IProjectAccessApi serviceToServiceProjectAccessApi,
             IProjectApi serviceToServiceProjectApi,
-            IUserApi userApi,
-            IValidatorLocator validatorLocator)
+            IUserApi userApi)
         {
-            _validatorLocator = validatorLocator;
-
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
 
             _guestSessionController = guestSessionController;
@@ -59,56 +54,6 @@ namespace Synthesis.GuestService.Controllers
             _serviceToServiceProjectAccessApi = serviceToServiceProjectAccessApi;
             _userApi = userApi;
             _projectGuestContextService = projectGuestContextService;
-        }
-
-        public async Task PromoteGuestUserToProjectMember(Guid userIdToPromote, Guid projectId, Guid currentUserId, Guid? currentUserTenantId)
-        {
-            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
-            {
-                { typeof(UserIdValidator), userIdToPromote },
-                { typeof(ProjectIdValidator), projectId }
-            });
-            if (!validationResult.IsValid)
-            {
-                throw new ValidationFailedException(validationResult.Errors);
-            }
-
-            await GrantUserFullMembershipToProject(userIdToPromote, projectId);
-
-            var updatedSession = await SetGuestSessionStateToPromotedToProjectMember(userIdToPromote, projectId);
-
-            await _guestSessionController.DeleteGuestSessionAsync(updatedSession.Id);
-
-            //TODO: Send participant email - CU-602
-        }
-
-        private async Task GrantUserFullMembershipToProject(Guid userId, Guid projectId)
-        {
-            var request = new GrantProjectMembershipRequest
-            {
-                UserId = userId,
-                ProjectId = projectId,
-                Role = MemberRole.FullUser
-            };
-            await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(request);
-        }
-
-        private async Task<GuestSession> SetGuestSessionStateToPromotedToProjectMember(Guid userId, Guid projectId)
-        {
-            var guestSession = await GetGuestSessionForUser(userId, projectId);
-
-            var guestSessionRequest = new UpdateGuestSessionStateRequest
-            {
-                GuestSessionId = guestSession.Id,
-                GuestSessionState = InternalApi.Enums.GuestState.PromotedToProjectMember
-            };
-            var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, userId);
-            if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Failed)
-            {
-                throw new Exception($"Failed to update the guest session state for SessionId={guestSession.Id}. Message={guestSessionStateResponse.Message}");
-            }
-
-            return guestSession;
         }
 
         private async Task<GuestSession> GetGuestSessionForUser(Guid userId, Guid projectId)
