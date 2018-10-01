@@ -177,8 +177,7 @@ namespace Synthesis.GuestService.Controllers
                     session.AccessRevokedBy = principalId;
                     session.AccessRevokedDateTime = DateTime.UtcNow;
 
-                    _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
-                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
+                    return UpdateGuestSessionAsync(session, principalId);
                 });
 
             await Task.WhenAll(guestSessionTasks);
@@ -374,17 +373,24 @@ namespace Synthesis.GuestService.Controllers
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
 
-            var existingProjectGuestContext = await _projectGuestContextService.GetProjectGuestContextAsync(result.SessionId);
-
-            var guestState = (Guest.ProjectContext.Enums.GuestState)result.GuestSessionState;
-
-            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext
+            if (guestSessionModel.GuestSessionState == GuestState.Ended)
             {
-                GuestSessionId = existingProjectGuestContext.GuestSessionId,
-                ProjectId = existingProjectGuestContext.ProjectId,
-                GuestState = guestState,
-                TenantId = existingProjectGuestContext.TenantId
-            }, result.SessionId);
+                await _projectGuestContextService.RemoveProjectGuestContextAsync(guestSessionModel.SessionId);
+            }
+            else
+            {
+                var existingProjectGuestContext = await _projectGuestContextService.GetProjectGuestContextAsync(result.SessionId);
+
+                var guestState = (Guest.ProjectContext.Enums.GuestState)result.GuestSessionState;
+
+                await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext
+                {
+                    GuestSessionId = existingProjectGuestContext.GuestSessionId,
+                    ProjectId = existingProjectGuestContext.ProjectId,
+                    GuestState = guestState,
+                    TenantId = existingProjectGuestContext.TenantId
+                }, result.SessionId);
+            }
 
             _eventService.Publish(EventNames.GuestSessionUpdated, result);
 
