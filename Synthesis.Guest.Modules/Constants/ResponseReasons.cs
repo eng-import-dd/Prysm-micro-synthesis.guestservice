@@ -26,6 +26,7 @@ namespace Synthesis.GuestService.Constants
         // Internal Server Errors
         public const string InternalServerErrorCreateGuestSession = "An error occurred while creating the GuestSession";
         public const string InternalServerErrorGetGuestSession = "An error occurred retrieving the GuestSession";
+        public const string InternalServerErrorDeleteGuestSession = "An error occurred deleting the GuestSession";
         public const string InternalServerErrorGetGuestSessions = "An error occurred retrieving the GuestSession";
         public const string InternalServerErrorUpdateGuestSession = "An error occurred updating the GuestSession";
         public const string InternalServerErrorUpdateGuestSessionState = "An error occurred updating the GuestSessionState";

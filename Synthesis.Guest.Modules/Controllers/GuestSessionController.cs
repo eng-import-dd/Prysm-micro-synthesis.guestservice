@@ -190,6 +190,33 @@ namespace Synthesis.GuestService.Controllers
             _eventService.Publish(EventNames.ProjectStatusUpdated, newState);
         }
 
+        public async Task DeleteGuestSessionAsync(Guid id)
+        {
+            var validationResult = _validatorLocator.Validate<GuestSessionIdValidator>(id);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            try
+            {
+                var guestSession = await _guestSessionRepository.GetItemAsync(x => x.Id == id);
+
+                await _projectGuestContextService.RemoveProjectGuestContextAsync(guestSession.SessionId);
+
+                await _guestSessionRepository.DeleteItemAsync(id);
+
+                _eventService.Publish(EventNames.GuestSessionDeleted, new GuidEvent(guestSession.Id));
+
+                await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(guestSession.ProjectId);
+            }
+            catch (DocumentNotFoundException)
+            {
+                // We don't really care if it's not found.
+                // The resource not being there is what we wanted.
+            }
+        }
+
         public async Task<GuestSession> GetGuestSessionAsync(Guid id)
         {
             var validationResult = _validatorLocator.Validate<GuestSessionIdValidator>(id);

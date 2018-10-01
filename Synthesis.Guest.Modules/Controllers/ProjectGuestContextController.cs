@@ -2,18 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using log4net.Repository.Hierarchy;
 using Synthesis.DocumentStorage;
-using Synthesis.Guest.ProjectContext.Enums;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
+using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Constants;
 using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
@@ -56,14 +56,17 @@ namespace Synthesis.GuestService.Controllers
             _projectGuestContextService = projectGuestContextService;
         }
 
-        /// <summary>
-        /// Assigns the guest
-        /// </summary>
-        /// <param name="projectId"></param>
-        /// <param name="accessCode"></param>
-        /// <param name="currentUserId"></param>
-        /// <param name="currentUserTenantId"></param>
-        /// <returns></returns>
+        private async Task<GuestSession> GetGuestSessionForUser(Guid userId, Guid projectId)
+        {
+            var guestSessions = await _guestSessionController.GetGuestSessionsByProjectIdForUserAsync(projectId, userId);
+            if (!guestSessions.Any())
+            {
+                throw new Exception($"Failed to get guest session for userId={userId} and projectId={projectId}");
+            }
+
+            return guestSessions.FirstOrDefault();
+        }
+        
         public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId, Guid? currentUserTenantId)
         {
             if (projectId.Equals(Guid.Empty))
@@ -120,7 +123,7 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var userName = !string.IsNullOrEmpty(userResponse.Payload.Email) ? userResponse.Payload.Email : userResponse.Payload.Username;
-            var verifyRequest = new GuestVerificationRequest() { Username = userName, ProjectAccessCode = accessCode, ProjectId = projectId };
+            var verifyRequest = new GuestVerificationRequest { Username = userName, ProjectAccessCode = accessCode, ProjectId = projectId };
 
             var guestVerifyResponse = await _guestSessionController.VerifyGuestAsync(verifyRequest, project, currentUserTenantId);
 
@@ -148,10 +151,13 @@ namespace Synthesis.GuestService.Controllers
 
             if (!userIsFullProjectMember)
             {
-                // Add the user as a guest member to the project.
-                // WARNING: Order of operations is significant here. Project membership call must be made only after the 
-                // the guest session has been successfully created. Otherwise the user may be given the wrong kind of membership.
-                var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(currentUserId, project.Id, new List<KeyValuePair<string, string>>() { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
+                var request = new GrantProjectMembershipRequest
+                {
+                    UserId = currentUserId,
+                    ProjectId = project.Id,
+                    Role = MemberRole.GuestUser
+                };
+                var grantUserResponse = await _serviceToServiceProjectAccessApi.GrantProjectMembershipAsync(request, new List<KeyValuePair<string, string>> { HeaderKeys.CreateTenantHeaderKey(projectTenantId) });
                 if (!grantUserResponse.IsSuccess())
                 {
                     throw new InvalidOperationException("Failed to add user to project");
@@ -167,13 +173,13 @@ namespace Synthesis.GuestService.Controllers
 
             if (guestContext == null || guestContext.GuestSessionId == Guid.Empty)
             {
-                return new CurrentProjectState()
+                return new CurrentProjectState
                 {
                     Message = "No guest session from which to clear the current project."
                 };
             }
 
-            var guestSessionRequest = new UpdateGuestSessionStateRequest()
+            var guestSessionRequest = new UpdateGuestSessionStateRequest
             {
                 GuestSessionId = guestContext.GuestSessionId,
                 GuestSessionState = InternalApi.Enums.GuestState.Ended
@@ -181,7 +187,7 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, principalId);
 
-            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext());
+            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext{ GuestState = GuestState.Ended });
 
             if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Success)
             {

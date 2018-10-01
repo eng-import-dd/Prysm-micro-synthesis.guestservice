@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.GuestService.Constants;
