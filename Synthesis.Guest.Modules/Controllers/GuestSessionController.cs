@@ -102,7 +102,7 @@ namespace Synthesis.GuestService.Controllers
             _requestHeaders = requestHeaders;
         }
 
-        public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model)
+        public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId)
         {
             var validationResult = _validatorLocator.Validate<GuestSessionValidator>(model);
             if (!validationResult.IsValid)
@@ -111,7 +111,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            await EndGuestSessionsForUser(model.UserId);
+            await EndGuestSessionsForUser(model.UserId, principalId);
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
@@ -143,7 +143,7 @@ namespace Synthesis.GuestService.Controllers
             return result;
         }
 
-        private async Task EndGuestSessionsForUser(Guid userId)
+        private async Task EndGuestSessionsForUser(Guid userId, Guid principalId)
         {
             var openSessions = (await _guestSessionRepository
                     .GetItemsAsync(g => g.UserId == userId && (g.GuestSessionState == GuestState.InLobby || g.GuestSessionState == GuestState.InProject)))
@@ -157,8 +157,8 @@ namespace Synthesis.GuestService.Controllers
             var endSessionTasks = openSessions.Select(session =>
                 {
                     session.GuestSessionState = GuestState.Ended;
-                    _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
-                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
+
+                    return UpdateGuestSessionAsync(session, principalId);
                 });
 
             await Task.WhenAll(endSessionTasks);

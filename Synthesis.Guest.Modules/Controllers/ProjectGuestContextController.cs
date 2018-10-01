@@ -67,7 +67,7 @@ namespace Synthesis.GuestService.Controllers
             return guestSessions.FirstOrDefault();
         }
         
-        public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId, Guid? currentUserTenantId)
+        public async Task<CurrentProjectState> SetProjectGuestContextAsync(Guid projectId, string accessCode, Guid currentUserId, Guid? currentUserTenantId, Guid principalId)
         {
             if (projectId.Equals(Guid.Empty))
             {
@@ -138,7 +138,7 @@ namespace Synthesis.GuestService.Controllers
                 ProjectId = projectId,
                 ProjectAccessCode = project.GuestAccessCode,
                 GuestSessionState = InternalApi.Enums.GuestState.InLobby
-            });
+            }, principalId);
 
             await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext()
             {

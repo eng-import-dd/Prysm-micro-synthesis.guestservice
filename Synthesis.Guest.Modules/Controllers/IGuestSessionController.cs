@@ -16,8 +16,9 @@ namespace Synthesis.GuestService.Controllers
         /// <remarks>Exposed as public method only for unit testing. Should not be called by any external consumers of this interface.
         ///  External consumers should instead call <see cref="IProjectGuestContextController.SetProjectGuestContextAsync"/> to create a guest session.</remarks>
         /// <param name="model">The property values to assign to the created guest session</param>
+        /// <param name="principalId"></param>
         /// <returns></returns>
-        Task<GuestSession> CreateGuestSessionAsync(GuestSession model);
+        Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId);
         Task<GuestSession> GetGuestSessionAsync(Guid guestSessionId);
         Task<IEnumerable<GuestSession>> GetMostRecentValidGuestSessionsByProjectIdAsync(Guid projectId);
         Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdForCurrentUserAsync(Guid projectId, Guid userId);

@@ -46,7 +46,7 @@ namespace Synthesis.GuestService.Modules
             string accesscode = Request.Query.accesscode;
             try
             {
-                return await _projectGuestContextController.SetProjectGuestContextAsync(projectId, accesscode, PrincipalId, TenantId);
+                return await _projectGuestContextController.SetProjectGuestContextAsync(projectId, accesscode, PrincipalId, TenantId, PrincipalId);
             }
             catch (ValidationFailedException ex)
             {
