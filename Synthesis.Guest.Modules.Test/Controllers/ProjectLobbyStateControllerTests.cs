@@ -14,7 +14,6 @@ using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
-using Synthesis.GuestService.Modules.Test.Utilities;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
@@ -161,7 +160,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(m => m.ItemSetAsync(It.IsAny<string>(), It.IsAny<ProjectLobbyState>(), It.IsAny<TimeSpan>(), It.IsAny<CacheCommandOptions>()))
                 .Throws(new ApplicationException());
             var projectId = Guid.NewGuid();
-            var expectedResult = new ProjectLobbyState() { ProjectId = projectId, LobbyState = LobbyState.Error };
 
             var result = await _target.RecalculateProjectLobbyStateAsync(projectId);
 

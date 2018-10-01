@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Runtime.InteropServices.ComTypes;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,10 +43,10 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         private readonly Mock<ITokenValidator> _tokenValidatorMock = new Mock<ITokenValidator>();
         private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
-        private readonly Guid TenantId = Guid.NewGuid();
-        private readonly Guid PrincipalId = Guid.NewGuid();
+        private readonly Guid _tenantId = Guid.NewGuid();
+        private readonly Guid _principalId = Guid.NewGuid();
         private readonly User _defaultGuestUser;
-        private readonly Project _defaultProject;
+        private readonly Project _defaultProject = Project.Example();
         private readonly GuestVerificationRequest _defaultGuestVerificationRequest;
 
         public GuestSessionModuleTests()
@@ -60,13 +59,12 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Returns<string>(name => new SynthesisRouteMetadata(null, null, name));
 
             _defaultGuestUser = User.GuestUserExample();
-            _defaultGuestUser.Id = PrincipalId;
+            _defaultGuestUser.Id = _principalId;
             _defaultGuestUser.IsLocked = false;
             _defaultGuestUser.IsEmailVerified = true;
             _defaultGuestUser.EmailVerifiedAt = DateTime.Now.AddDays(-1.0);
 
-            _defaultProject = Project.Example();
-            _defaultProject.TenantId = TenantId;
+            _defaultProject.TenantId = _tenantId;
 
             _defaultGuestVerificationRequest = new GuestVerificationRequest() { ProjectAccessCode = _defaultProject.GuestAccessCode, ProjectId = _defaultProject.Id, Username = _defaultGuestUser.Username };
         }
@@ -86,8 +84,8 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                     var identity = new ClaimsIdentity(new[]
                            {
                                new Claim(JwtRegisteredClaimNames.Aud, Audiences.Synthesis),
-                               new Claim(JwtRegisteredClaimNames.Sub, PrincipalId.ToString()),
-                               new Claim(ClaimTypes.Tenant, TenantId.ToString()),
+                               new Claim(JwtRegisteredClaimNames.Sub, _principalId.ToString()),
+                               new Claim(ClaimTypes.Tenant, _tenantId.ToString()),
                                new Claim(ClaimTypes.Group, Guid.NewGuid().ToString()),
                                new Claim(ClaimTypes.Group, Guid.NewGuid().ToString())
                             },
@@ -140,7 +138,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
              _userApiMock
                 .Setup(x => x.GetUserByUsernameAsync(_defaultGuestUser.Username))
-                .ReturnsAsync(MicroserviceResponse.Create<User>(NetHttpStatusCode.OK, _defaultGuestUser));
+                .ReturnsAsync(MicroserviceResponse.Create(NetHttpStatusCode.OK, _defaultGuestUser));
 
             await AuthenticatedBrowser.Post($"{Routing.VerifyGuestRoute}", ctx => BuildRequest(ctx, _defaultGuestVerificationRequest));
 
@@ -149,7 +147,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 gvr.ProjectAccessCode == _defaultGuestVerificationRequest.ProjectAccessCode &&
                 gvr.ProjectId == _defaultGuestVerificationRequest.ProjectId &&
                 gvr.Username == _defaultGuestVerificationRequest.Username),
-                It.Is<Guid>(t => t == TenantId)));
+                It.Is<Guid>(t => t == _tenantId)));
         }
 
         [Fact]
