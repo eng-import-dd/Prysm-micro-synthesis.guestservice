@@ -50,8 +50,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
         private readonly Mock<IProjectGuestContextService> _projectGuestContextServiceMock = new Mock<IProjectGuestContextService>();
-        
+
         private readonly Project _defaultProject;
+        private readonly Guid _defaultPrincipalId;
 
         private static ValidationResult FailedValidationResult => new ValidationResult(
             new List<ValidationFailure>
@@ -63,6 +64,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public GuestSessionControllerTests()
         {
             _defaultProject = Project.Example();
+            _defaultPrincipalId = Guid.NewGuid();
 
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();
@@ -148,14 +150,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSession_CallsCreate()
         {
-            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
             _guestSessionRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestSession>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task CreateGuestSession_CallsDeleteItemsToClearOldGuestSessionsForUserAndProject()
         {
-            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
 
             _guestSessionRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
@@ -198,7 +200,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     return Task.FromResult(sublist);
                 });
 
-            await _target.CreateGuestSessionAsync(newGuestSession);
+            await _target.CreateGuestSessionAsync(newGuestSession, _defaultPrincipalId);
 
             _projectGuestContextServiceMock.Verify(x => x.RemoveProjectGuestContextAsync(It.IsAny<string>()), Times.Exactly(2));
         }
@@ -206,7 +208,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSession_ReturnsProvidedGuestSession()
         {
-            var result = await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            var result = await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
             Assert.NotNull(result);
             Assert.Equal(_defaultGuestSession.Id, result.Id);
             Assert.Equal(_defaultGuestSession.UserId, result.UserId);
@@ -217,21 +219,21 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSession_CallsRepositoryCreateItemAsync()
         {
-            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
             _guestSessionRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<GuestSession>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task CreateNewGuestSession_BussesEvent()
         {
-            await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<GuestSession>>()));
         }
 
         [Fact]
         public async Task CreateNewGuestSession_SetsProjectAccessCode()
         {
-            var result = await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            var result = await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
             Assert.NotNull(result);
             Assert.NotEqual(string.Empty, result.ProjectAccessCode);
             Assert.Equal(_defaultGuestSession.ProjectAccessCode, result.ProjectAccessCode);
@@ -240,7 +242,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task CreateNewGuestSession_SetsProjectId()
         {
-            var result = await _target.CreateGuestSessionAsync(_defaultGuestSession);
+            var result = await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId);
             Assert.NotNull(result);
             Assert.NotEqual(Guid.Empty, result.ProjectId);
             Assert.Equal(_defaultGuestSession.ProjectId, result.ProjectId);
@@ -261,7 +263,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .Throws<DocumentNotFoundException>();
 
-            await Assert.ThrowsAnyAsync<Exception>(async () => await _target.CreateGuestSessionAsync(guestSession));
+            await Assert.ThrowsAnyAsync<Exception>(async () => await _target.CreateGuestSessionAsync(guestSession, _defaultPrincipalId));
         }
 
         [Fact]
