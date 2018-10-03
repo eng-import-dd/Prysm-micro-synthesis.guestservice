@@ -265,7 +265,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException("Guest not found");
             }
 
-            var userResult = await _userApi.GetUserByUsernameAsync(email);
+            var userResult = await _userApi.GetUserByUserNameOrEmailAsync(email);
 
             if (userResult.ResponseCode == HttpStatusCode.NotFound)
             {

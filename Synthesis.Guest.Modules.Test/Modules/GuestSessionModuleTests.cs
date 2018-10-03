@@ -137,7 +137,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task VerifyGuestAsync_CallsVerifyGuestAsyncControllerMethodWithExpectedArgs()
         {
              _userApiMock
-                .Setup(x => x.GetUserByUsernameAsync(_defaultGuestUser.Username))
+                .Setup(x => x.GetUserByUserNameOrEmailAsync(_defaultGuestUser.Username))
                 .ReturnsAsync(MicroserviceResponse.Create(NetHttpStatusCode.OK, _defaultGuestUser));
 
             await AuthenticatedBrowser.Post($"{Routing.VerifyGuestRoute}", ctx => BuildRequest(ctx, _defaultGuestVerificationRequest));
