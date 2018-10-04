@@ -7,7 +7,7 @@ namespace Synthesis.GuestService.Controllers
 {
     public interface IGuestInviteController
     {
-        Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model);
+        Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model, Guid tenantId);
 
         Task<GuestInvite> GetGuestInviteAsync(Guid guestInviteId);
 
