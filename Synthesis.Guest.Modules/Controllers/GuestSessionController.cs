@@ -479,7 +479,7 @@ namespace Synthesis.GuestService.Controllers
             response.ProjectName = project.Name;
             response.Username = request.Username;
 
-            var userResponse = await _userApi.GetUserByUsernameAsync(request.Username);
+            var userResponse = await _userApi.GetUserByUserNameOrEmailAsync(request.Username);
 
             if (!userResponse.IsSuccess())
             {
