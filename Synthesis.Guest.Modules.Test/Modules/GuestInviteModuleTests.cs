@@ -205,7 +205,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestInviteReturnsInternalServerErrorOnUnexpectedException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>(), It.IsAny<Guid>()))
                 .Throws<Exception>();
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
@@ -217,7 +217,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestInviteReturnsInternalServerErrorOnGetProjectException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>(), It.IsAny<Guid>()))
                 .Throws<GetProjectException>();
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
@@ -229,7 +229,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestInviteReturnsInternalServerErrorOnGetUserException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>(), It.IsAny<Guid>()))
                 .Throws<GetUserException>();
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
@@ -241,7 +241,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestInviteReturnsInternalServerErrorOnGetAccessCodeException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>(), It.IsAny<Guid>()))
                 .Throws<ResetAccessCodeException>();
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
@@ -253,7 +253,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestInviteReturnsBadRequestValidationFailedException()
         {
             _guestInviteControllerMock
-                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>()))
+                .Setup(x => x.CreateGuestInviteAsync(It.IsAny<GuestInvite>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestInvitesRoute}", ctx => BuildRequest(ctx, _guestInvite));
