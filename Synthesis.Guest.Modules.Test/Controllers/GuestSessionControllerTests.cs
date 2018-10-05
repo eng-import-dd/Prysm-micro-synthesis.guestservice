@@ -340,13 +340,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task EndGuestSessionsForProjectAsync_PublishesGuestSessionsForProjectDeleted()
         {
+            var session = GuestSession.Example();
+            session.GuestSessionState = GuestState.InLobby;
+
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<GuestSession>());
+                .ReturnsAsync(new List<GuestSession> { session });
 
             await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.UserId, false);
 
-            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.GuestSessionDeleted)));
+            _eventServiceMock.Verify(x => x.PublishAsync(It.Is<ServiceBusEvent<GuidEvent>>(y => y.Name == EventNames.GuestSessionsForProjectDeleted)));
         }
 
         [Fact]
