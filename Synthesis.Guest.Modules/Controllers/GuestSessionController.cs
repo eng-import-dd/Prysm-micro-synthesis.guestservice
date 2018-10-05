@@ -166,36 +166,21 @@ namespace Synthesis.GuestService.Controllers
 
         public async Task EndGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
         {
-            //var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
+            var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
-            //var guestSessionTasks = guestSessions
-            //    .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
-            //        !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
-            //    .Select(session =>
-            //    {
-            //        session.GuestSessionState = GuestState.Ended;
-            //        session.AccessRevokedBy = principalId;
-            //        session.AccessRevokedDateTime = DateTime.UtcNow;
-
-            //        _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
-            //        return UpdateGuestSessionAsync(session, principalId);
-            //    });
-
-            //await Task.WhenAll(guestSessionTasks);
-
-            var allGuestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
-            var guestSessions = allGuestSessions
+            var guestSessionTasks = guestSessions
                 .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
-                    !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended);
+                    !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
+                .Select(session =>
+                {
+                    session.GuestSessionState = GuestState.Ended;
+                    session.AccessRevokedBy = principalId;
+                    session.AccessRevokedDateTime = DateTime.UtcNow;
 
-            foreach (var session in guestSessions)
-            {
-                session.GuestSessionState = GuestState.Ended;
-                session.AccessRevokedBy = principalId;
-                session.AccessRevokedDateTime = DateTime.UtcNow;
+                    return UpdateGuestSessionAsync(session, principalId);
+                });
 
-                await UpdateGuestSessionAsync(session, principalId);
-            }
+            await Task.WhenAll(guestSessionTasks);
 
             _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
 
