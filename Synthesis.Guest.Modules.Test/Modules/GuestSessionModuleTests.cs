@@ -137,7 +137,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task VerifyGuestAsync_CallsVerifyGuestAsyncControllerMethodWithExpectedArgs()
         {
              _userApiMock
-                .Setup(x => x.GetUserByUsernameAsync(_defaultGuestUser.Username))
+                .Setup(x => x.GetUserByUserNameOrEmailAsync(_defaultGuestUser.Username))
                 .ReturnsAsync(MicroserviceResponse.Create(NetHttpStatusCode.OK, _defaultGuestUser));
 
             await AuthenticatedBrowser.Post($"{Routing.VerifyGuestRoute}", ctx => BuildRequest(ctx, _defaultGuestVerificationRequest));
@@ -292,7 +292,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestSession_OnUnexpectedException_ReturnsInternalServerError()
         {
             _guestSessionControllerMock
-                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>()))
+                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
                 .Throws<Exception>();
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));
@@ -304,7 +304,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         public async Task CreateGuestSession_WhenValidationFails_ReturnsBadRequestValidationFailedException()
         {
             _guestSessionControllerMock
-                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>()))
+                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
             var response = await AuthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));

@@ -77,7 +77,7 @@ namespace Synthesis.GuestService.Controllers
             _serializer = serializer;
         }
 
-        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
+        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
             if (!validationResult.IsValid)
@@ -101,6 +101,7 @@ namespace Synthesis.GuestService.Controllers
                                                                x.GuestEmail == model.GuestEmail &&
                                                                x.Id != result.Id);
 
+            result.InvitedByTenantId = tenantId;
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
             // Send an invite email to the guest
@@ -265,7 +266,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException("Guest not found");
             }
 
-            var userResult = await _userApi.GetUserByUsernameAsync(email);
+            var userResult = await _userApi.GetUserByUserNameOrEmailAsync(email);
 
             if (userResult.ResponseCode == HttpStatusCode.NotFound)
             {

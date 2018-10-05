@@ -107,7 +107,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestSessionController.CreateGuestSessionAsync(newGuestSession);
+                return await _guestSessionController.CreateGuestSessionAsync(newGuestSession, PrincipalId);
             }
             catch (ValidationFailedException ex)
             {
