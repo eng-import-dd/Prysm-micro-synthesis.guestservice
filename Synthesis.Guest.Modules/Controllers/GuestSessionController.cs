@@ -197,7 +197,7 @@ namespace Synthesis.GuestService.Controllers
                 await UpdateGuestSessionAsync(session, principalId);
             }
 
-            _eventService.Publish(EventNames.GuestSessionsForProjectEnded, new GuidEvent(projectId));
+            _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
 
             var newState = await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
 
