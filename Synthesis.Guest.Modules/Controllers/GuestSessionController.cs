@@ -164,26 +164,41 @@ namespace Synthesis.GuestService.Controllers
             await Task.WhenAll(endSessionTasks);
         }
 
-        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
+        public async Task EndGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
         {
-            var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
+            //var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
-            var guestSessionTasks = guestSessions
+            //var guestSessionTasks = guestSessions
+            //    .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
+            //        !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
+            //    .Select(session =>
+            //    {
+            //        session.GuestSessionState = GuestState.Ended;
+            //        session.AccessRevokedBy = principalId;
+            //        session.AccessRevokedDateTime = DateTime.UtcNow;
+
+            //        _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
+            //        return UpdateGuestSessionAsync(session, principalId);
+            //    });
+
+            //await Task.WhenAll(guestSessionTasks);
+
+            var allGuestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
+            var guestSessions = allGuestSessions
                 .Where(x => onlyKickGuestsInProject && x.GuestSessionState == GuestState.InProject ||
-                    !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended)
-                .Select(session =>
-                {
-                    session.GuestSessionState = GuestState.Ended;
-                    session.AccessRevokedBy = principalId;
-                    session.AccessRevokedDateTime = DateTime.UtcNow;
+                    !onlyKickGuestsInProject && x.GuestSessionState != GuestState.Ended);
 
-                    _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
-                    return _guestSessionRepository.UpdateItemAsync(session.Id, session);
-                });
+            foreach (var session in guestSessions)
+            {
+                session.GuestSessionState = GuestState.Ended;
+                session.AccessRevokedBy = principalId;
+                session.AccessRevokedDateTime = DateTime.UtcNow;
 
-            await Task.WhenAll(guestSessionTasks);
+                await _projectGuestContextService.RemoveProjectGuestContextAsync(session.SessionId);
+                await UpdateGuestSessionAsync(session, principalId);
+            }
 
-            _eventService.Publish(EventNames.GuestSessionsForProjectDeleted, new GuidEvent(projectId));
+            _eventService.Publish(EventNames.GuestSessionsForProjectEnded, new GuidEvent(projectId));
 
             var newState = await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
 

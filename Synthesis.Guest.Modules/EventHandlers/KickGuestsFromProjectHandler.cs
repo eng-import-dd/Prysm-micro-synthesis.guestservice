@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
+using Synthesis.ExpirationNotifierService.InternalApi.Models;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Retry;
 using Synthesis.Logging;
@@ -10,7 +11,7 @@ using Synthesis.ExpirationNotifierService.InternalApi.Services;
 
 namespace Synthesis.GuestService.EventHandlers
 {
-    public class KickGuestsFromProjectHandler : IEventHandler<GuidEvent>
+    public class KickGuestsFromProjectHandler : IEventHandler<KickGuestsFromProjectRequest>
     {
         private readonly ILogger _logger;
         private readonly IGuestSessionController _guestSessionController;
@@ -27,26 +28,26 @@ namespace Synthesis.GuestService.EventHandlers
         }
 
         /// <inheritdoc />
-        public async void HandleEvent(GuidEvent args)
+        public async void HandleEvent(KickGuestsFromProjectRequest request)
         {
             try
             {
                 var retryPolicy = new RetryPolicy<KickGuestsExceptionDetectionStrategy>(1, TimeSpan.Zero);
-                retryPolicy.Retrying += (s, e) => _logger.Warning($"An Exception was thrown while kicking guests from ProjectId={args.Value}.  Retrying.");
+                retryPolicy.Retrying += (s, e) => _logger.Warning($"An Exception was thrown while kicking guests from ProjectId={request.ProjectId}.  Retrying.");
 
-                await retryPolicy.ExecuteAsync(() => KickGuestsInternal(args.Value));
+                await retryPolicy.ExecuteAsync(() => KickGuestsInternal(request));
             }
             catch (Exception ex)
             {
-                _logger.Error($"Errors occurred while kicking guests for ProjectId={args.Value}.", ex);
+                _logger.Error($"Errors occurred while kicking guests for ProjectId={request.ProjectId}.", ex);
 
-                await _cacheNotificationService.RetryScheduleKickGuestsNotificationAsync(args.Value);
+                await _cacheNotificationService.RetryScheduleKickGuestsNotificationAsync(request);
             }
         }
 
-        private async Task KickGuestsInternal(Guid projectId)
+        private async Task KickGuestsInternal(KickGuestsFromProjectRequest request)
         {
-            await _guestSessionController.DeleteGuestSessionsForProjectAsync(projectId, Guid.Empty, true);
+            await _guestSessionController.EndGuestSessionsForProjectAsync(request.ProjectId, request.PrincipalId, true);
         }
     }
 }

@@ -24,11 +24,11 @@ namespace Synthesis.GuestService.Modules.Test.Events
         }
 
         [Fact]
-        public void HandleGuestAccessCodeChangedEventCallsDeleteGuestSessionsForProjectAsync()
+        public void HandleGuestAccessCodeChangedEvent_CallsEndGuestSessionsForProjectAsync()
         {
             var projectId = Guid.NewGuid();
             _target.HandleEvent(new GuestAccessCodeChanged { ProjectId = projectId });
-            _guestSessionControllerMock.Verify(x => x.DeleteGuestSessionsForProjectAsync(It.Is<Guid>(v => v == projectId), It.IsAny<Guid>(), false));
+            _guestSessionControllerMock.Verify(x => x.EndGuestSessionsForProjectAsync(It.Is<Guid>(v => v == projectId), It.IsAny<Guid>(), false));
         }
     }
 }

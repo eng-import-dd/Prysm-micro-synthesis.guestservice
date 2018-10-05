@@ -1,6 +1,6 @@
 ﻿using System;
 using Moq;
-using Synthesis.EventBus.Events;
+using Synthesis.ExpirationNotifierService.InternalApi.Models;
 using Synthesis.ExpirationNotifierService.InternalApi.Services;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
@@ -15,6 +15,8 @@ namespace Synthesis.GuestService.Modules.Test.Events
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
         private readonly Mock<INotificationService> _cacheNotificationMock = new Mock<INotificationService>();
 
+        private readonly KickGuestsFromProjectRequest _kickRequest = KickGuestsFromProjectRequest.Example();
+
         public KickGuestsFromProjectHandlerTests()
         {
             var loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -27,19 +29,19 @@ namespace Synthesis.GuestService.Modules.Test.Events
         [Fact]
         public void HandleTriggerKickGuestsFromProject_ForValidEvent_DeletesGuestSessionsForProject()
         {
-            _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
-            _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), true));
+            _target.HandleEvent(_kickRequest);
+            _guestSessionControllerMock.Verify(m => m.EndGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), true));
         }
 
         [Fact]
         public void HandleTriggerKickGuestsFromProject_OnException_RetriesDeletingGuestSessionsForProject()
         {
-            _guestSessionControllerMock.Setup(x => x.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _guestSessionControllerMock.Setup(x => x.EndGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ThrowsAsync(new Exception());
 
-            _target.HandleEvent(new GuidEvent(Guid.NewGuid()));
+            _target.HandleEvent(_kickRequest);
 
-            _guestSessionControllerMock.Verify(m => m.DeleteGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), true), Times.Exactly(2));
+            _guestSessionControllerMock.Verify(m => m.EndGuestSessionsForProjectAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), true), Times.Exactly(2));
         }
     }
 }
