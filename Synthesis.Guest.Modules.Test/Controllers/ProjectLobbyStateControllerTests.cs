@@ -392,7 +392,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
         private GuestSession CloneGuestSession(GuestSession guestSession)
         {
-            return new GuestSession()
+            return new GuestSession
             {
                 Id = guestSession.Id,
                 AccessGrantedBy = guestSession.AccessGrantedBy,
@@ -400,12 +400,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 AccessRevokedBy = guestSession.AccessRevokedBy,
                 AccessRevokedDateTime = guestSession.AccessRevokedDateTime,
                 CreatedDateTime = guestSession.CreatedDateTime,
-                Email = guestSession.Email,
                 EmailedHostDateTime = guestSession.EmailedHostDateTime,
-                FirstName = guestSession.FirstName,
                 GuestSessionState = guestSession.GuestSessionState,
-                LastName = guestSession.LastName,
-                LastAccessDate = guestSession.LastAccessDate,
                 ProjectId = guestSession.ProjectId,
                 ProjectAccessCode = guestSession.ProjectAccessCode,
                 UserId = guestSession.UserId
