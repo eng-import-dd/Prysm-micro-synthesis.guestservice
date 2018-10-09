@@ -93,7 +93,7 @@ namespace Synthesis.GuestService.Controllers
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
             model.ProjectAccessCode = accessCode;
-            model.InvitedByTenantId = tenantId;
+            model.ProjectTenantId = project.TenantId;
 
             var result = await _guestInviteRepository.CreateItemAsync(model);
 
