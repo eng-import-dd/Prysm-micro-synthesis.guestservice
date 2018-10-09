@@ -77,7 +77,7 @@ namespace Synthesis.GuestService.Controllers
             _serializer = serializer;
         }
 
-        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model, Guid tenantId)
+        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
             var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
             if (!validationResult.IsValid)
