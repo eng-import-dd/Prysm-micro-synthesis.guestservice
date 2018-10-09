@@ -85,7 +85,7 @@ namespace Synthesis.GuestService.Modules
 
             try
             {
-                return await _guestInviteController.CreateGuestInviteAsync(newGuestInvite, TenantId);
+                return await _guestInviteController.CreateGuestInviteAsync(newGuestInvite);
             }
             catch (ValidationFailedException ex)
             {
