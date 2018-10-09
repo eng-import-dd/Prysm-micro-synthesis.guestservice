@@ -108,15 +108,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (userHasAccess)
             {
-                var projectState = await CreateCurrentProjectState(project, true);
-
-                if (projectState.GuestSession != null)
-                {
-                    projectState.GuestSession.GuestSessionState = InternalApi.Enums.GuestState.InProject;
-                    await _guestSessionRepository.UpdateItemAsync(projectState.GuestSession.Id, projectState.GuestSession);
-                }
-
-                return projectState;
+                return await CreateCurrentProjectState(project, true);
             }
 
             if (UserHasActiveProjectGuestContext(guestContext) && guestContext?.ProjectId == project?.Id)
