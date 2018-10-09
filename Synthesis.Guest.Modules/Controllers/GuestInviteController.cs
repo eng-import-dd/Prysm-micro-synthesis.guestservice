@@ -77,7 +77,7 @@ namespace Synthesis.GuestService.Controllers
             _serializer = serializer;
         }
 
-        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model, Guid tenantId)
+        public async Task<GuestInvite> CreateGuestInviteAsync(GuestInvite model)
         {
             var validationResult = _validatorLocator.Validate<GuestInviteValidator>(model);
             if (!validationResult.IsValid)
@@ -93,7 +93,7 @@ namespace Synthesis.GuestService.Controllers
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
             model.ProjectAccessCode = accessCode;
-            model.InvitedByTenantId = tenantId;
+            model.ProjectTenantId = project.TenantId;
 
             var result = await _guestInviteRepository.CreateItemAsync(model);
 
