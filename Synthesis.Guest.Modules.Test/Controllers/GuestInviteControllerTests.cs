@@ -117,6 +117,19 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task CreateGuestInvite_SetsProjectTenantIdToTenantIdOfTheProject()
+        {
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
+
+            var tenantId = _defaultProject.TenantId;
+
+            var result = await _target.CreateGuestInviteAsync(_defaultGuestInvite);
+
+            Assert.Equal(result.ProjectTenantId, tenantId);
+        }
+
+        [Fact]
         public async Task CreateGuestInviteCallsDeleteItemsToClearOldGuestInvitesForEmailAndProject()
         {
             await _target.CreateGuestInviteAsync(_defaultGuestInvite);
