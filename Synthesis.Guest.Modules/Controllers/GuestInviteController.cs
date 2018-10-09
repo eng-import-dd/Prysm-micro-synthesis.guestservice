@@ -93,6 +93,7 @@ namespace Synthesis.GuestService.Controllers
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
             model.ProjectAccessCode = accessCode;
+            model.InvitedByTenantId = tenantId;
 
             var result = await _guestInviteRepository.CreateItemAsync(model);
 
@@ -101,7 +102,6 @@ namespace Synthesis.GuestService.Controllers
                                                                x.GuestEmail == model.GuestEmail &&
                                                                x.Id != result.Id);
 
-            result.InvitedByTenantId = tenantId;
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
             // Send an invite email to the guest
