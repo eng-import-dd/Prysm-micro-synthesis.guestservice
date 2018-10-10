@@ -1,5 +1,6 @@
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
+using Synthesis.ExpirationNotifierService.InternalApi.Models;
 using Synthesis.GuestService.Constants;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.ProjectService.InternalApi.Models;
@@ -20,7 +21,7 @@ namespace Synthesis.GuestService.EventHandlers
             eventHandlerLocator.SubscribeEventHandler<RecalculateProjectLobbyStateHandler, GuidEvent>(EventNamespaces.MessageHubService, EventNames.TriggerRecalculateProjectLobbyState);
 
             // expiration notifier events
-            eventHandlerLocator.SubscribeEventHandler<KickGuestsFromProjectHandler, GuidEvent>(EventNamespaces.ExpirationNotifier, EventNames.TriggerKickGuestsFromProject);
+            eventHandlerLocator.SubscribeEventHandler<KickGuestsFromProjectHandler, KickGuestsFromProjectRequest>(EventNamespaces.ExpirationNotifier, EventNames.TriggerKickGuestsFromProject);
         }
     }
 }

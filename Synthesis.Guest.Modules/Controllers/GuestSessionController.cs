@@ -164,7 +164,7 @@ namespace Synthesis.GuestService.Controllers
             await Task.WhenAll(endSessionTasks);
         }
 
-        public async Task DeleteGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
+        public async Task EndGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
         {
             var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId)).ToList();
 
