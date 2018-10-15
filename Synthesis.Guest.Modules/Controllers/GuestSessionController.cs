@@ -24,7 +24,6 @@ using System.Threading.Tasks;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.Http.Microservice;
-using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 
@@ -111,7 +110,12 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            var getProjectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(model.ProjectId);
+
             await EndGuestSessionsForUser(model.UserId, principalId);
+
+            var projectResponse = await getProjectTask;
+
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
@@ -128,6 +132,13 @@ namespace Synthesis.GuestService.Controllers
             {
                 throw new BadRequestException("Request headers do not contain a SessionId");
             }
+
+            if (!projectResponse.IsSuccess())
+            {
+                throw new InvalidOperationException($"Error fetching tenantid for project {model.ProjectId}: {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase} ");
+            }
+
+            model.ProjectTenantId = projectResponse.Payload.TenantId;
 
             var result = await _guestSessionRepository.CreateItemAsync(model);
 
@@ -370,6 +381,14 @@ namespace Synthesis.GuestService.Controllers
                     guestSessionModel.AccessGrantedBy = principalId;
                     break;
             }
+
+            var existinGuestSession = await _guestSessionRepository.GetItemAsync(guestSessionModel.Id);
+            if (existinGuestSession == null)
+            {
+                throw new NotFoundException();
+            }
+
+            guestSessionModel.ProjectTenantId = existinGuestSession.ProjectTenantId;
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
 
