@@ -382,13 +382,13 @@ namespace Synthesis.GuestService.Controllers
                     break;
             }
 
-            var existinGuestSession = await _guestSessionRepository.GetItemAsync(guestSessionModel.Id);
-            if (existinGuestSession == null)
+            var existingGuestSession = await _guestSessionRepository.GetItemAsync(guestSessionModel.Id);
+            if (existingGuestSession == null)
             {
                 throw new NotFoundException();
             }
 
-            guestSessionModel.ProjectTenantId = existinGuestSession.ProjectTenantId;
+            guestSessionModel.ProjectTenantId = existingGuestSession.ProjectTenantId;
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
 
