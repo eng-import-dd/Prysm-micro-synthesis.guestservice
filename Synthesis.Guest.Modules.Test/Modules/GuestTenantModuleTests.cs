@@ -19,7 +19,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async void GetWorkspaceCountReturnsOk()
+        public async void GetTenantIdListReturnsOk()
         {
             var response = await UserTokenBrowser.Get("guesttenantids", BuildRequest);
 
@@ -27,7 +27,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async void GetWorkspaceCountReturnsListOfTenantIds()
+        public async void GetTenantIdListReturns500UponControllerRaisesException()
         {
             var tenantId = Guid.NewGuid();
             _tenantIds.Add(tenantId);
