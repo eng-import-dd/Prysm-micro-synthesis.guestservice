@@ -87,7 +87,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .ReturnsAsync(new GuestVerificationResponse() {ResultCode = VerifyGuestResponseCode.Success});
 
             _guestSessionControllerMock
-                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>(), _defaultPrincipalId))
+                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>(), _defaultPrincipalId, It.IsAny<Guid>()))
                 .ReturnsAsync(_defaultGuestSession);
 
             _userApiMock
@@ -366,9 +366,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Verify(x => x.CreateGuestSessionAsync(It.Is<GuestSession>(props => props.UserId == _currentUserId
                 && props.ProjectId == _defaultProjectId
                 && props.ProjectAccessCode == _defaultProject.GuestAccessCode
-                && props.GuestSessionState == GuestState.InLobby), _defaultPrincipalId));
+                && props.GuestSessionState == GuestState.InLobby), _defaultPrincipalId, It.IsAny<Guid>()));
         }
-
 
         [Fact]
         public async Task SetProjectGuestContext_WhenEvaluatingNonMemberUserCanEnterLobbyAndVerifyGuestReturnsSuccess_CachesProjectGuestContextRecord()

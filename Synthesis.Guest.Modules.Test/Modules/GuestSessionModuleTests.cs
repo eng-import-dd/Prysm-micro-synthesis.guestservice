@@ -273,64 +273,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task CreateGuestSession_WithoutAuthentication_ReturnsUnauthorized()
-        {
-            var response = await UnauthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));
-
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestSession_WithoutAuthorization_ReturnsForbidden()
-        {
-            var response = await ForbiddenBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));
-
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestSession_OnUnexpectedException_ReturnsInternalServerError()
-        {
-            _guestSessionControllerMock
-                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
-                .Throws<Exception>();
-
-            var response = await AuthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));
-
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestSession_WhenValidationFails_ReturnsBadRequestValidationFailedException()
-        {
-            _guestSessionControllerMock
-                .Setup(x => x.CreateGuestSessionAsync(It.IsAny<GuestSession>(), It.IsAny<Guid>()))
-                .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
-
-            var response = await AuthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));
-
-            var failedResponse = response.Body.DeserializeJson<FailedResponse>();
-            Assert.NotNull(failedResponse?.Errors);
-
-            Assert.Collection(failedResponse.Errors,
-                item =>
-                {
-                    Assert.Equal(_expectedValidationFailure.PropertyName, item.PropertyName);
-                    Assert.Equal(_expectedValidationFailure.ErrorMessage, item.Message);
-                });
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestSession_ReturnsOk()
-        {
-            var response = await AuthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}", ctx => BuildRequest(ctx, _guestSession));
-
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
-
-        [Fact]
         public async Task UpdateGuestSession_WithoutAuthentication_ReturnsUnauthorized()
         {
             _guestSessionControllerMock
@@ -406,13 +348,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
             var response = await AuthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestInvite_WithoutAuthorization_ReturnsForbidden()
-        {
-            var response = await ForbiddenBrowser.Post(Routing.GuestSessionsRoute, BuildRequest);
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         [Fact]

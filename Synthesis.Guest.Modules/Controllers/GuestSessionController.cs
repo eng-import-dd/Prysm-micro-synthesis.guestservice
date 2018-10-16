@@ -101,7 +101,7 @@ namespace Synthesis.GuestService.Controllers
             _requestHeaders = requestHeaders;
         }
 
-        public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId)
+        public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<GuestSessionValidator>(model);
             if (!validationResult.IsValid)
@@ -110,12 +110,30 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var getProjectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(model.ProjectId);
+            Task<MicroserviceResponse<Project>> getProjectTask = null;
+
+            var isTenantUnknown = tenantId == Guid.Empty;
+            if (isTenantUnknown)
+            {
+                getProjectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(model.ProjectId);
+            }
 
             await EndGuestSessionsForUser(model.UserId, principalId);
 
-            var projectResponse = await getProjectTask;
+            if (isTenantUnknown)
+            {
+                var projectResponse = await getProjectTask;
+                if (!projectResponse.IsSuccess())
+                {
+                    throw new InvalidOperationException($"Error fetching tenantid for project {model.ProjectId}: {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase} ");
+                }
 
+                model.ProjectTenantId = projectResponse.Payload.TenantId;
+            }
+            else
+            {
+                model.ProjectTenantId = tenantId;
+            }
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
@@ -132,13 +150,6 @@ namespace Synthesis.GuestService.Controllers
             {
                 throw new BadRequestException("Request headers do not contain a SessionId");
             }
-
-            if (!projectResponse.IsSuccess())
-            {
-                throw new InvalidOperationException($"Error fetching tenantid for project {model.ProjectId}: {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase} ");
-            }
-
-            model.ProjectTenantId = projectResponse.Payload.TenantId;
 
             var result = await _guestSessionRepository.CreateItemAsync(model);
 
