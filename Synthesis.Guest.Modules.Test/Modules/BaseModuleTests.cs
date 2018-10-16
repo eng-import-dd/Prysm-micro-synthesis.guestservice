@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Threading;
 using Moq;
 using Nancy.Testing;
 using Synthesis.Authentication;
@@ -9,6 +10,7 @@ using Synthesis.Authentication.Jwt;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
+using Synthesis.Policy.Models;
 using Synthesis.PolicyEvaluator;
 using ClaimTypes = Synthesis.Authentication.Jwt.ClaimTypes;
 
@@ -47,6 +49,10 @@ namespace Synthesis.GuestService.Modules.Test.Modules
 
         protected Browser GetBrowser(List<object> dependencies, AuthenticatedAs authenticatedAs = AuthenticatedAs.User)
         {
+            _policyEvaluatorMock
+                .Setup(x => x.EvaluateAsync(It.IsAny<PolicyEvaluationContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(authenticatedAs != AuthenticatedAs.Forbidden ? PermissionScope.Allow : PermissionScope.Deny);
+
             return new Browser(with =>
             {
                 if (authenticatedAs != AuthenticatedAs.None)
@@ -85,6 +91,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             User,
             Service,
+            Forbidden,
             None
         }
 
