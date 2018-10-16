@@ -558,7 +558,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.UpdateGuestSessionAsync(new GuestSession() {ProjectTenantId = updatedTenantId }, Guid.NewGuid());
 
-            _guestSessionRepositoryMock
+            _guestSessionRepositoryMock  // Verifies the update uses the existing and NOT supplied tenantId
                 .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<GuestSession>(gs => gs.ProjectTenantId == existingTenantId),
                     It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
         }
