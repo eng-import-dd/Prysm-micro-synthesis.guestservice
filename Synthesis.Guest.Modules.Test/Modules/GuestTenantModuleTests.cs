@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Moq;
 using Nancy;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.InternalApi.Constants;
 using Xunit;
 
 namespace Synthesis.GuestService.Modules.Test.Modules
@@ -21,7 +22,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         [Fact]
         public async void GetTenantIdListReturnsOk()
         {
-            var response = await UserTokenBrowser.Get("guesttenantids", BuildRequest);
+            var response = await UserTokenBrowser.Get(Routing.GuestTenantIdsRoute, BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -36,7 +37,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetTenantIdsForUserAsync(It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await UserTokenBrowser.Get("guesttenantids", BuildRequest);
+            var response = await UserTokenBrowser.Get(Routing.GuestTenantIdsRoute, BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
