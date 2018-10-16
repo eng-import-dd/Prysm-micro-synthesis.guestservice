@@ -29,13 +29,13 @@ namespace Synthesis.GuestService.Modules
             _tenantController = tenantController;
 
             // initialize routes
-            CreateRoute("GetGuestTenantIdsForCurrentUser", HttpMethod.Get, Routing.GuestTenantIdsRoute, GetTenantIdsForGuestAsync)
+            CreateRoute("GetGuestTenantIdsForCurrentUser", HttpMethod.Get, Routing.GuestTenantIdsRoute, GetTenantIdsForCurrentUserAsync)
                 .Description("Retrieves the list of tenantids for a guest user")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(new List<Guid> { Guid.Empty });
         }
 
-        private async Task<object> GetTenantIdsForGuestAsync(dynamic input)
+        private async Task<object> GetTenantIdsForCurrentUserAsync(dynamic input)
         {
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
