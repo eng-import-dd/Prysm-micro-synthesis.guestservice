@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
-using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Newtonsoft.Json;
 using Synthesis.GuestService.Constants;
@@ -37,11 +36,6 @@ namespace Synthesis.GuestService.Modules
             _guestSessionController = guestSessionController;
 
             // Initialize Routes
-            CreateRoute("CreateGuestSession", HttpMethod.Post, $"{Routing.GuestSessionsRoute}", CreateGuestSessionAsync)
-                .Description("Create a specific GuestSession resource.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
-
             CreateRoute("GetGuestSession", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{{id:guid}}", GetGuestSessionAsync)
                 .Description("Retrieve a specific GuestSession resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized,HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
@@ -86,38 +80,6 @@ namespace Synthesis.GuestService.Modules
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
-        }
-
-        private async Task<object> CreateGuestSessionAsync(dynamic input, CancellationToken cancellationToken)
-        {
-            GuestSession newGuestSession;
-            try
-            {
-                newGuestSession = this.Bind<GuestSession>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to create a GuestSession resource", ex);
-                return Response.BadRequestBindingException(ResponseReasons.FailedToBindToRequest);
-            }
-
-            await RequiresAccess()
-                .WithProjectIdExpansion(context => newGuestSession.ProjectId)
-                .ExecuteAsync(cancellationToken);
-
-            try
-            {
-                return await _guestSessionController.CreateGuestSessionAsync(newGuestSession, PrincipalId);
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Failed to create guestSession resource due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestSession);
-            }
         }
 
         private async Task<object> GetGuestSessionAsync(dynamic input, CancellationToken cancellationToken)

@@ -215,7 +215,7 @@
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta045\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta047\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
@@ -356,6 +356,8 @@
     <Compile Include="Constants\EventNamespaces.cs" />
     <Compile Include="Constants\ResponseMessages.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
+    <Compile Include="Controllers\GuestTenantController.cs" />
+    <Compile Include="Controllers\IGuestTenantController.cs" />
     <Compile Include="Controllers\IProjectGuestContextController.cs" />
     <Compile Include="Controllers\ProjectGuestContextController.cs" />
     <Compile Include="Controllers\GuestInviteController.cs" />
@@ -386,6 +388,7 @@
     <Compile Include="Modules\GuestSessionModule.cs" />
     <Compile Include="Modules\ProjectGuestContextModule.cs" />
     <Compile Include="Modules\ProjectLobbyStateModule.cs" />
+    <Compile Include="Modules\GuestTenantModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="GuestServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

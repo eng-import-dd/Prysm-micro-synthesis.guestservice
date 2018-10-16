@@ -138,7 +138,7 @@ namespace Synthesis.GuestService.Controllers
                 ProjectId = projectId,
                 ProjectAccessCode = project.GuestAccessCode,
                 GuestSessionState = InternalApi.Enums.GuestState.InLobby
-            }, principalId);
+            }, principalId, projectTenantId);
 
             await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext()
             {

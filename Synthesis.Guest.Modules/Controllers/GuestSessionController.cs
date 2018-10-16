@@ -24,7 +24,6 @@ using System.Threading.Tasks;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.Http.Microservice;
-using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 
@@ -102,7 +101,7 @@ namespace Synthesis.GuestService.Controllers
             _requestHeaders = requestHeaders;
         }
 
-        public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId)
+        public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<GuestSessionValidator>(model);
             if (!validationResult.IsValid)
@@ -111,7 +110,30 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            Task<MicroserviceResponse<Project>> getProjectTask = null;
+
+            var isTenantUnknown = tenantId == Guid.Empty;
+            if (isTenantUnknown)
+            {
+                getProjectTask = _serviceToServiceProjectApi.GetProjectByIdAsync(model.ProjectId);
+            }
+
             await EndGuestSessionsForUser(model.UserId, principalId);
+
+            if (isTenantUnknown)
+            {
+                var projectResponse = await getProjectTask;
+                if (!projectResponse.IsSuccess())
+                {
+                    throw new InvalidOperationException($"Error fetching tenantid for project {model.ProjectId}: {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase} ");
+                }
+
+                model.ProjectTenantId = projectResponse.Payload.TenantId;
+            }
+            else
+            {
+                model.ProjectTenantId = tenantId;
+            }
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
@@ -370,6 +392,14 @@ namespace Synthesis.GuestService.Controllers
                     guestSessionModel.AccessGrantedBy = principalId;
                     break;
             }
+
+            var existingGuestSession = await _guestSessionRepository.GetItemAsync(guestSessionModel.Id);
+            if (existingGuestSession == null)
+            {
+                throw new NotFoundException();
+            }
+
+            guestSessionModel.ProjectTenantId = existingGuestSession.ProjectTenantId;
 
             var result = await _guestSessionRepository.UpdateItemAsync(guestSessionModel.Id, guestSessionModel);
 

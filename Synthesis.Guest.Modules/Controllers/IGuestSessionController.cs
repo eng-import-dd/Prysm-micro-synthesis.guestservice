@@ -17,8 +17,9 @@ namespace Synthesis.GuestService.Controllers
         ///  External consumers should instead call <see cref="IProjectGuestContextController.SetProjectGuestContextAsync"/> to create a guest session.</remarks>
         /// <param name="model">The property values to assign to the created guest session</param>
         /// <param name="principalId"></param>
+        /// <param name="tenantId"></param>
         /// <returns></returns>
-        Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId);
+        Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId, Guid tenantId);
         Task<GuestSession> GetGuestSessionAsync(Guid guestSessionId);
         Task<IEnumerable<GuestSession>> GetMostRecentValidGuestSessionsByProjectIdAsync(Guid projectId);
         Task<IEnumerable<GuestSession>> GetValidGuestSessionsByProjectIdForCurrentUserAsync(Guid projectId, Guid userId);
