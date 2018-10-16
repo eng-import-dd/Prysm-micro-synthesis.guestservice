@@ -7,7 +7,6 @@ using Nancy;
 using Nancy.Testing;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Constants;
-using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Xunit;
@@ -19,8 +18,6 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
 
         protected override List<object> BrowserDependencies => new List<object> { _projectLobbyStateControllerMock.Object };
-
-        private Browser ForbiddenBrowser => GetBrowser(AuthenticatedAs.Forbidden);
 
         [Fact]
         public async Task GetProjectLobbyStateAsyncReturnsOk()

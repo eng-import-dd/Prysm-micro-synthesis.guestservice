@@ -39,8 +39,10 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         protected Browser UserTokenBrowser => GetBrowser();
         protected Browser ServiceTokenBrowser => GetBrowser(AuthenticatedAs.Service);
         protected Browser UnauthenticatedBrowser => GetBrowser(AuthenticatedAs.None);
+        protected Browser ForbiddenBrowser => GetBrowser(AuthenticatedAs.Forbidden);
 
         protected Mock<IPolicyEvaluator> PolicyEvaluatorMock => _policyEvaluatorMock;
+        protected Guid TenantId { get; set; }
 
         protected Browser GetBrowser(AuthenticatedAs authenticatedAs = AuthenticatedAs.User)
         {
@@ -63,7 +65,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                         {
                             new Claim(JwtRegisteredClaimNames.Aud, authenticatedAs == AuthenticatedAs.Service ? Audiences.SynthesisMicroservice : Audiences.Synthesis),
                             new Claim(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString()),
-                            new Claim(ClaimTypes.Tenant, Guid.NewGuid().ToString()),
+                            new Claim(ClaimTypes.Tenant, TenantId.ToString()),
                             new Claim(ClaimTypes.Group, Guid.NewGuid().ToString()),
                             new Claim(ClaimTypes.Group, Guid.NewGuid().ToString())
                         };
