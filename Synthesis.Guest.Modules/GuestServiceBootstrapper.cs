@@ -392,7 +392,7 @@ namespace Synthesis.GuestService
 
             // Controllers
             builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
-
+            builder.RegisterType<GuestTenantController>().As<IGuestTenantController>();
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceAccountSettingApi",
