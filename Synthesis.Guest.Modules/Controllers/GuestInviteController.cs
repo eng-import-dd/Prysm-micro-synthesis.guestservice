@@ -105,8 +105,8 @@ namespace Synthesis.GuestService.Controllers
             }
 
             var invitedByUser = await GetUserAsync(model.InvitedBy);
-            var userResponse = await _userApi.GetUserByUsernameAsync(model.GuestEmail);
-            if (userSettingsResponse.IsSuccess())
+            var userResponse = await _userApi.GetUserByUserNameOrEmailAsync(model.GuestEmail);
+            if (userResponse.IsSuccess() && userResponse.Payload != null)
             {
                 var otherUser = userResponse.Payload;
                 var otherUserTenantIds = await _serviceToServiceTenantApi.GetTenantIdsForUserIdAsync(otherUser.Id.Value);

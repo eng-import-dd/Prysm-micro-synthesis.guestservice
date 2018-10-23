@@ -34,7 +34,6 @@ using Synthesis.Microservice.Health;
 using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
-using Synthesis.Nancy.MicroService.Middleware;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
@@ -64,6 +63,7 @@ using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 using Synthesis.GuestService.Enumerations;
+using Synthesis.Nancy.MicroService.Middleware;
 using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService

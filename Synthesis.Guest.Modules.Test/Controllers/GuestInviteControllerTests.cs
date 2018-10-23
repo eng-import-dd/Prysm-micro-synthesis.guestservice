@@ -21,11 +21,15 @@ using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Models;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
+using Synthesis.SettingService.InternalApi.Api;
+using Synthesis.TenantService.InternalApi.Models;
 using Xunit;
 using static Synthesis.GuestService.Modules.Test.Utilities.LoopUtilities;
+using Synthesis.SettingService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Modules.Test.Controllers
 {
@@ -46,7 +50,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultProject = new Project
             {
                 Id = Guid.NewGuid(),
-                GuestAccessCode = Guid.NewGuid().ToString()
+                GuestAccessCode = Guid.NewGuid().ToString(),
+                IsGuestModeEnabled = true
             };
 
             _userApiMock.Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
@@ -57,6 +62,12 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _projectApiMock.Setup(x => x.ResetGuestAccessCodeAsync(It.IsAny<Guid>(), null))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
+
+            _settingApiMock.Setup(x => x.GetUserSettingsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserSettings { IsGuestModeEnabled = true }));
+
+            _tenantApiMock.Setup(x => x.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid> { Guid.NewGuid() }).AsEnumerable()));
 
             _emailServiceMock.Setup(x => x.SendGuestInviteEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
@@ -94,12 +105,14 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new GuestInviteController(_userApiMock.Object, _projectApiMock.Object, _emailServiceMock.Object, repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object, loggerFactoryMock.Object, _serializerMock.Object);
+            _target = new GuestInviteController(_userApiMock.Object, _projectApiMock.Object, _settingApiMock.Object,_tenantApiMock.Object, _emailServiceMock.Object, repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object, loggerFactoryMock.Object, _serializerMock.Object);
         }
 
         private readonly GuestInviteController _target;
         private readonly Mock<IUserApi> _userApiMock = new Mock<IUserApi>();
         private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
+        private readonly Mock<ISettingApi> _settingApiMock = new Mock<ISettingApi>();
+        private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
         private readonly Mock<IEmailSendingService> _emailServiceMock = new Mock<IEmailSendingService>();
         private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
