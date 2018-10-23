@@ -9,11 +9,11 @@ namespace Synthesis.GuestService.Email
 {
     public class InviteGuestEmail
     {
-        public static SendEmailRequest BuildRequest(string projectName, string projectCode, string guestEmail, string fromFirstName,  string webClientUrl)
+        public static SendEmailRequest BuildRequest(string projectName, string projectUri, string guestEmail, string fromFirstName)
         {
             try
             {
-                return BuildRequestObject(projectName, projectCode, guestEmail, fromFirstName, webClientUrl);
+                return BuildRequestObject(projectName, projectUri, guestEmail, fromFirstName);
             }
             catch (Exception ex)
             {
@@ -21,16 +21,14 @@ namespace Synthesis.GuestService.Email
             }
         }
 
-        private static SendEmailRequest BuildRequestObject(string projectName, string projectCode, string guestEmail, string fromFirstName, string webClientUrl)
+        private static SendEmailRequest BuildRequestObject(string projectName, string projectUri, string guestEmail, string fromFirstName)
         {
             var subject = "Prysm Guest Invite: " + projectName;
-            var link = $"{webClientUrl}/#/guest?accesscode={projectCode}&email={HttpUtility.UrlEncode(guestEmail)}";
 
             var inviteGuestTemplate = GetContent("Email/Templates/GuestInvite.html");
-            inviteGuestTemplate = inviteGuestTemplate.Replace("{Link}", link);
+            inviteGuestTemplate = inviteGuestTemplate.Replace("{Link}", $"{projectUri}&email={HttpUtility.UrlEncode(guestEmail)}");
             inviteGuestTemplate = inviteGuestTemplate.Replace("{Name}", fromFirstName);
             inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectName}", projectName);
-            inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectCode}", projectCode.Insert(7, " ").Insert(3, " "));
 
             return new SendEmailRequest
             {

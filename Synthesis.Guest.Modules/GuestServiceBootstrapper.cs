@@ -64,6 +64,7 @@ using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 using Synthesis.GuestService.Enumerations;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService
 {
@@ -79,6 +80,7 @@ namespace Synthesis.GuestService
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
         public const string ServiceToServiceProjectAccessApiKey = "ServiceToServiceProjectAccessApiKey";
         public const string ServiceToServiceProjectApiKey = "ServiceToServiceProjectApiKey";
+        public const string ServiceToServiceTenantApiKey = "ServiceToServiceTenantApiKey";
         public const string ServiceToServiceSettingApiKey = "ServiceToServiceSettingApiKey";
 
         public GuestServiceBootstrapper()
@@ -374,6 +376,12 @@ namespace Synthesis.GuestService
                     (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
                 .Keyed<IProjectApi>(ServiceToServiceProjectApiKey);
 
+            builder.RegisterType<TenantApi>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
+                .Keyed<ITenantApi>(ServiceToServiceTenantApiKey);
+
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
 
             builder.RegisterType<ProjectAccessApi>()
@@ -393,8 +401,15 @@ namespace Synthesis.GuestService
             builder.RegisterType<ProjectGuestContextService>().As<IProjectGuestContextService>();
 
             // Controllers
-            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
             builder.RegisterType<GuestTenantController>().As<IGuestTenantController>();
+            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceAccountSettingApi",
+                    (p, c) => c.ResolveKeyed<ISettingApi>(ServiceToServiceSettingApiKey)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceTenantApi",
+                    (p, c) => c.ResolveKeyed<ITenantApi>(ServiceToServiceTenantApiKey)));
+
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceAccountSettingApi",

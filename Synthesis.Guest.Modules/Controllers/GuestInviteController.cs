@@ -20,6 +20,8 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
+using Synthesis.SettingService.InternalApi.Api;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -35,6 +37,8 @@ namespace Synthesis.GuestService.Controllers
         private readonly IValidatorLocator _validatorLocator;
         private readonly IProjectApi _projectApi;
         private readonly IUserApi _userApi;
+        private readonly ISettingApi _serviceToServiceAccountSettingsApi;
+        private readonly ITenantApi _serviceToServiceTenantApi;
         private readonly IEmailSendingService _emailSendingService;
         private readonly IObjectSerializer _serializer;
 
@@ -42,6 +46,8 @@ namespace Synthesis.GuestService.Controllers
         ///     Initializes a new instance of the <see cref="GuestInviteController" /> class.
         /// </summary>
         /// <param name="userApi">The user api.</param>
+        /// <param name="serviceToServiceAccountSettingsApi"></param>
+        /// <param name="serviceToServiceTenantApi"></param>
         /// <param name="emailSendingService">The email sending service.</param>
         /// <param name="projectApi">The project API.</param>
         /// <param name="repositoryFactory">The repository factory.</param>
@@ -52,6 +58,8 @@ namespace Synthesis.GuestService.Controllers
         public GuestInviteController(
             IUserApi userApi,
             IProjectApi projectApi,
+            ISettingApi serviceToServiceAccountSettingsApi,
+            ITenantApi serviceToServiceTenantApi,
             IEmailSendingService emailSendingService,
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -71,6 +79,8 @@ namespace Synthesis.GuestService.Controllers
             _userApi = userApi;
             _emailSendingService = emailSendingService;
             _projectApi = projectApi;
+            _serviceToServiceTenantApi = serviceToServiceTenantApi;
+            _serviceToServiceAccountSettingsApi = serviceToServiceAccountSettingsApi;
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
@@ -87,13 +97,42 @@ namespace Synthesis.GuestService.Controllers
 
             // Get dependent resources
             var project = await GetProjectAsync(model.ProjectId);
+
+            var userSettingsResponse = await _serviceToServiceAccountSettingsApi.GetUserSettingsAsync(project.TenantId);
+            if (!userSettingsResponse.IsSuccess() || !userSettingsResponse.Payload.IsGuestModeEnabled)
+            {
+                throw new GuestModeNotEnabledException($"Guest Mode not enabled for the tenant associated with project {model.ProjectId}. Please enable before inviting guests.");
+            }
+
             var invitedByUser = await GetUserAsync(model.InvitedBy);
+            var userResponse = await _userApi.GetUserByUsernameAsync(model.GuestEmail);
+            if (userSettingsResponse.IsSuccess())
+            {
+                var otherUser = userResponse.Payload;
+                var otherUserTenantIds = await _serviceToServiceTenantApi.GetTenantIdsForUserIdAsync(otherUser.Id.Value);
+                var invitedByUserTenantIds = await _serviceToServiceTenantApi.GetTenantIdsForUserIdAsync(invitedByUser.Id.Value);
+
+                if (otherUserTenantIds.IsSuccess() && invitedByUserTenantIds.IsSuccess())
+                {
+                    if (otherUserTenantIds.Payload.Any(x => invitedByUserTenantIds.Payload.Contains(x)))
+                    {
+                        throw new DuplicateInviteException($"Can not invite a user under the same tenant.");
+                    }
+                }
+            }
+
             var accessCode = await GetGuestAccessCodeAsync(project);
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
             model.CreatedDateTime = DateTime.UtcNow;
             model.ProjectAccessCode = accessCode;
             model.ProjectTenantId = project.TenantId;
+
+            var previousInvites = await _guestInviteRepository.GetItemsAsync(x => x.ProjectId == model.ProjectId && x.GuestEmail == model.GuestEmail);
+            if (previousInvites.Any())
+            {
+                throw new DuplicateInviteException();
+            }
 
             var result = await _guestInviteRepository.CreateItemAsync(model);
 
@@ -105,10 +144,11 @@ namespace Synthesis.GuestService.Controllers
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
             // Send an invite email to the guest
-            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName);
+            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, project.ProjectUri, model.GuestEmail, invitedByUser.FirstName);
             if (!emailResult.IsSuccess())
             {
                 _logger.Error($"Sending guest invite email failed. Reason={emailResult.ReasonPhrase} Error={_serializer.SerializeToString(emailResult.ErrorResponse)}");
+                await _guestInviteRepository.DeleteItemAsync(result.Id);
             }
 
             return result;
@@ -120,6 +160,11 @@ namespace Synthesis.GuestService.Controllers
             if (!projectResult.IsSuccess() || projectResult.Payload == null)
             {
                 throw new GetProjectException($"Could not get the project for Id={guid}, Reason={projectResult.ReasonPhrase} Error={_serializer.SerializeToString(projectResult.ErrorResponse)}");
+            }
+
+            if (!projectResult.Payload.IsGuestModeEnabled)
+            {
+                throw new GuestModeNotEnabledException($"Could not use the project {guid} as GuestMode is not enabled for this project.");
             }
 
             return projectResult.Payload;
