@@ -376,12 +376,6 @@ namespace Synthesis.GuestService
                     (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
                 .Keyed<IProjectApi>(ServiceToServiceProjectApiKey);
 
-            builder.RegisterType<TenantApi>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
-                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
-                .Keyed<ITenantApi>(ServiceToServiceTenantApiKey);
-
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
 
             builder.RegisterType<ProjectAccessApi>()
@@ -402,13 +396,7 @@ namespace Synthesis.GuestService
 
             // Controllers
             builder.RegisterType<GuestTenantController>().As<IGuestTenantController>();
-            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.Name == "serviceToServiceAccountSettingApi",
-                    (p, c) => c.ResolveKeyed<ISettingApi>(ServiceToServiceSettingApiKey)))
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.Name == "serviceToServiceTenantApi",
-                    (p, c) => c.ResolveKeyed<ITenantApi>(ServiceToServiceTenantApiKey)));
+            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
 
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>()
                 .WithParameter(new ResolvedParameter(

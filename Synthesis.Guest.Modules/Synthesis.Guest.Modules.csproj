@@ -376,8 +376,6 @@
     <Compile Include="EventHandlers\KickGuestsFromProjectHandler.cs" />
     <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />
     <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
-    <Compile Include="Exceptions\GuestModeNotEnabledException.cs" />
-    <Compile Include="Exceptions\DuplicateInviteException.cs" />
     <Compile Include="Exceptions\GetProjectException.cs" />
     <Compile Include="Exceptions\ResetAccessCodeException.cs" />
     <Compile Include="Exceptions\SendEmailException.cs" />
