@@ -21,6 +21,7 @@ using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Models;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
@@ -46,7 +47,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultProject = new Project
             {
                 Id = Guid.NewGuid(),
-                GuestAccessCode = Guid.NewGuid().ToString()
+                GuestAccessCode = Guid.NewGuid().ToString(),
+                IsGuestModeEnabled = true
             };
 
             _userApiMock.Setup(x => x.GetUserAsync(It.IsAny<Guid>()))

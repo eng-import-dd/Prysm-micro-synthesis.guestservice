@@ -34,7 +34,6 @@ using Synthesis.Microservice.Health;
 using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
-using Synthesis.Nancy.MicroService.Middleware;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
@@ -64,6 +63,8 @@ using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 using Synthesis.GuestService.Enumerations;
+using Synthesis.Nancy.MicroService.Middleware;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService
 {
@@ -79,6 +80,7 @@ namespace Synthesis.GuestService
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
         public const string ServiceToServiceProjectAccessApiKey = "ServiceToServiceProjectAccessApiKey";
         public const string ServiceToServiceProjectApiKey = "ServiceToServiceProjectApiKey";
+        public const string ServiceToServiceTenantApiKey = "ServiceToServiceTenantApiKey";
         public const string ServiceToServiceSettingApiKey = "ServiceToServiceSettingApiKey";
 
         public GuestServiceBootstrapper()
@@ -393,8 +395,9 @@ namespace Synthesis.GuestService
             builder.RegisterType<ProjectGuestContextService>().As<IProjectGuestContextService>();
 
             // Controllers
-            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
             builder.RegisterType<GuestTenantController>().As<IGuestTenantController>();
+            builder.RegisterType<GuestInviteController>().As<IGuestInviteController>();
+
             builder.RegisterType<GuestSessionController>().As<IGuestSessionController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceAccountSettingApi",

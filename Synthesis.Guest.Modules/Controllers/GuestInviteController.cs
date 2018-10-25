@@ -20,6 +20,8 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
+using Synthesis.SettingService.InternalApi.Api;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Controllers
 {
@@ -86,8 +88,13 @@ namespace Synthesis.GuestService.Controllers
             }
 
             // Get dependent resources
-            var project = await GetProjectAsync(model.ProjectId);
-            var invitedByUser = await GetUserAsync(model.InvitedBy);
+            var projectTask = GetProjectAsync(model.ProjectId);
+            var invitedByUserTask = GetUserAsync(model.InvitedBy);
+            await Task.WhenAll(projectTask, invitedByUserTask);
+
+            var project = projectTask.Result;
+            var invitedByUser = invitedByUserTask.Result;
+
             var accessCode = await GetGuestAccessCodeAsync(project);
 
             model.Id = model.Id == Guid.Empty ? Guid.NewGuid() : model.Id;
@@ -105,10 +112,11 @@ namespace Synthesis.GuestService.Controllers
             _eventService.Publish(EventNames.GuestInviteCreated, result);
 
             // Send an invite email to the guest
-            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, accessCode, model.GuestEmail, invitedByUser.FirstName);
+            var emailResult = await _emailSendingService.SendGuestInviteEmailAsync(project.Name, project.ProjectUri, model.GuestEmail, invitedByUser.FirstName);
             if (!emailResult.IsSuccess())
             {
                 _logger.Error($"Sending guest invite email failed. Reason={emailResult.ReasonPhrase} Error={_serializer.SerializeToString(emailResult.ErrorResponse)}");
+                await _guestInviteRepository.DeleteItemAsync(result.Id);
             }
 
             return result;
