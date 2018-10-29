@@ -12,6 +12,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
     {
         private readonly GuestAccessCodeChangedEventHandler _target;
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
+        private readonly Mock<IGuestInviteController> _guestInviteControllerMock = new Mock<IGuestInviteController>();
 
         public GuestAccessCodeChangedEventHandlerTests()
         {
@@ -20,7 +21,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
 
-            _target = new GuestAccessCodeChangedEventHandler(loggerFactoryMock.Object, _guestSessionControllerMock.Object);
+            _target = new GuestAccessCodeChangedEventHandler(loggerFactoryMock.Object, _guestSessionControllerMock.Object, _guestInviteControllerMock.Object);
         }
 
         [Fact]
