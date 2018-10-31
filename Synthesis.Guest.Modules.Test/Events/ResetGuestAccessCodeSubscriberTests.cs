@@ -28,8 +28,10 @@ namespace Synthesis.GuestService.Modules.Test.Events
         public void HandleGuestAccessCodeChangedEvent_CallsEndGuestSessionsForProjectAsync()
         {
             var projectId = Guid.NewGuid();
-            _target.HandleEvent(new GuestAccessCodeChanged { ProjectId = projectId });
+            var previousGuestAccessCode = Guid.NewGuid().ToString();
+            _target.HandleEvent(new GuestAccessCodeChanged { ProjectId = projectId, PreviousGuestAccessCode = previousGuestAccessCode });
             _guestSessionControllerMock.Verify(x => x.EndGuestSessionsForProjectAsync(It.Is<Guid>(v => v == projectId), It.IsAny<Guid>(), false));
+            _guestInviteControllerMock.Verify(x => x.DeleteGuestInvitesByProjectIdAsync(It.Is<Guid>(v => v == projectId), It.Is<String>(v => v == previousGuestAccessCode)));
         }
     }
 }
