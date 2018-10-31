@@ -37,8 +37,6 @@ namespace Synthesis.GuestService.EventHandlers
                 _logger.Error($"Guests could not be kicked from project upon {EventNames.GuestAccessCodeChanged} event for project: {args.ProjectId}", ex);
             }
 
-            var guestInvites = new List<GuestInvite>();
-
             try
             {
                 await _guestInviteController.DeleteGuestInvitesByProjectIdAsync(args.ProjectId, args.PreviousGuestAccessCode);
