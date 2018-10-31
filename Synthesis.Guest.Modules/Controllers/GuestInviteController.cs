@@ -217,6 +217,35 @@ namespace Synthesis.GuestService.Controllers
             return filteredList;
         }
 
+        public async Task DeleteGuestInvitesByProjectIdAsync(Guid projectId, string previousGuestAccessCode)
+        {
+            var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var projectResponse = await _projectApi.GetProjectByIdAsync(projectId);
+            if (!projectResponse.IsSuccess())
+            {
+                if (projectResponse.ResponseCode == HttpStatusCode.NotFound)
+                {
+                    var notFoundMessage = $"Project could not be found: {projectId}";
+                    _logger.Error(notFoundMessage);
+                    throw new NotFoundException(notFoundMessage);
+                }
+
+                var message = $"Failed to retrieve project: {projectId}. Message: {projectResponse.ReasonPhrase}, StatusCode: {projectResponse.ResponseCode}";
+                _logger.Error(message);
+                throw new Exception(message);
+            }
+
+            await _guestInviteRepository.DeleteItemsAsync(x => x.ProjectId == projectId &&
+                                                               x.ProjectAccessCode == previousGuestAccessCode);
+        }
+
+
         public async Task<IEnumerable<GuestInvite>> GetGuestInvitesForUserAsync(GetGuestInvitesRequest request)
         {
             var validationResult = _validatorLocator.Validate<GetGuestInvitesRequestValidator>(request);

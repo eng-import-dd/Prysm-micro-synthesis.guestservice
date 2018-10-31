@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Constants;
@@ -42,14 +41,11 @@ namespace Synthesis.GuestService.EventHandlers
 
             try
             {
-                var guestInvitesEnumerable = await _guestInviteController.GetValidGuestInvitesByProjectIdAsync(args.ProjectId);
-                guestInvites = guestInvitesEnumerable.ToList();
-                // TODO: Now, we need to delete all of these GuestInvites from the CosmosDB Guest/GuestInvite collection. There is a delete in CreateGuestInviteAsync in GuestInviteController.cs
-                // TODO: Will also need to implement GetValidGuestSessionsByProjectIdAsync() to get a list of GuestSessions to delete. GetAvailableGuestCountAsync in GuestSessionController
+                await _guestInviteController.DeleteGuestInvitesByProjectIdAsync(args.ProjectId, args.PreviousGuestAccessCode);
             }
             catch (Exception ex)
             {
-                _logger.Error($"GuestInvites could not be retrieved for projectId {args.ProjectId}", ex);
+                _logger.Error($"GuestInvites could not be deleted for projectId {args.ProjectId}", ex);
             }
 
         }
