@@ -347,6 +347,32 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             Assert.Contains(resultList, invite => invite.GuestEmail == thirdEmailInvites.First().GuestEmail);
         }
 
+        [Fact]
+        public async Task DeleteGuestInvitesByProjectIdThrowsExceptionOnValidationError()
+        {
+            _validatorMock.Setup(v => v.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _target.DeleteGuestInvitesByProjectIdAsync(Guid.Empty, Guid.NewGuid().ToString()));
+        }
+
+        [Fact]
+        public async Task DeleteGuestInvitesByProjectIdThrowsNotFoundExceptionIfProjectIsNotFound()
+        {
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
+                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.DeleteGuestInvitesByProjectIdAsync(Guid.NewGuid(), Guid.NewGuid().ToString()));
+        }
+
+        [Fact]
+        public async Task DeleteInvitesByProjectIdAndPreviousAccessCodeDeletesInvitesForProject()
+        {
+            await _target.DeleteGuestInvitesByProjectIdAsync(_defaultProject.Id, Guid.NewGuid().ToString());
+
+            _guestInviteRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
+        }
+
         private List<GuestInvite> MakeTestInviteList(Guid projectId,
                                                      string email,
                                                      int matchingProjectIdEmailAccessCodeCount,
