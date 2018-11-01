@@ -357,19 +357,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task DeleteGuestInvitesByProjectIdThrowsNotFoundExceptionIfProjectIsNotFound()
-        {
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
-                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
-
-            await Assert.ThrowsAsync<NotFoundException>(() => _target.DeleteGuestInvitesByProjectIdAsync(Guid.NewGuid(), Guid.NewGuid().ToString()));
-        }
-
-        [Fact]
         public async Task DeleteInvitesByProjectIdAndPreviousAccessCodeDeletesInvitesForProject()
         {
             await _target.DeleteGuestInvitesByProjectIdAsync(_defaultProject.Id, Guid.NewGuid().ToString());
-
             _guestInviteRepositoryMock.Verify(x => x.DeleteItemsAsync(It.IsAny<Expression<Func<GuestInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
