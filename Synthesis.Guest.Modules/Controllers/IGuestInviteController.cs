@@ -17,6 +17,8 @@ namespace Synthesis.GuestService.Controllers
 
         Task<GuestInvite> UpdateGuestInviteAsync(GuestInvite model);
 
+        Task DeleteGuestInvitesByProjectIdAsync(Guid projectId, string previousGuestAccessCode);
+
         Task<bool> IsGuestRegistrationRequired(string email, string accessCode);
     }
 }

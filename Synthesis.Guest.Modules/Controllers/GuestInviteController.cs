@@ -217,6 +217,20 @@ namespace Synthesis.GuestService.Controllers
             return filteredList;
         }
 
+        public async Task DeleteGuestInvitesByProjectIdAsync(Guid projectId, string previousGuestAccessCode)
+        {
+            var validationResult = _validatorLocator.Validate<ProjectIdValidator>(projectId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the projectId while attempting to retrieve GuestInvite resources.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            await _guestInviteRepository.DeleteItemsAsync(x => x.ProjectId == projectId &&
+                                                               x.ProjectAccessCode == previousGuestAccessCode);
+        }
+
+
         public async Task<IEnumerable<GuestInvite>> GetGuestInvitesForUserAsync(GetGuestInvitesRequest request)
         {
             var validationResult = _validatorLocator.Validate<GetGuestInvitesRequestValidator>(request);
