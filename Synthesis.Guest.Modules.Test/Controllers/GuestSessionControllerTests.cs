@@ -262,7 +262,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task VerifyGuestAsync_ForNullProjectPassedIn_GetsProjectByIdIfIdSupplied()
+        public async Task VerifyGuestAsync_ForNullProjectPassed_GetsProjectByIdIfIdSupplied()
         {
             await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, null, null);
 
