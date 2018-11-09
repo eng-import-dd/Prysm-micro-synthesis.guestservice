@@ -458,14 +458,14 @@ namespace Synthesis.GuestService.Controllers
                 if (request.ProjectId != Guid.Empty && request.ProjectId != project.Id)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    response.Message = $"Could not find a project with that project Id.";
+                    response.Message = "Could not find a project with that project Id.";
                     return response;
                 }
 
                 if (request.ProjectAccessCode != project.GuestAccessCode && guestTenantId != project.TenantId)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    response.Message = $"Could not find a project with that project access code.";
+                    response.Message = "Could not find a project with that project access code.";
                     return response;
                 }
             }
@@ -478,7 +478,7 @@ namespace Synthesis.GuestService.Controllers
                     if (!projectResponse.IsSuccess())
                     {
                         response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                        response.Message = $"Could not find a project with that project Id.";
+                        response.Message = "Could not find a project with that project Id.";
                         return response;
                     }
 
@@ -490,7 +490,7 @@ namespace Synthesis.GuestService.Controllers
                     if (!projectResponse.IsSuccess())
                     {
                         response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                        response.Message = $"Could not find a project with that project access code.";
+                        response.Message = "Could not find a project with that project access code.";
                         return response;
                     }
 
@@ -501,7 +501,7 @@ namespace Synthesis.GuestService.Controllers
             if (project.TenantId == Guid.Empty)
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                response.Message = $"There is no tenant associated with this project. Please contact support to fix this project.";
+                response.Message = "There is no tenant associated with this project. Please contact support to fix this project.";
                 return response;
             }
 
@@ -510,7 +510,6 @@ namespace Synthesis.GuestService.Controllers
             response.Username = request.Username;
 
             var userResponse = await _userApi.GetUserByUserNameOrEmailAsync(request.Username);
-
             if (!userResponse.IsSuccess())
             {
                 if (userResponse.ResponseCode == HttpStatusCode.NotFound)
