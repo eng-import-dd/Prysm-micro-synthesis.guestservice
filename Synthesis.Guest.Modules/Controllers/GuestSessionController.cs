@@ -462,7 +462,7 @@ namespace Synthesis.GuestService.Controllers
                     return response;
                 }
 
-                if (request.ProjectAccessCode != project.GuestAccessCode)
+                if (request.ProjectAccessCode != project.GuestAccessCode && guestTenantId != project.TenantId)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
                     response.Message = $"Could not find a project with that project access code.";
