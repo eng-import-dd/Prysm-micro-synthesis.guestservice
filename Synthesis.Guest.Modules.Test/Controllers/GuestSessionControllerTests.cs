@@ -28,7 +28,6 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
-using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
@@ -84,6 +83,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultGuestSession.GuestSessionState = GuestState.InLobby;
 
             _defaultProject.GuestAccessCode = _defaultProjectAccessCode.ToString();
+            _defaultProject.TenantId = _defaultTenantId;
 
             _defaultGuestVerificationRequest = new GuestVerificationRequest
             {
@@ -101,7 +101,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 GuestSessionId = _defaultGuestSession.Id,
                 GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                 ProjectId = _defaultGuestSession.ProjectId,
-                TenantId = Guid.NewGuid()
+                TenantId = _defaultTenantId
             });
 
             _guestSessionRepositoryMock
@@ -215,10 +215,10 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task VerifyGuestAsync_IfProjectAccessCodeDoesNotMatch_ReturnsInvalidCodeForUserInAnotherTenant()
+        public async Task VerifyGuestAsync_IfProjectAccessCodeDoesNotMatch_ReturnsInvalidCodeWhenGuestTenantDoesNotMatchProjectTenant()
         {
             _defaultGuestVerificationRequest.ProjectAccessCode = Guid.NewGuid().ToString();
-            Guid? guestTenantId = null;
+            Guid? guestTenantId = Guid.NewGuid();
 
             var result = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, guestTenantId);
 
