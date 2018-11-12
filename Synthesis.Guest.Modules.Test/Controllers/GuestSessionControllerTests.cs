@@ -21,6 +21,7 @@ using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.Modules.Test.Extensions;
 using Synthesis.GuestService.Utilities.Interfaces;
+using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Models;
 using Synthesis.Logging;
@@ -55,6 +56,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
         private readonly Mock<IProjectGuestContextService> _projectGuestContextServiceMock = new Mock<IProjectGuestContextService>();
+        private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         private readonly User _defaultUser = User.Example();
         private readonly Project _defaultProject;
@@ -151,6 +153,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _settingsApiMock.Setup(x => x.GetUserSettingsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserSettings { IsGuestModeEnabled = true }));
 
+            _validatorFailsMock.Setup(m => m.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
+
             repositoryFactoryMock
 #pragma warning disable 612
                 .Setup(x => x.CreateRepository<GuestSession>())
@@ -190,9 +195,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                                                  _userApiMock.Object, _projectLobbyStateControllerMock.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object,
                                                  _projectGuestContextServiceMock.Object,headersWithSession);
         }
-
-        //TODO: Improve UpdateGuestSessionAsync unit test coverage
-
 
         #region UpdateGuestSessionStateAsync
         [Fact]
@@ -896,8 +898,27 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             await Assert.ThrowsAsync<NotFoundException>(async () => await _target.GetGuestSessionAsync(Guid.NewGuid()));
         }
 
+        #region UpdateGuestSessionAsync
         [Fact]
-        public async Task UpdateGuestSession_OnNotFoundException_ThrowsNotFound()
+        public async Task UpdateGuestSessionAsync_ForInvalidPrincipalId_ThrowsValidationFailedException()
+        {
+            _validatorLocator.Setup(m => m.GetValidator(typeof(GuestSessionIdValidator)))
+                .Returns(_validatorFailsMock.Object);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession, Guid.Empty));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionAsync_ForInvalidGuestSession_ThrowsValidationFailedException()
+        {
+            _validatorLocator.Setup(m => m.GetValidator(typeof(GuestSessionValidator)))
+                .Returns(_validatorFailsMock.Object);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(async () => await _target.UpdateGuestSessionAsync(_defaultGuestSession, Guid.Empty));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionAsync_OnNotFoundException_ThrowsNotFound()
         {
             _guestSessionRepositoryMock
                 .Setup(x => x.UpdateItemAsync(It.IsAny<Guid>(), _defaultGuestSession, It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
@@ -907,7 +928,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task UpdateGuestSession_CallsRepositoryUpdateItem()
+        public async Task UpdateGuestSessionAsync_WithValidRequest_UpdatesItem()
         {
             await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
 
@@ -915,7 +936,41 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task UpdateGuestSession_BussesEvent()
+        public async Task UpdateGuestSessionAsync_WhenEndingSession_SetsAccessRevokedInfo()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.Ended;
+            _defaultGuestSession.AccessRevokedDateTime = null;
+            _defaultGuestSession.AccessRevokedBy = null;
+
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
+
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<GuestSession>(session => session.AccessRevokedBy != null && session.AccessRevokedDateTime != null), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionAsync_WhenEnteringProject_SetsAccessGrantedInfo()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.InProject;
+            _defaultGuestSession.AccessGrantedDateTime = null;
+            _defaultGuestSession.AccessGrantedBy = null;
+
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
+
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<GuestSession>(session => session.AccessGrantedBy != null && session.AccessGrantedDateTime != null), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionAsync_EndingGuestSession_RemovesProjectGuestContext()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.Ended;
+
+            await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
+
+            _projectGuestContextServiceMock.Verify(x => x.RemoveProjectGuestContextAsync(It.IsAny<string>()));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionAsync_SendsEvent()
         {
             await _target.UpdateGuestSessionAsync(_defaultGuestSession, It.IsAny<Guid>());
 
@@ -923,28 +978,30 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task UpdateGuestSession_UpdatesProjectGuestContextInRedis()
+        public async Task UpdateGuestSessionAsync_UpdatesProjectGuestContextInRedis()
         {
             await _target.UpdateGuestSessionAsync(_defaultGuestSession, Guid.NewGuid());
             _projectGuestContextServiceMock.Verify(x => x.SetProjectGuestContextAsync(It.IsAny<ProjectGuestContext>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
-        public async Task UpdateGuestSession_DoesNotUpdateSuppliedSessionTenantId()
+        public async Task UpdateGuestSessionAsync_DoesNotUpdateSuppliedSessionTenantId()
         {
             var updatedTenantId = Guid.NewGuid();
             var existingTenantId = Guid.NewGuid();
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new GuestSession {ProjectTenantId = existingTenantId });
+                .ReturnsAsync(new GuestSession { ProjectTenantId = existingTenantId });
 
-            await _target.UpdateGuestSessionAsync(new GuestSession() {ProjectTenantId = updatedTenantId }, Guid.NewGuid());
+            await _target.UpdateGuestSessionAsync(new GuestSession() { ProjectTenantId = updatedTenantId }, Guid.NewGuid());
 
             _guestSessionRepositoryMock  // Verifies the update uses the existing and NOT supplied tenantId
                 .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<GuestSession>(gs => gs.ProjectTenantId == existingTenantId),
                     It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
         }
+
+        #endregion
 
         [Fact]
         public async Task UpdateGuestSessionState_IfProjectWithInvalidGuestAccessCodeIsReturned_ThrowsValidationException()
