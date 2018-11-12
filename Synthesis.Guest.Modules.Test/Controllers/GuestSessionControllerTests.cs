@@ -19,6 +19,7 @@ using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
+using Synthesis.GuestService.Modules.Test.Extensions;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Models;
@@ -28,7 +29,6 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
-using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
 using Synthesis.SettingService.InternalApi.Api;
@@ -62,6 +62,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Guid _defaultTenantId;
         private readonly Guid _defaultProjectAccessCode = Guid.NewGuid();
         private readonly GuestVerificationRequest _defaultGuestVerificationRequest;
+        private readonly UpdateGuestSessionStateRequest _updateGuestSessionStateRequest = UpdateGuestSessionStateRequest.Example;
 
         private static ValidationResult FailedValidationResult => new ValidationResult(
             new List<ValidationFailure>
@@ -138,7 +139,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _serviceToServiceProjectApiMock
                 .Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new Project()));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
             _projectApiMock
                 .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), null))
@@ -191,8 +192,177 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         //TODO: Improve UpdateGuestSessionAsync unit test coverage
-        //TODO: Add UpdateGuestSessionStateAsync tests
-        
+
+
+        #region UpdateGuestSessionStateAsync
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_IfCannotGetSession_ThrowsInvalidOperationException()
+        {
+            _guestSessionRepositoryMock.Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("some exception"));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_WhenUpdatingAnEndedSession_ReturnsSessionEnded()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.Ended;
+
+            var reponse = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            Assert.Equal(UpdateGuestSessionStateResultCodes.SessionEnded, reponse.ResultCode);
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_WhenUpdatingAnEndedSession_ReturnsSameAsCurrent()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.InLobby;
+            _updateGuestSessionStateRequest.GuestSessionState = _defaultGuestSession.GuestSessionState;
+
+            var reponse = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            Assert.Equal(UpdateGuestSessionStateResultCodes.SameAsCurrent, reponse.ResultCode);
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_IfProjectNotFound_ReturnsFailed()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.InProject;
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, new Project()));
+
+            var reponse = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            _serviceToServiceProjectApiMock.Verify(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()));
+            Assert.Equal(UpdateGuestSessionStateResultCodes.Failed, reponse.ResultCode);
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_IfGetProjectByIdFails_ReturnsFailed()
+        {
+            _defaultGuestSession.GuestSessionState = GuestState.InProject;
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.BadRequest, new Project()));
+
+            var reponse = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            _serviceToServiceProjectApiMock.Verify(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()));
+            Assert.Equal(UpdateGuestSessionStateResultCodes.Failed, reponse.ResultCode);
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_IfGuestAccessCodeChangedAndSessionEnded_ReturnsSessionEnded()
+        {
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+
+            var reponse = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            Assert.Equal(UpdateGuestSessionStateResultCodes.SessionEnded, reponse.ResultCode);
+        }
+
+        private GuestSession MakeSession()
+        {
+            var session = GuestSession.Example();
+            return session;
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_ProjectAlreadyFull_ReturnsProjectFull()
+        {
+            SetupGuests(GuestSessionController.GuestSessionLimit);
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+            _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
+
+            var reponse = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            Assert.Equal(UpdateGuestSessionStateResultCodes.ProjectFull, reponse.ResultCode);
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_ProjectAlreadyFull_SetsProjectLobbyToGuestLimitReached()
+        {
+            SetupGuests(GuestSessionController.GuestSessionLimit);
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+            _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
+
+            await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            _projectLobbyStateControllerMock.Verify(x => x.UpsertProjectLobbyStateAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.GuestLimitReached)));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_WithValidRequest_UpdatesGuestSession()
+        {
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+            _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
+
+            await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_ProjectReachedFull_SetsProjectLobbyToGuestLimitReached()
+        {
+            SetupGuests(GuestSessionController.GuestSessionLimit-1);
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+            _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
+
+            await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
+            _projectLobbyStateControllerMock.Verify(x => x.UpsertProjectLobbyStateAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.GuestLimitReached)));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_ProjectReachedFull_SetsProjectLobbyToNormal()
+        {
+            SetupGuests(GuestSessionController.GuestSessionLimit);
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+            _defaultGuestSession.GuestSessionState = GuestState.InProject;
+            _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.PromotedToProjectMember;
+
+            await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
+            _projectLobbyStateControllerMock.Verify(x => x.UpsertProjectLobbyStateAsync(It.IsAny<Guid>(), It.Is<ProjectLobbyState>(state => state.LobbyState == LobbyState.Normal)));
+        }
+
+        [Fact]
+        public async Task UpdateGuestSessionStateAsync_WithValidRequest_ReturnsSuccess()
+        {
+            _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
+            _defaultGuestSession.GuestSessionState = GuestState.InProject;
+            _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _updateGuestSessionStateRequest.GuestSessionState = GuestState.PromotedToProjectMember;
+
+            var result = await _target.UpdateGuestSessionStateAsync(_updateGuestSessionStateRequest, Guid.NewGuid());
+
+            Assert.Equal(UpdateGuestSessionStateResultCodes.Success, result.ResultCode);
+        }
+
+        private void SetupGuests(int guestCount)
+        {
+            var sessionList = new List<GuestSession>();
+            Enumerable.Range(0, guestCount).ForEach(arg => sessionList.Add(MakeSession()));
+            _guestSessionRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(sessionList);
+        }
+        #endregion
+
+        #region GetAvailableGuestCountAsync
+        #endregion
+
         #region VerifyGuestAsync
 
         [Fact]
@@ -218,9 +388,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task VerifyGuestAsync_IfProjectAccessCodeDoesNotMatch_ReturnsInvalidCodeForUserInAnotherTenant()
         {
             _defaultGuestVerificationRequest.ProjectAccessCode = Guid.NewGuid().ToString();
-            Guid? guestTenantId = null;
 
-            var result = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, guestTenantId);
+            var result = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, null);
 
             Assert.Equal(VerifyGuestResponseCode.InvalidCode, result.ResultCode);
         }
@@ -254,6 +423,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [ClassData(typeof(ProjectIdData))]
         public async Task VerifyGuestAsync_IfCannotGetProject_ReturnsInvalidCode(Guid projectId)
         {
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.BadRequest, default(Project)));
             _defaultGuestVerificationRequest.ProjectId = projectId;
 
             var response = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, null, null);
@@ -403,8 +575,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.CreateGuestSessionAsync(_defaultGuestSession, _defaultPrincipalId, Guid.Empty);
 
-            _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<GuestSession>(gs => gs.ProjectTenantId == theTenantId),
-                It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+            _guestSessionRepositoryMock.Verify(x => x.CreateItemAsync(It.Is<GuestSession>(gs => gs.ProjectTenantId == theTenantId), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
@@ -840,9 +1011,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 }
             };
 
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
-
             _guestSessionRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns<Expression<Func<GuestSession, bool>>, BatchOptions, CancellationToken>((predicate, bo, ct) =>
                 {
@@ -861,9 +1029,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task GetMostRecentValidGuestSessionsByProjectId_IfNoSessionsFoundReturns_EmptyList()
         {
-            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), null))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
-
             _guestSessionRepositoryMock.Setup(x => x
                 .GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<GuestSession>());
