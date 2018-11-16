@@ -76,11 +76,13 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultProject = Project.Example();
             _defaultPrincipalId = Guid.NewGuid();
             _defaultTenantId = Guid.NewGuid();
+
             _defaultGuestSession.Id = Guid.NewGuid();
             _defaultGuestSession.UserId = Guid.NewGuid();
             _defaultGuestSession.ProjectId = _defaultProject.Id;
             _defaultGuestSession.ProjectAccessCode = _defaultProject.GuestAccessCode;
             _defaultGuestSession.GuestSessionState = GuestState.InLobby;
+            _defaultGuestSession.ProjectTenantId = _defaultTenantId;
 
             _defaultProject.GuestAccessCode = _defaultProjectAccessCode.ToString();
             _defaultProject.TenantId = _defaultTenantId;
