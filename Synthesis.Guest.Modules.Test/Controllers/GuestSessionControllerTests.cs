@@ -229,6 +229,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfProjectAccessCodeDoesNotMatch_ReturnsSuccessForUserInSameTenant()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
             _defaultGuestVerificationRequest.ProjectAccessCode = Guid.NewGuid().ToString();
             var guestTenantId = _defaultProject.TenantId;
 
@@ -293,6 +294,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_GetsUser()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, _defaultProject.TenantId);
 
             _userApiMock.Verify(x => x.GetUserByUserNameOrEmailAsync(It.IsAny<string>()));
@@ -301,6 +304,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfInvitedToProject_ReturnsSuccessNoUser()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             _userApiMock.Setup(x => x.GetUserByUserNameOrEmailAsync(It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, default(User)));
             _defaultGuestInvite.GuestEmail = "example@abc.xyz";
@@ -313,6 +318,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfNotInvitedToProject_ReturnsInvalidNoInvite()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             _userApiMock.Setup(x => x.GetUserByUserNameOrEmailAsync(It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, default(User)));
             _guestInviteRepositoryMock
@@ -327,6 +334,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfUserIsLocked_ReturnsUserIsLocked()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             _defaultUser.IsLocked = true;
             var response = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, _defaultProject.TenantId);
 
@@ -336,6 +345,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfUserEmailNotVerified_ReturnsEmailVerificationNeeded()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             _defaultUser.IsEmailVerified = false;
             var response = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, _defaultProject.TenantId);
 
@@ -345,6 +356,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfGuestModeOffGlobally_ReturnsFailed()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             _settingsApiMock.Setup(x => x.GetUserSettingsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new UserSettings { IsGuestModeEnabled = false }));
 
@@ -356,6 +369,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_IfGuestModeOffInProject_ReturnsFailed()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             _defaultProject.IsGuestModeEnabled = false;
 
             var response = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, Guid.NewGuid());
@@ -366,6 +381,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task VerifyGuestAsync_ForValidGuestUser_ReturnsSuccess()
         {
+            _defaultProject.TenantId = Guid.NewGuid();
+
             var response = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, Guid.NewGuid());
 
             Assert.Equal(VerifyGuestResponseCode.Success, response.ResultCode);
