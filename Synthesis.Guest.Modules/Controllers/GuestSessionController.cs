@@ -50,7 +50,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IRequestHeaders _requestHeaders;
 
-        private const int GuestSessionLimit = 10;
+        public const int GuestSessionLimit = 10;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -458,14 +458,14 @@ namespace Synthesis.GuestService.Controllers
                 if (request.ProjectId != Guid.Empty && request.ProjectId != project.Id)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    response.Message = $"Could not find a project with that project Id.";
+                    response.Message = "Could not find a project with that project Id.";
                     return response;
                 }
 
                 if (request.ProjectAccessCode != project.GuestAccessCode && guestTenantId != project.TenantId)
                 {
                     response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                    response.Message = $"Could not find a project with that project access code.";
+                    response.Message = "Could not find a project with that project access code.";
                     return response;
                 }
             }
@@ -478,7 +478,7 @@ namespace Synthesis.GuestService.Controllers
                     if (!projectResponse.IsSuccess())
                     {
                         response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                        response.Message = $"Could not find a project with that project Id.";
+                        response.Message = "Could not find a project with that project Id.";
                         return response;
                     }
 
@@ -490,7 +490,7 @@ namespace Synthesis.GuestService.Controllers
                     if (!projectResponse.IsSuccess())
                     {
                         response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                        response.Message = $"Could not find a project with that project access code.";
+                        response.Message = "Could not find a project with that project access code.";
                         return response;
                     }
 
@@ -501,7 +501,7 @@ namespace Synthesis.GuestService.Controllers
             if (project.TenantId == Guid.Empty)
             {
                 response.ResultCode = VerifyGuestResponseCode.InvalidCode;
-                response.Message = $"There is no tenant associated with this project. Please contact support to fix this project.";
+                response.Message = "There is no tenant associated with this project. Please contact support to fix this project.";
                 return response;
             }
 
@@ -510,7 +510,6 @@ namespace Synthesis.GuestService.Controllers
             response.Username = request.Username;
 
             var userResponse = await _userApi.GetUserByUserNameOrEmailAsync(request.Username);
-
             if (!userResponse.IsSuccess())
             {
                 if (userResponse.ResponseCode == HttpStatusCode.NotFound)
@@ -697,6 +696,7 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
+            var previousSessionState = currentGuestSession.GuestSessionState;
             currentGuestSession.GuestSessionState = request.GuestSessionState;
 
             var guestSession = await UpdateGuestSessionAsync(currentGuestSession, principalId);
@@ -705,7 +705,7 @@ namespace Synthesis.GuestService.Controllers
             {
                 await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
             }
-            else if (currentGuestSession.GuestSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
+            else if (previousSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
             {
                 await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
             }
