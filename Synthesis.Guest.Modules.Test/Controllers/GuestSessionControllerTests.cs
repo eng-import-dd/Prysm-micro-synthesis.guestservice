@@ -82,7 +82,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultGuestSession.ProjectId = _defaultProject.Id;
             _defaultGuestSession.ProjectAccessCode = _defaultProject.GuestAccessCode;
             _defaultGuestSession.GuestSessionState = GuestState.InLobby;
-            _defaultGuestSession.ProjectTenantId = _defaultTenantId;
 
             _defaultProject.GuestAccessCode = _defaultProjectAccessCode.ToString();
             _defaultProject.TenantId = _defaultTenantId;
@@ -103,7 +102,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 GuestSessionId = _defaultGuestSession.Id,
                 GuestState = Guest.ProjectContext.Enums.GuestState.InLobby,
                 ProjectId = _defaultGuestSession.ProjectId,
-                TenantId = _defaultTenantId
+                TenantId = _defaultGuestSession.ProjectTenantId
             });
 
             _guestSessionRepositoryMock
