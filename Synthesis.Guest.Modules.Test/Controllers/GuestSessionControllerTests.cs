@@ -84,7 +84,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _defaultGuestSession.GuestSessionState = GuestState.InLobby;
 
             _defaultProject.GuestAccessCode = _defaultProjectAccessCode.ToString();
-            _defaultProject.TenantId = _defaultTenantId;
+            _defaultProject.TenantId = _defaultGuestSession.ProjectTenantId;
 
             _defaultGuestVerificationRequest = new GuestVerificationRequest
             {
