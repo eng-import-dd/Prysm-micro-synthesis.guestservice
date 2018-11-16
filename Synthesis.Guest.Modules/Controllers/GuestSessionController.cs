@@ -50,7 +50,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IRequestHeaders _requestHeaders;
 
-        private const int GuestSessionLimit = 10;
+        public const int GuestSessionLimit = 10;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -696,6 +696,7 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
+            var previousSessionState = currentGuestSession.GuestSessionState;
             currentGuestSession.GuestSessionState = request.GuestSessionState;
 
             var guestSession = await UpdateGuestSessionAsync(currentGuestSession, principalId);
@@ -704,7 +705,7 @@ namespace Synthesis.GuestService.Controllers
             {
                 await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
             }
-            else if (currentGuestSession.GuestSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
+            else if (previousSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
             {
                 await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
             }

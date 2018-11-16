@@ -336,6 +336,7 @@
     <Compile Include="Events\RecalculateProjectLobbyStateHandlerTests.cs" />
     <Compile Include="Events\ProjectCreatedEventHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
+    <Compile Include="Extensions\IEnumerablExtensions.cs" />
     <Compile Include="Modules\BaseModuleTests.cs" />
     <Compile Include="Modules\GuestInviteModuleTests.cs" />
     <Compile Include="Modules\GuestSessionModuleTests.cs" />
