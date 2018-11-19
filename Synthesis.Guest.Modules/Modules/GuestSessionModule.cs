@@ -38,7 +38,7 @@ namespace Synthesis.GuestService.Modules
             // Initialize Routes
             CreateRoute("GetGuestSession", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{{id:guid}}", GetGuestSessionAsync)
                 .Description("Retrieve a specific GuestSession resource.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized,HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestSession()));
 
             CreateRoute("DeleteGuestSession", HttpMethod.Delete, $"{Routing.GuestSessionsRoute}/{{id:guid}}", DeleteGuestSessionAsync)
@@ -76,7 +76,7 @@ namespace Synthesis.GuestService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new GuestVerificationResponse()));
 
-            CreateRoute("EmailHost", HttpMethod.Get, $"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{{accessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
+            CreateRoute("EmailHost", HttpMethod.Post, $"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{{accessCode}}/{Routing.EmailHostPath}", EmailHostAsync)
                 .Description("Send email to project host.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new SendHostEmailResponse()));
