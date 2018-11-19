@@ -227,7 +227,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await UserTokenBrowser.Get($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await UserTokenBrowser.Post($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -239,7 +239,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new SendHostEmailResponse());
 
-            var response = await UnauthenticatedBrowser.Get($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
+            var response = await UnauthenticatedBrowser.Post($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -251,7 +251,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.EmailHostAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                 .Throws<Exception>();
 
-            var response = await UserTokenBrowser.Get($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
+            var response = await UserTokenBrowser.Post($"{Routing.GuestSessionsRoute}/{Routing.ProjectsPath}/{_guestSession.ProjectAccessCode}/{Routing.EmailHostPath}", ctx => BuildRequest(ctx, _guestSession));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -303,7 +303,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                 .Setup(x => x.GetValidGuestSessionsByProjectIdForCurrentUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure> { _expectedValidationFailure }));
 
-            var response = await UserTokenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.UsersPath}/{Routing.GuestSessionsPath}",  BuildRequest);
+            var response = await UserTokenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.UsersPath}/{Routing.GuestSessionsPath}", BuildRequest);
 
             var failedResponse = response.Body.DeserializeJson<FailedResponse>();
             Assert.NotNull(failedResponse?.Errors);
@@ -323,13 +323,12 @@ namespace Synthesis.GuestService.Modules.Test.Modules
         {
             _guestSessionControllerMock
                 .Setup(x => x.GetGuestSessionsByProjectIdForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .ReturnsAsync(new List<GuestSession>(){ new GuestSession()});
+                .ReturnsAsync(new List<GuestSession>() { new GuestSession() });
 
             var response = await UserTokenBrowser.Get($"{Routing.ProjectsRoute}/{Guid.NewGuid()}/{Routing.UsersPath}/{Routing.GuestSessionsPath}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
-
 
         [Fact]
         public async Task GetGuestSessionsByProjectIdForUser_WithoutAuthentication_ReturnsUnauthorized()
