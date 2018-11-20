@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Web;
+using Synthesis.Configuration;
 
 namespace Synthesis.GuestService.Utilities
 {
@@ -23,8 +24,9 @@ namespace Synthesis.GuestService.Utilities
         private readonly LinkedResource _prysmLogo;
         private readonly LinkedResource _twitterIcon;
         private readonly LinkedResource _youtubeIcon;
+        private readonly string _webclientLink;
 
-        public EmailUtility(ILoggerFactory loggerFactory)
+        public EmailUtility(ILoggerFactory loggerFactory, IAppSettingsReader appSettingsReader)
         {
             _logger = loggerFactory.GetLogger(this);
 
@@ -35,6 +37,7 @@ namespace Synthesis.GuestService.Utilities
             _twitterIcon = new LinkedResource(MapPath("Utilities/EmailTemplates/Images/twitter-icon.png"), "image/png");
             _youtubeIcon = new LinkedResource(MapPath("Utilities/EmailTemplates/Images/youtube-icon.png"), "image/png");
 
+            _webclientLink = appSettingsReader.GetValue<string>("BaseWebClientUrl");
             _linkedResources.Add(_facebookIcon);
             _linkedResources.Add(_googlePlusIcon);
             _linkedResources.Add(_linkedInIcon);
@@ -62,7 +65,7 @@ namespace Synthesis.GuestService.Utilities
                 replacedContent = replacedContent.Replace("{Project}", projectName);
                 replacedContent = replacedContent.Replace("{HostEmail}", userEmail);
                 replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
-                replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
+                replacedContent = replacedContent.Replace("{WebClientLink}", _webclientLink);
 
                 SendEmail(email, "", "", subject, replacedContent, "");
             }
