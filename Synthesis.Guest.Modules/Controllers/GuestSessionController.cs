@@ -23,6 +23,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
+using Synthesis.GuestService.Exceptions;
 using Synthesis.Http.Microservice;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
@@ -625,7 +626,7 @@ namespace Synthesis.GuestService.Controllers
 
             if (!_emailUtility.SendHostEmail(hostUser.Email, sendingUser.FullName, sendingUser.FirstName, sendingUser.Email, project.Name))
             {
-                throw new Exception($"Email from user {sendingUser.Email} to host {hostUser.Email} could not be sent");
+                throw new SendEmailException($"Email from user {sendingUser.Email} to host {hostUser.Email} could not be sent");
             }
 
             userSession.EmailedHostDateTime = DateTime.UtcNow;
