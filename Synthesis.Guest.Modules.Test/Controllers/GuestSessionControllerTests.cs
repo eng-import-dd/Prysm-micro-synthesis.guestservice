@@ -10,12 +10,14 @@ using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
+using Synthesis.DocumentStorage.TestTools.Mocks;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Exceptions;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
@@ -44,7 +46,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
         private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
-        private readonly Mock<IEmailUtility> _emailUtility = new Mock<IEmailUtility>();
+        private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
         private readonly Mock<IProjectApi> _serviceToServiceProjectApiMock = new Mock<IProjectApi>();
         private readonly Mock<ISettingApi> _settingsApiMock = new Mock<ISettingApi>();
@@ -115,7 +117,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             _guestSessionRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<GuestSession> {_defaultGuestSession});
+                .ReturnsAsync(new List<GuestSession> { _defaultGuestSession });
 
             _guestSessionRepositoryMock
                 .Setup(x => x.CreateItemAsync(It.IsAny<GuestSession>(), It.IsAny<CancellationToken>()))
@@ -193,12 +195,13 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var headersWithSession = new RequestHeaders(kvpList);
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
-                                                 loggerFactoryMock.Object, _emailUtility.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
+                                                 loggerFactoryMock.Object, _emailUtilityMock.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
                                                  _userApiMock.Object, _projectLobbyStateControllerMock.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object,
-                                                 _projectGuestContextServiceMock.Object,headersWithSession);
+                                                 _projectGuestContextServiceMock.Object, headersWithSession);
         }
 
         #region UpdateGuestSessionStateAsync
+
         [Fact]
         public async Task UpdateGuestSessionStateAsync_IfCannotGetSession_ThrowsInvalidOperationException()
         {
@@ -315,7 +318,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateGuestSessionStateAsync_ProjectReachedFull_SetsProjectLobbyToGuestLimitReached()
         {
-            SetupGuests(GuestSessionController.GuestSessionLimit-1);
+            SetupGuests(GuestSessionController.GuestSessionLimit - 1);
             _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
             _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
             _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
@@ -362,10 +365,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(sessionList);
         }
-        #endregion
 
-        #region GetAvailableGuestCountAsync
-        #endregion
+        #endregion UpdateGuestSessionStateAsync
 
         #region VerifyGuestAsync
 
@@ -563,7 +564,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             Assert.Equal(VerifyGuestResponseCode.Success, response.ResultCode);
         }
-        #endregion
+
+        #endregion VerifyGuestAsync
 
         [Fact]
         public async Task CreateGuestSession_CallsCreate()
@@ -856,49 +858,305 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task EmailHost_WhenGuestSessionThrowsNotFound_ThrowsNotFoundException()
+        public async Task EmailHostAsync_WhenGetBasicUserForSendingUserReturnsErrorResponse_ThrowsNotFoundException()
         {
-            _userApiMock
-                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
+            var sendingUserId = Guid.NewGuid();
 
-            _guestSessionRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<GuestSession, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new NotFoundException("GuestSession could not be found."));
+            _userApiMock.Setup(x => x.GetBasicUserAsync(sendingUserId))
+                .ReturnsAsync(MicroserviceResponse.Create<BasicUser>(HttpStatusCode.NotFound, new ErrorResponse()));
 
-            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, sendingUserId));
         }
 
         [Fact]
-        public async Task EmailHost_WhenGetProjectThrowsNotFound_ThrowsNotFoundException()
+        public async Task EmailHostAsync_WhenGuestSessionNotFound_ThrowsNotFoundException()
         {
-            _userApiMock
-                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, User.Example()));
+            _userApiMock.Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => Enumerable.Empty<GuestSession>());
+
+            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId));
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenGetProjectApiReturnsErrorResponse_ThrowsNotFoundException()
+        {
+            _userApiMock.Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
 
             _serviceToServiceProjectApiMock
-                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), null))
-                .ThrowsAsync(new NotFoundException("Project could not be found"));
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create<Project>(HttpStatusCode.NotFound, new ErrorResponse()));
 
-            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
+            await Assert.ThrowsAsync<NotFoundException>(() => _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId));
         }
 
         [Fact]
-        public async Task EmailHost_WhenGetUserThrowsNotFound_ThrowsNotFoundException()
+        public async Task EmailHostAsync_WhenEmailAlreadySent_ReturnsSuccessfully()
+        {
+            _userApiMock.Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            var sentTime = DateTime.UtcNow - TimeSpan.FromMinutes(10);
+            _defaultGuestSession.EmailedHostDateTime = sentTime;
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
+
+            _defaultGuestInvite.InvitedBy = Guid.NewGuid();
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(_defaultGuestInvite.InvitedBy))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = "anything@abc.com" }));
+
+            var response = await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
+
+            Assert.Equal(sentTime, response.EmailSentDateTime);
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenEmailAlreadySent_DoesNotSendEmail()
+        {
+            const string toEmail = "a@b.com";
+
+            _userApiMock
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            var sentTime = DateTime.UtcNow - TimeSpan.FromMinutes(10);
+            _defaultGuestSession.EmailedHostDateTime = sentTime;
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Project.Example()));
+
+            _defaultGuestInvite.InvitedBy = Guid.NewGuid();
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(_defaultGuestInvite.InvitedBy))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = toEmail }));
+
+            await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
+
+            _emailUtilityMock.Verify(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenGuestInviteNotFound_SendsEmailToProjectOwner()
+        {
+            const string invitedByEmail = "invitedby@abc.com";
+            const string projectOwnerEmail = "owner@abc.com";
+
+            _userApiMock
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            var project = Project.Example();
+
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _defaultGuestInvite.InvitedBy = Guid.NewGuid();
+
+            // Invite will not be found because UserId and ProjectAccessCode will not match.
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(_defaultGuestInvite.InvitedBy))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = invitedByEmail }));
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
+
+            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
+
+            _emailUtilityMock.Verify(m => m.SendHostEmail(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenGuestInviteFoundButInvitedByUserNotFound_SendsEmailToProjectOwner()
+        {
+            const string projectOwnerEmail = "owner@abc.com";
+
+            _userApiMock
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            var project = Project.Example();
+
+            _serviceToServiceProjectApiMock
+                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _defaultGuestInvite.UserId = _defaultGuestSession.UserId;
+            _defaultGuestInvite.ProjectAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _defaultGuestInvite.InvitedBy = Guid.NewGuid();
+
+            // Invite will be found because UserId and ProjectAccessCode will match.
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            // However, the InvitedBy user is not found.
+            _userApiMock.Setup(m => m.GetBasicUserAsync(_defaultGuestInvite.InvitedBy))
+                .ReturnsAsync(MicroserviceResponse.Create<BasicUser>(HttpStatusCode.NotFound, new ErrorResponse()));
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
+
+            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
+
+            _emailUtilityMock.Verify(m => m.SendHostEmail(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenGuestInviteFound_SendsEmailToInvitedBy()
+        {
+            const string invitedByEmail = "invitedby@abc.com";
+            const string projectOwnerEmail = "owner@abc.com";
+
+            _userApiMock
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            var project = Project.Example();
+
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _defaultGuestInvite.UserId = _defaultGuestSession.UserId;
+            _defaultGuestInvite.ProjectAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _defaultGuestInvite.InvitedBy = Guid.NewGuid();
+
+            // Invite will be found because UserId and ProjectAccessCode will match.
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(_defaultGuestInvite.InvitedBy))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = invitedByEmail }));
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
+
+            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
+
+            _emailUtilityMock.Verify(m => m.SendHostEmail(invitedByEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenNeitherProjectOwnerOrInvitedUserFound_ThrowsInvalidOperationException()
         {
             _userApiMock
-                .Setup(x => x.GetUserAsync(It.IsAny<Guid>()))
-                .ThrowsAsync(new NotFoundException("The sending user could not be found"));
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
 
-            await Assert.ThrowsAsync<NotFoundException>(async () => await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, Guid.NewGuid()));
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            var project = Project.Example();
+
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _defaultGuestInvite.UserId = _defaultGuestSession.UserId;
+            _defaultGuestInvite.ProjectAccessCode = _defaultGuestSession.ProjectAccessCode;
+            _defaultGuestInvite.InvitedBy = Guid.NewGuid();
+
+            // Invite will be found because UserId and ProjectAccessCode will match.
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(_defaultGuestInvite.InvitedBy))
+                .ReturnsAsync(MicroserviceResponse.Create<BasicUser>(HttpStatusCode.NotFound, new ErrorResponse()));
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
+                .ReturnsAsync(MicroserviceResponse.Create<BasicUser>(HttpStatusCode.NotFound, new ErrorResponse()));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId));
         }
 
         [Fact]
-        public async Task GetGuestSession_CallsRespositoryGetItem()
+        public async Task EmailHostAsync_WhenEmailSent_GuestSessionIsUpdated()
+        {
+            const string projectOwnerEmail = "owner@abc.com";
+
+            _userApiMock
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            var project = Project.Example();
+
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
+
+            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
+
+            _guestSessionRepositoryMock.Verify(
+                m => m.UpdateItemAsync(_defaultGuestSession.Id, It.Is<GuestSession>(s => s == _defaultGuestSession && s.EmailedHostDateTime.HasValue), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task EmailHostAsync_WhenEmailFailsToSend_SendEmailExceptionThrown()
+        {
+            const string projectOwnerEmail = "owner@abc.com";
+
+            _userApiMock
+                .Setup(x => x.GetBasicUserAsync(_defaultGuestSession.UserId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, BasicUser.Example()));
+
+            _guestSessionRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestSession });
+
+            var project = Project.Example();
+
+            _serviceToServiceProjectApiMock.Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, project));
+
+            _guestInviteRepositoryMock.SetupCreateItemQuery(o => new[] { _defaultGuestInvite });
+
+            _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
+
+            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(false);
+
+            await Assert.ThrowsAsync<SendEmailException>(() => _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId));
+        }
+
+        [Fact]
+        public async Task GetGuestSession_CallsRepositoryGetItem()
         {
             var id = Guid.NewGuid();
             await _target.GetGuestSessionAsync(id);
-            _guestSessionRepositoryMock.Verify(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
+            _guestSessionRepositoryMock.Verify(x => x.GetItemAsync(id, It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
@@ -919,6 +1177,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         #region UpdateGuestSessionAsync
+
         [Fact]
         public async Task UpdateGuestSessionAsync_ForInvalidPrincipalId_ThrowsValidationFailedException()
         {
@@ -1021,7 +1280,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
         }
 
-        #endregion
+        #endregion UpdateGuestSessionAsync
 
         [Fact]
         public async Task UpdateGuestSessionState_IfProjectWithInvalidGuestAccessCodeIsReturned_ThrowsValidationException()

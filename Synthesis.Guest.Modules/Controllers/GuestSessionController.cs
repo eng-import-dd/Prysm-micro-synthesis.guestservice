@@ -23,6 +23,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
+using Synthesis.GuestService.Exceptions;
 using Synthesis.Http.Microservice;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
@@ -470,7 +471,7 @@ namespace Synthesis.GuestService.Controllers
                 }
             }
 
-            if(project == null)
+            if (project == null)
             {
                 if (request.ProjectId != Guid.Empty)
                 {
@@ -574,23 +575,22 @@ namespace Synthesis.GuestService.Controllers
             return response;
         }
 
-
         public async Task<SendHostEmailResponse> EmailHostAsync(string accessCode, Guid sendingUserId)
         {
             var codeValidationResult = _validatorLocator.Validate<ProjectAccessCodeValidator>(accessCode);
             if (!codeValidationResult.IsValid)
             {
-                _logger.Error($"Failed to validate the project access code {accessCode} while attempting to email the host");
                 throw new ValidationFailedException(codeValidationResult.Errors);
             }
 
-            var sendingUser = (await _userApi.GetUserAsync(sendingUserId)).Payload;
+            var sendingUser = (await _userApi.GetBasicUserAsync(sendingUserId)).Payload;
             if (sendingUser == null)
             {
                 throw new NotFoundException($"User with id {sendingUserId} could not be found");
             }
 
-            var userSession = (await _guestSessionRepository.GetItemsAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode)).FirstOrDefault();
+            var userSession = await _guestSessionRepository.CreateItemQuery()
+                .FirstOrDefaultAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode);
             if (userSession == null)
             {
                 throw new NotFoundException($"User guest session with userId {sendingUserId} and project access code {accessCode} could not be found");
@@ -602,23 +602,31 @@ namespace Synthesis.GuestService.Controllers
                 throw new NotFoundException($"Project with access code {accessCode} could not be found");
             }
 
-            var projectOwner = (await _userApi.GetUserAsync(project.OwnerId)).Payload;
-            if (projectOwner == null)
-            {
-                throw new NotFoundException($"User for project owner {project.OwnerId} could not be found");
-            }
-
             if (userSession.EmailedHostDateTime != null)
             {
-                throw new Exception($"User {sendingUser.Email} has already emailed the host {projectOwner.Email} once for this guest session {userSession.Id}");
+                // This is not an error, but a no-op.
+                return new SendHostEmailResponse
+                {
+                    EmailSentDateTime = userSession.EmailedHostDateTime.Value,
+                    SentBy = sendingUser.Email
+                };
             }
 
-            var invite = (await _guestInviteRepository.GetItemsAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode)).FirstOrDefault();
-            var sendTo = invite == null ? projectOwner.Email : invite.GuestEmail;
+            var invite = await _guestInviteRepository.CreateItemQuery()
+                .FirstOrDefaultAsync(x => x.UserId == sendingUserId && x.ProjectAccessCode == accessCode);
 
-            if (!_emailUtility.SendHostEmail(sendTo, sendingUser.GetFullName(), sendingUser.FirstName, sendingUser.Email, project.Name))
+            var hostUser = invite == null
+                ? (await _userApi.GetBasicUserAsync(project.OwnerId)).Payload
+                : (await _userApi.GetBasicUserAsync(invite.InvitedBy)).Payload ?? (await _userApi.GetBasicUserAsync(project.OwnerId)).Payload;
+
+            if (hostUser == null)
             {
-                throw new Exception($"Email from user {sendingUser.Email} to host {projectOwner.Email} could not be sent");
+                throw new InvalidOperationException($"Unable to find a host user for guest principal {sendingUserId} using access code {accessCode}");
+            }
+
+            if (!_emailUtility.SendHostEmail(hostUser.Email, sendingUser.FullName, sendingUser.FirstName, sendingUser.Email, project.Name))
+            {
+                throw new SendEmailException($"Email from user {sendingUser.Email} to host {hostUser.Email} could not be sent");
             }
 
             userSession.EmailedHostDateTime = DateTime.UtcNow;
