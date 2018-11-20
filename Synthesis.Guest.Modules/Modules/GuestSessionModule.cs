@@ -18,6 +18,7 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -333,23 +334,28 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> EmailHostAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess().ExecuteAsync(cancellationToken);
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
+
+            string accessCode = input.accessCode;
 
             try
             {
-                return await _guestSessionController.EmailHostAsync(input.accessCode, PrincipalId);
+                return await _guestSessionController.EmailHostAsync(accessCode, PrincipalId);
             }
-            catch (NotFoundException)
+            catch (NotFoundException ex)
             {
+                Logger.Info($"Failed to send email to host from principal {PrincipalId} because the guest session for access code {accessCode} could not be found", ex);
                 return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Parameter validation failed while attempting to send email to project host from principal {PrincipalId} using access code {accessCode}", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to send email to host for project with access code {input.accessCode} due to an error", ex);
+                Logger.Error($"Failed to send email to host for project with access code {accessCode} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestSession);
             }
         }
