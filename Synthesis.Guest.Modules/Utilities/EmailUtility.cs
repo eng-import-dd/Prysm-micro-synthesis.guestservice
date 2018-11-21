@@ -16,7 +16,6 @@ namespace Synthesis.GuestService.Utilities
         private readonly string _emailTemplate;
         private readonly LinkedResource _facebookIcon;
         private readonly LinkedResource _googlePlusIcon;
-        private readonly string _guestInviteEmail;
         private readonly LinkedResource _linkedInIcon;
         private readonly List<LinkedResource> _linkedResources = new List<LinkedResource>();
         private readonly ILogger _logger;
@@ -48,7 +47,6 @@ namespace Synthesis.GuestService.Utilities
             }
             _emailTemplate = _emailTemplate.Replace("{{YEAR}}", DateTime.UtcNow.Year.ToString());
 
-            _guestInviteEmail = GetContent("Utilities/EmailTemplates/GuestInvite.html");
             _emailHostEmail = GetContent("Utilities/EmailTemplates/EmailHost.html");
         }
 
