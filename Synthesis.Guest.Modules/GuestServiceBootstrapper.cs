@@ -64,8 +64,6 @@ using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 using Synthesis.GuestService.Enumerations;
 using Synthesis.Nancy.MicroService.Middleware;
-using Synthesis.TenantService.InternalApi.Api;
-
 namespace Synthesis.GuestService
 {
     public class GuestServiceBootstrapper : AutofacNancyBootstrapper
@@ -425,7 +423,7 @@ namespace Synthesis.GuestService
                 .As<IProjectGuestContextController>();
 
             // Utilities
-            builder.RegisterType<EmailUtility>().As<IEmailUtility>();
+            builder.RegisterType<EmailBuilder>().As<IEmailBuilder>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
 
             builder.RegisterType<SessionService>().As<ISessionService>();
