@@ -624,7 +624,7 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Unable to find a host user for guest principal {sendingUserId} using access code {accessCode}");
             }
 
-            var response = await _emailSendingService.SendNotifyHostEmailAsync(hostUser.Email, project.Name, sendingUser.FullName, sendingUser.Email, sendingUser.FirstName);
+            var response = await _emailSendingService.SendNotifyHostEmailAsync(hostUser.Email, project.ProjectUri, project.Name, sendingUser.FullName, sendingUser.Email, sendingUser.FirstName);
             if (!response.IsSuccess())
             {
                 throw new SendEmailException($"Notify host email could not be sent - {response.ResponseCode}, {response.ReasonPhrase}");

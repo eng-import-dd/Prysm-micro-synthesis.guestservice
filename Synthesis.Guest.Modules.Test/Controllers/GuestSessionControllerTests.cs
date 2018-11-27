@@ -184,7 +184,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(g => g.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
 
-            _emailSendingServiceMock.Setup(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            _emailSendingServiceMock.Setup(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, "Ok"));
 
             var loggerFactoryMock = new Mock<ILoggerFactory>();
@@ -948,7 +948,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -982,7 +982,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1018,7 +1018,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1053,7 +1053,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(invitedByEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(invitedByEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1135,7 +1135,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
 
-            _emailSendingServiceMock.Setup(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            _emailSendingServiceMock.Setup(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Forbidden, "Forbidden"));
 
             await Assert.ThrowsAsync<SendEmailException>(() => _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId));
