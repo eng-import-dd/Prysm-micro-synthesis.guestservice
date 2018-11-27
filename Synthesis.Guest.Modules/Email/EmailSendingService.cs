@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nancy.Helpers;
 using Synthesis.Configuration;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.Http.Microservice;
@@ -25,7 +26,7 @@ namespace Synthesis.GuestService.Email
                 new Dictionary<string, string>
                 {
                     { "Project", projectName },
-                    { "WebClientProjectLink", projectUri },
+                    { "WebClientProjectLink",  $"{projectUri}&email={HttpUtility.UrlEncode(guestEmail)}" },
                     { "InvitorFullName", invitorFirstName }
                 });
 

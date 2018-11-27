@@ -40,7 +40,7 @@ namespace Synthesis.GuestService.Email
             }
             catch (Exception ex)
             {
-                throw new BuildEmailException($"An error occurred while trying to build email {GetType().Name}", ex);
+                throw new BuildEmailException($"An error occurred while trying to build email {emailType}", ex);
             }
         }
 
