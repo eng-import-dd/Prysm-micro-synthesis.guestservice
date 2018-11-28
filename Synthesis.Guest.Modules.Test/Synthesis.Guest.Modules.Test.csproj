@@ -337,6 +337,7 @@
     <Compile Include="Controllers\GuestTenantControllerTests.cs" />
     <Compile Include="Controllers\ProjectGuestContextControllerTests.cs" />
     <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
+    <Compile Include="Email\EmailSendingServiceTests.cs" />
     <Compile Include="Events\SessionEndedEventHandlerTests.cs" />
     <Compile Include="Events\KickGuestsFromProjectHandlerTests.cs" />
     <Compile Include="Events\RecalculateProjectLobbyStateHandlerTests.cs" />
