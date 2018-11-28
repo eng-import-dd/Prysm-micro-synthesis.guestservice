@@ -17,12 +17,12 @@ using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Exceptions;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.Modules.Test.Extensions;
-using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Models;
@@ -46,7 +46,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IRepository<GuestSession>> _guestSessionRepositoryMock;
         private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
-        private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
+        private readonly Mock<IEmailSendingService> _emailSendingServiceMock = new Mock<IEmailSendingService>();
         private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
         private readonly Mock<IProjectApi> _serviceToServiceProjectApiMock = new Mock<IProjectApi>();
         private readonly Mock<ISettingApi> _settingsApiMock = new Mock<ISettingApi>();
@@ -184,6 +184,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(g => g.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
 
+            _emailSendingServiceMock.Setup(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, "Ok"));
+
             var loggerFactoryMock = new Mock<ILoggerFactory>();
             loggerFactoryMock
                 .Setup(x => x.Get(It.IsAny<LogTopic>()))
@@ -195,7 +198,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             var headersWithSession = new RequestHeaders(kvpList);
 
             _target = new GuestSessionController(repositoryFactoryMock.Object, _validatorLocator.Object, _eventServiceMock.Object,
-                                                 loggerFactoryMock.Object, _emailUtilityMock.Object, _projectApiMock.Object, _serviceToServiceProjectApiMock.Object,
+                                                 loggerFactoryMock.Object, _emailSendingServiceMock.Object, _serviceToServiceProjectApiMock.Object,
                                                  _userApiMock.Object, _projectLobbyStateControllerMock.Object, _settingsApiMock.Object, _synthesisObjectSerializer.Object,
                                                  _projectGuestContextServiceMock.Object, headersWithSession);
         }
@@ -393,7 +396,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         public async Task VerifyGuestAsync_IfProjectAccessCodeDoesNotMatch_ReturnsInvalidCodeWhenGuestTenantDoesNotMatchProjectTenant()
         {
             _defaultGuestVerificationRequest.ProjectAccessCode = Guid.NewGuid().ToString();
-            Guid? guestTenantId = Guid.NewGuid();
 
             var result = await _target.VerifyGuestAsync(_defaultGuestVerificationRequest, _defaultProject, null);
 
@@ -946,7 +948,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailUtilityMock.Verify(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -978,12 +980,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
 
-            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(true);
-
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailUtilityMock.Verify(m => m.SendHostEmail(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1017,12 +1016,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
 
-            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(true);
-
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailUtilityMock.Verify(m => m.SendHostEmail(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(projectOwnerEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1055,12 +1051,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
 
-            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(true);
-
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
-            _emailUtilityMock.Verify(m => m.SendHostEmail(invitedByEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailSendingServiceMock.Verify(m => m.SendNotifyHostEmailAsync(invitedByEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1114,9 +1107,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
 
-            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(true);
-
             await _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId);
 
             _guestSessionRepositoryMock.Verify(
@@ -1145,8 +1135,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             _userApiMock.Setup(m => m.GetBasicUserAsync(project.OwnerId))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new BasicUser { Email = projectOwnerEmail }));
 
-            _emailUtilityMock.Setup(m => m.SendHostEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(false);
+            _emailSendingServiceMock.Setup(m => m.SendNotifyHostEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Forbidden, "Forbidden"));
 
             await Assert.ThrowsAsync<SendEmailException>(() => _target.EmailHostAsync(_defaultGuestSession.ProjectAccessCode, _defaultGuestSession.UserId));
         }

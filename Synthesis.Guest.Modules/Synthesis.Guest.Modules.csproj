@@ -366,9 +366,11 @@
     <Compile Include="Controllers\IGuestSessionController.cs" />
     <Compile Include="Controllers\IProjectLobbyStateController.cs" />
     <Compile Include="Controllers\ProjectLobbyStateController.cs" />
+    <Compile Include="Email\EmailBuilder.cs" />
     <Compile Include="Email\EmailSendingService.cs" />
+    <Compile Include="Email\EmailType.cs" />
+    <Compile Include="Email\IEmailBuilder.cs" />
     <Compile Include="Email\IEmailSendingService.cs" />
-    <Compile Include="Email\InviteGuestEmail.cs" />
     <Compile Include="Enumerations\CacheConnection.cs" />
     <Compile Include="EventHandlers\EventSubscriber.cs" />
     <Compile Include="EventHandlers\GuestModeToggledEventHandler.cs" />
@@ -396,8 +398,6 @@
     <Compile Include="ServiceToServiceMicroserviceHttpClientResolver.cs" />
     <Compile Include="Utilities\CacheSelector.cs" />
     <Compile Include="Utilities\Interfaces\ICacheSelector.cs" />
-    <Compile Include="Utilities\EmailUtility.cs" />
-    <Compile Include="Utilities\Interfaces\IEmailUtility.cs" />
     <Compile Include="Utilities\Interfaces\IPasswordUtility.cs" />
     <Compile Include="Utilities\Objects\DataSortOrder.cs" />
     <Compile Include="Utilities\Objects\InvitedUserDto.cs" />
@@ -424,6 +424,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Email\Templates\EmailHost.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Email\Templates\GuestInvite.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -435,33 +438,6 @@
     <Content Include="librdkafka\x86\librdkafkacpp.dll" />
     <Content Include="librdkafka\x86\msvcr120.dll" />
     <Content Include="librdkafka\x86\zlib.dll" />
-    <Content Include="Utilities\EmailTemplates\EmailHost.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\EmailTemplate.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\GuestInvite.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\Images\facebook-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\Images\google-plus-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\Images\linkedin-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\Images\Prysm-logo.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\Images\twitter-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Utilities\EmailTemplates\Images\youtube-icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

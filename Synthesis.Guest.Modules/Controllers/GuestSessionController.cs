@@ -1,13 +1,11 @@
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Events;
-using Synthesis.GuestService.Extensions;
 using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.InternalApi.Responses;
-using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.GuestService.Validators;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
@@ -23,6 +21,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Synthesis.Guest.ProjectContext.Models;
 using Synthesis.Guest.ProjectContext.Services;
+using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Exceptions;
 using Synthesis.Http.Microservice;
 using Synthesis.ProjectService.InternalApi.Models;
@@ -36,12 +35,10 @@ namespace Synthesis.GuestService.Controllers
     /// <seealso cref="IGuestSessionController" />
     public class GuestSessionController : IGuestSessionController
     {
-        private readonly IEmailUtility _emailUtility;
         private readonly IEventService _eventService;
         private readonly IRepository<GuestSession> _guestSessionRepository;
         private readonly IRepository<GuestInvite> _guestInviteRepository;
         private readonly ILogger _logger;
-        private readonly IProjectApi _projectApi;
         private readonly IProjectApi _serviceToServiceProjectApi;
         private readonly ISettingApi _serviceToServiceAccountSettingsApi;
         private readonly IUserApi _userApi;
@@ -50,7 +47,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IObjectSerializer _synthesisObjectSerializer;
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IRequestHeaders _requestHeaders;
-
+        private readonly IEmailSendingService _emailSendingService;
         public const int GuestSessionLimit = 10;
 
         /// <summary>
@@ -60,11 +57,10 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger.</param>
-        /// <param name="projectApi"></param>
         /// <param name="serviceToServiceProjectApi"></param>
         /// <param name="projectLobbyStateController"></param>
         /// <param name="userApi"></param>
-        /// <param name="emailUtility"></param>
+        /// <param name="emailSendingService"></param>
         /// <param name="serviceToServiceAccountSettingsApi">The API for Account/Tenant specific settings</param>
         /// <param name="synthesisObjectSerializer">The Synthesis object serializer</param>
         /// <param name="projectGuestContextService"></param>
@@ -74,8 +70,7 @@ namespace Synthesis.GuestService.Controllers
             IValidatorLocator validatorLocator,
             IEventService eventService,
             ILoggerFactory loggerFactory,
-            IEmailUtility emailUtility,
-            IProjectApi projectApi,
+            IEmailSendingService emailSendingService,
             IProjectApi serviceToServiceProjectApi,
             IUserApi userApi,
             IProjectLobbyStateController projectLobbyStateController,
@@ -91,9 +86,8 @@ namespace Synthesis.GuestService.Controllers
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
             _projectLobbyStateController = projectLobbyStateController;
-            _emailUtility = emailUtility;
+            _emailSendingService = emailSendingService;
 
-            _projectApi = projectApi;
             _serviceToServiceProjectApi = serviceToServiceProjectApi;
             _userApi = userApi;
             _serviceToServiceAccountSettingsApi = serviceToServiceAccountSettingsApi;
@@ -278,11 +272,11 @@ namespace Synthesis.GuestService.Controllers
 
             var project = projectResult.Payload;
 
-            var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+            var validGuestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
                                                                                       x.ProjectAccessCode == project.GuestAccessCode &&
-                                                                                      x.GuestSessionState != GuestState.PromotedToProjectMember);
+                                                                                      x.GuestSessionState != GuestState.PromotedToProjectMember)).ToList();
 
-            if (validGuestSessions == null || !validGuestSessions.Any())
+            if (!validGuestSessions.Any())
             {
                 return new List<GuestSession>();
             }
@@ -317,12 +311,12 @@ namespace Synthesis.GuestService.Controllers
 
             var project = projectResult.Payload;
 
-            var validGuestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+            var validGuestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
                 x.UserId == userId &&
                 x.ProjectAccessCode == project.GuestAccessCode &&
-                x.GuestSessionState != GuestState.PromotedToProjectMember);
+                x.GuestSessionState != GuestState.PromotedToProjectMember)).ToList();
 
-            if (validGuestSessions == null || !validGuestSessions.Any())
+            if (!validGuestSessions.Any())
             {
                 return new List<GuestSession>();
             }
@@ -355,11 +349,11 @@ namespace Synthesis.GuestService.Controllers
 
             var project = projectResult.Payload;
 
-            var guestSessions = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
+            var guestSessions = (await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId &&
                 x.UserId == userId &&
-                x.ProjectAccessCode == project.GuestAccessCode);
+                x.ProjectAccessCode == project.GuestAccessCode)).ToList();
 
-            if (guestSessions == null || !guestSessions.Any())
+            if (!guestSessions.Any())
             {
                 return new List<GuestSession>();
             }
@@ -583,10 +577,16 @@ namespace Synthesis.GuestService.Controllers
                 throw new ValidationFailedException(codeValidationResult.Errors);
             }
 
-            var sendingUser = (await _userApi.GetBasicUserAsync(sendingUserId)).Payload;
-            if (sendingUser == null)
+            var getUserResponse = (await _userApi.GetBasicUserAsync(sendingUserId));
+            var sendingUser = getUserResponse.Payload;
+            if (!getUserResponse.IsSuccess())
             {
-                throw new NotFoundException($"User with id {sendingUserId} could not be found");
+                if (getUserResponse.ResponseCode == HttpStatusCode.NotFound)
+                {
+                    throw new NotFoundException($"User with id {sendingUserId} could not be found");
+                }
+
+                throw new InvalidOperationException();
             }
 
             var userSession = await _guestSessionRepository.CreateItemQuery()
@@ -624,12 +624,14 @@ namespace Synthesis.GuestService.Controllers
                 throw new InvalidOperationException($"Unable to find a host user for guest principal {sendingUserId} using access code {accessCode}");
             }
 
-            if (!_emailUtility.SendHostEmail(hostUser.Email, sendingUser.FullName, sendingUser.FirstName, sendingUser.Email, project.Name))
+            var response = await _emailSendingService.SendNotifyHostEmailAsync(hostUser.Email, project.ProjectUri, project.Name, sendingUser.FullName, sendingUser.Email, sendingUser.FirstName);
+            if (!response.IsSuccess())
             {
-                throw new SendEmailException($"Email from user {sendingUser.Email} to host {hostUser.Email} could not be sent");
+                throw new SendEmailException($"Notify host email could not be sent - {response.ResponseCode}, {response.ReasonPhrase}");
             }
 
             userSession.EmailedHostDateTime = DateTime.UtcNow;
+
             await _guestSessionRepository.UpdateItemAsync(userSession.Id, userSession);
 
             return new SendHostEmailResponse()
@@ -680,7 +682,7 @@ namespace Synthesis.GuestService.Controllers
                 return result;
             }
 
-            if (!projectResponse.IsSuccess() || projectResponse?.Payload == null)
+            if (!projectResponse.IsSuccess() || projectResponse.Payload == null)
             {
                 _logger.Error($"Failed to obtain GuestSession {request.GuestSessionId}. Could not retrieve the project associated with this guest session. {projectResponse.ResponseCode} - {projectResponse.ReasonPhrase}");
                 result.Message = $"{failedToUpdateGuestSession}  Could not find the project associated with this guest session.";
