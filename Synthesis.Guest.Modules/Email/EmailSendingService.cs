@@ -40,7 +40,7 @@ namespace Synthesis.GuestService.Email
                     { "GuestEmail", guestEmail },
                     { "Project", projectName },
                     { "HostEmail", hostEmail },
-                    { "WebClientProjectLink", $"{projectUri}&email={HttpUtility.UrlEncode(guestEmail)}" }
+                    { "WebClientProjectLink", $"{projectUri}&email={HttpUtility.UrlEncode(hostEmail)}" }
                 });
 
             return await _emailApi.SendEmailAsync(request);
