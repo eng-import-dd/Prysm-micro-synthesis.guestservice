@@ -57,10 +57,10 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger.</param>
-        /// <param name="serviceToServiceProjectApi"></param>
-        /// <param name="projectLobbyStateController"></param>
-        /// <param name="userApi"></param>
         /// <param name="emailSendingService"></param>
+        /// <param name="serviceToServiceProjectApi"></param>
+        /// <param name="userApi"></param>
+        /// <param name="projectLobbyStateController"></param>
         /// <param name="serviceToServiceAccountSettingsApi">The API for Account/Tenant specific settings</param>
         /// <param name="synthesisObjectSerializer">The Synthesis object serializer</param>
         /// <param name="projectGuestContextService"></param>

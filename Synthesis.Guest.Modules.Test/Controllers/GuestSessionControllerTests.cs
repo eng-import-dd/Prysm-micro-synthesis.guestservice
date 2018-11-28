@@ -47,7 +47,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IRepository<GuestInvite>> _guestInviteRepositoryMock;
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<IEmailSendingService> _emailSendingServiceMock = new Mock<IEmailSendingService>();
-        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
         private readonly Mock<IProjectApi> _serviceToServiceProjectApiMock = new Mock<IProjectApi>();
         private readonly Mock<ISettingApi> _settingsApiMock = new Mock<ISettingApi>();
         private readonly Mock<IUserApi> _userApiMock = new Mock<IUserApi>();
@@ -147,10 +146,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 .Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultProject));
 
-            _projectApiMock
-                .Setup(x => x.GetProjectByAccessCodeAsync(It.IsAny<string>(), null))
-                .ThrowsAsync(new NotFoundException("Project could not be found"));
-
             _userApiMock.Setup(x => x.GetUserByUserNameOrEmailAsync(It.IsAny<string>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _defaultUser));
 
@@ -202,8 +197,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 _validatorLocator.Object,
                 _eventServiceMock.Object,
                 loggerFactoryMock.Object,
-                _emailUtilityMock.Object,
-                _projectApiMock.Object,
+                _emailSendingServiceMock.Object,
                 _serviceToServiceProjectApiMock.Object,
                 _userApiMock.Object,
                 _projectLobbyStateControllerMock.Object,
