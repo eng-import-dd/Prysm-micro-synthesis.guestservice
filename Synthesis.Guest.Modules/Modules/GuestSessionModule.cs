@@ -145,7 +145,7 @@ namespace Synthesis.GuestService.Modules
 
         private async Task<object> GetGuestSessionsByProjectIdAsync(dynamic input, CancellationToken cancellationToken)
         {
-            var projectId = input.projectId;
+            Guid projectId = input.projectId;
 
             await RequiresAccess()
                 .WithProjectIdExpansion(ctx => projectId)
@@ -155,12 +155,14 @@ namespace Synthesis.GuestService.Modules
             {
                 return await _guestSessionController.GetMostRecentValidGuestSessionsByProjectIdAsync(projectId);
             }
-            catch (NotFoundException)
+            catch (NotFoundException ex)
             {
+                Logger.Info($"Guest session for project {projectId} not found", ex);
                 return Response.NotFound(ResponseReasons.NotFoundGuestSession);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Validation failed while getting guest sessions by project ID", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)

@@ -1,7 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Lifetime;
 using FluentValidation;
+using Microsoft.Owin;
 using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
@@ -17,10 +24,17 @@ using Synthesis.Configuration.Infrastructure;
 using Synthesis.Configuration.Shared;
 using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
+using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka.Autofac;
+using Synthesis.ExpirationNotifierService.InternalApi.Api;
+using Synthesis.ExpirationNotifierService.InternalApi.Services;
+using Synthesis.Guest.ProjectContext.Services;
 using Synthesis.GuestService.Controllers;
+using Synthesis.GuestService.Email;
+using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.EventHandlers;
+using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Modules;
 using Synthesis.GuestService.Owin;
 using Synthesis.GuestService.Utilities;
@@ -34,10 +48,11 @@ using Synthesis.Microservice.Health;
 using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Middleware;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
-using Synthesis.ParticipantService.InternalApi.Api;
+using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.PrincipalService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -46,25 +61,8 @@ using Synthesis.SettingService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using Microsoft.Owin;
-using Synthesis.EmailService.InternalApi.Api;
-using Synthesis.ExpirationNotifierService.InternalApi.Api;
-using Synthesis.ExpirationNotifierService.InternalApi.Services;
-using Synthesis.Guest.ProjectContext.Services;
-using Synthesis.GuestService.Email;
-using Synthesis.GuestService.InternalApi.Models;
-using Synthesis.ParticipantService.InternalApi.Services;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
-using Synthesis.GuestService.Enumerations;
-using Synthesis.Nancy.MicroService.Middleware;
-using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService
 {
@@ -390,7 +388,6 @@ namespace Synthesis.GuestService
                     (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
                 .Keyed<ISettingApi>(ServiceToServiceSettingApiKey);
 
-            builder.RegisterType<ParticipantApi>().As<IParticipantApi>();
             builder.RegisterType<UserApi>().As<IUserApi>();
             builder.RegisterType<ProjectGuestContextService>().As<IProjectGuestContextService>();
 

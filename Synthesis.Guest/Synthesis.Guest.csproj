@@ -188,11 +188,10 @@
       <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta015\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.2.1.0-beta003\lib\net452\Synthesis.Cache.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\Synthesis.Cache.2.1.0-beta004\lib\net452\Synthesis.Cache.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache.Redis, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta009\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Cache.Redis.2.1.0-beta010\lib\net452\Synthesis.Cache.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
@@ -212,11 +211,11 @@
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
+    <Reference Include="Synthesis.Http, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Http.2.0.0-beta001\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta029\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta030\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -252,8 +251,8 @@
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta014\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.1.0.7\lib\net452\Synthesis.Serialization.dll</HintPath>
+    <Reference Include="Synthesis.Serialization, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.1.1.0-beta001\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Json, Version=1.0.11.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Json.1.0.11-beta001\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
@@ -262,7 +261,7 @@
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta025\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Threading.1.1.1-beta001\lib\net452\Synthesis.Threading.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Threading.1.1.1-beta002\lib\net452\Synthesis.Threading.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Tracking, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Tracking.1.0.0-alpha2\lib\net452\Synthesis.Tracking.dll</HintPath>
@@ -282,6 +281,7 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.4.0\lib\net45\System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>

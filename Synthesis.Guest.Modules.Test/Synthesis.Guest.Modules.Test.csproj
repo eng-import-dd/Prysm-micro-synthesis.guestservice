@@ -167,7 +167,7 @@
       <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta015\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.2.1.0-beta003\lib\net452\Synthesis.Cache.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Cache.2.1.0-beta004\lib\net452\Synthesis.Cache.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
@@ -176,7 +176,7 @@
       <HintPath>..\packages\Synthesis.Configuration.Shared.1.0.0-beta004\lib\net452\Synthesis.Configuration.Shared.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.CopyProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta015\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta023\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
@@ -202,11 +202,11 @@
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta047\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
+    <Reference Include="Synthesis.Http, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Http.2.0.0-beta001\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta029\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta030\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -227,7 +227,7 @@
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ParticipantService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta047\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta052\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta006\lib\net452\Synthesis.Policy.dll</HintPath>
@@ -239,13 +239,13 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta014\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta061\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta062\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta057\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta058\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.1.0.7\lib\net452\Synthesis.Serialization.dll</HintPath>
+    <Reference Include="Synthesis.Serialization, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.1.1.0-beta001\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Avro, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Avro.1.0.0-beta007\lib\net452\Synthesis.Serialization.Avro.dll</HintPath>
@@ -256,16 +256,21 @@
     <Reference Include="Synthesis.SettingService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.SettingService.InternalApi.1.0.0-beta003\lib\net452\Synthesis.SettingService.InternalApi.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.SnapGridService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.SnapGridService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.SnapGridService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta025\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Threading.1.1.1-beta001\lib\net452\Synthesis.Threading.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\Synthesis.Threading.1.1.1-beta002\lib\net452\Synthesis.Threading.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Tracking.Correlations, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Tracking.Correlations.1.0.1\lib\net452\Synthesis.Tracking.Correlations.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="Synthesis.WorkspaceService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.WorkspaceService.InternalApi.1.0.0-beta025\lib\net452\Synthesis.WorkspaceService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -332,6 +337,7 @@
     <Compile Include="Controllers\GuestTenantControllerTests.cs" />
     <Compile Include="Controllers\ProjectGuestContextControllerTests.cs" />
     <Compile Include="Controllers\ProjectLobbyStateControllerTests.cs" />
+    <Compile Include="Events\SessionEndedEventHandlerTests.cs" />
     <Compile Include="Events\KickGuestsFromProjectHandlerTests.cs" />
     <Compile Include="Events\RecalculateProjectLobbyStateHandlerTests.cs" />
     <Compile Include="Events\ProjectCreatedEventHandlerTests.cs" />
