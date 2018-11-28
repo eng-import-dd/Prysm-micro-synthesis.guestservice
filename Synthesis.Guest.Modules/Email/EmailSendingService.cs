@@ -32,7 +32,7 @@ namespace Synthesis.GuestService.Email
 
         public async Task<MicroserviceResponse> SendNotifyHostEmailAsync(string hostEmail, string projectUri, string projectName, string guestFullName, string guestEmail, string guestFirstName)
         {
-            var request = _emailBuilder.BuildRequest(EmailType.NotifyHost, guestEmail, "You have a guest waiting for you in the lobby",
+            var request = _emailBuilder.BuildRequest(EmailType.NotifyHost, hostEmail, "You have a guest waiting for you in the lobby",
                 new Dictionary<string, string>
                 {
                     { "GuestFullName", guestFullName },
