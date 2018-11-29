@@ -853,6 +853,39 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task DeleteGuestSessionAsync_WhenGuestSessionNotFoundDuringDelete_DoesNotThrow()
+        {
+            _guestSessionRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DocumentNotFoundException());
+
+            var ex = await Record.ExceptionAsync(() => _target.DeleteGuestSessionAsync(Guid.NewGuid()));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_WhenGuestSessionNotFoundDuringDelete_DoesNotPublishSessionDeleted()
+        {
+            _guestSessionRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DocumentNotFoundException());
+
+            await _target.DeleteGuestSessionAsync(Guid.NewGuid());
+
+            _eventServiceMock.Verify(m => m.PublishAsync(It.IsAny<ServiceBusEvent<GuidEvent>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteGuestSessionAsync_WhenGuestSessionNotFoundDuringDelete_DoesNotRecalculateProjectLobbyState()
+        {
+            _guestSessionRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DocumentNotFoundException());
+
+            await _target.DeleteGuestSessionAsync(Guid.NewGuid());
+
+            _projectLobbyStateControllerMock.Verify(m => m.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Never);
+        }
+
+        [Fact]
         public async Task EmailHostAsync_WhenGetBasicUserForSendingUserReturnsErrorResponse_ThrowsNotFoundException()
         {
             var sendingUserId = Guid.NewGuid();

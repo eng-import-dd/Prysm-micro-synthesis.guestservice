@@ -222,7 +222,16 @@ namespace Synthesis.GuestService.Controllers
 
             await _projectGuestContextService.RemoveProjectGuestContextAsync(guestSession.SessionId);
 
-            await _guestSessionRepository.DeleteItemAsync(id);
+            try
+            {
+                await _guestSessionRepository.DeleteItemAsync(id);
+            }
+            catch (DocumentNotFoundException)
+            {
+                // We can safely ignore this and return because some parallel operation has deleted
+                // the guest session before this operation.
+                return;
+            }
 
             _eventService.Publish(EventNames.GuestSessionDeleted, new GuidEvent(guestSession.Id));
 
