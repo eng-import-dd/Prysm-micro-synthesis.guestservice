@@ -34,6 +34,7 @@ using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Email;
 using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.EventHandlers;
+using Synthesis.GuestService.InternalApi.Api;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.GuestService.Modules;
 using Synthesis.GuestService.Owin;
@@ -436,6 +437,9 @@ namespace Synthesis.GuestService
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>();
             builder.RegisterType<ExpirationNotifierApi>().As<IExpirationNotifierApi>();
+
+            // TODO: Replace IGuestApi implementation with an internal version that calls controllers.
+            builder.RegisterType<GuestApi>().As<IGuestApi>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
