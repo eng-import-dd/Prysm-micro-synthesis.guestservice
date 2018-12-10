@@ -20,7 +20,6 @@ namespace Synthesis.GuestService.EventHandlers
             eventHandlerLocator.SubscribeEventHandler<ProjectCreatedEventHandler, Project>(EventNamespaces.ProjectService, ProjectEventNames.ProjectCreated);
 
             // message hub events
-            eventHandlerLocator.SubscribeEventHandler<RecalculateProjectLobbyStateHandler, GuidEvent>(EventNamespaces.MessageHubService, EventNames.TriggerRecalculateProjectLobbyState);
             eventHandlerLocator.SubscribeEventHandler<SessionEndedEventHandler, SessionEnded>(EventNamespaces.MessageHubService, ParticipantEventNames.SessionEnded);
 
             // expiration notifier events

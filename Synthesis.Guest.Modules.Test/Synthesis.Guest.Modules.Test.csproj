@@ -340,7 +340,6 @@
     <Compile Include="Email\EmailSendingServiceTests.cs" />
     <Compile Include="Events\SessionEndedEventHandlerTests.cs" />
     <Compile Include="Events\KickGuestsFromProjectHandlerTests.cs" />
-    <Compile Include="Events\RecalculateProjectLobbyStateHandlerTests.cs" />
     <Compile Include="Events\ProjectCreatedEventHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Extensions\IEnumerablExtensions.cs" />

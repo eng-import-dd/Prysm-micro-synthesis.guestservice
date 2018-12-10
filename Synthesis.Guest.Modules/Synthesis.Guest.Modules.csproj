@@ -383,7 +383,6 @@
     <Compile Include="EventHandlers\GuestAccessCodeChangedEventHandler.cs" />
     <Compile Include="EventHandlers\KickGuestsFromProjectHandler.cs" />
     <Compile Include="EventHandlers\ProjectCreatedEventHandler.cs" />
-    <Compile Include="EventHandlers\RecalculateProjectLobbyStateHandler.cs" />
     <Compile Include="EventHandlers\SessionEndedEventHandler.cs" />
     <Compile Include="Exceptions\GetProjectException.cs" />
     <Compile Include="Exceptions\ResetAccessCodeException.cs" />
