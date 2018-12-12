@@ -1,5 +1,6 @@
 ﻿using System;
 using Moq;
+using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
 using Synthesis.GuestService.InternalApi.Enums;
@@ -12,6 +13,8 @@ namespace Synthesis.GuestService.Modules.Test.Events
 {
     public class SessionEndedEventHandlerTests
     {
+        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
+        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
         private readonly SessionEndedEventHandler _target;
@@ -22,7 +25,9 @@ namespace Synthesis.GuestService.Modules.Test.Events
                 .Returns(new Mock<ILogger>().Object);
 
             _target = new SessionEndedEventHandler(
+                _eventServiceMock.Object,
                 _guestSessionControllerMock.Object,
+                _projectLobbyStateControllerMock.Object,
                 _loggerFactoryMock.Object);
         }
 

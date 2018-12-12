@@ -49,6 +49,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IRequestHeaders _requestHeaders;
         private readonly IEmailSendingService _emailSendingService;
         public const int GuestSessionLimit = 10;
+        private readonly int _maxGuestsAllowedInProject;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -77,7 +78,8 @@ namespace Synthesis.GuestService.Controllers
             ISettingApi serviceToServiceAccountSettingsApi,
             IObjectSerializer synthesisObjectSerializer,
             IProjectGuestContextService projectGuestContextService,
-            IRequestHeaders requestHeaders)
+            IRequestHeaders requestHeaders,
+            int maxGuestsAllowedInProject)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
@@ -94,6 +96,7 @@ namespace Synthesis.GuestService.Controllers
             _synthesisObjectSerializer = synthesisObjectSerializer;
             _projectGuestContextService = projectGuestContextService;
             _requestHeaders = requestHeaders;
+            _maxGuestsAllowedInProject = maxGuestsAllowedInProject;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId, Guid tenantId)
@@ -178,7 +181,10 @@ namespace Synthesis.GuestService.Controllers
                     return UpdateGuestSessionAsync(session, principalId);
                 });
 
+            var updateLobbyTasks = openSessions.Select(session =>  _projectLobbyStateController.RecalculateProjectLobbyStateAsync(session.ProjectId));
+
             await Task.WhenAll(endSessionTasks);
+            await Task.WhenAll(updateLobbyTasks);
         }
 
         public async Task EndGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
@@ -443,6 +449,11 @@ namespace Synthesis.GuestService.Controllers
             }
 
             _eventService.Publish(EventNames.GuestSessionUpdated, result);
+
+            if (existingGuestSession.GuestSessionState != result.GuestSessionState && result.GuestSessionState > GuestState.InLobby)
+            {
+                await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(guestSessionModel.ProjectId);
+            }
 
             return result;
         }
@@ -736,14 +747,14 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSession = await UpdateGuestSessionAsync(currentGuestSession, principalId);
 
-            if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
-            {
-                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
-            }
-            else if (previousSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
-            {
-                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
-            }
+            //if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
+            //{
+            //    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
+            //}
+            //else if (previousSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
+            //{
+            //    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
+            //}
 
             result.GuestSession = guestSession;
             result.Message = "Guest session state updated.";
@@ -770,7 +781,7 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionsInProject = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == projectAccessCode && x.GuestSessionState == GuestState.InProject);
 
-            return GuestSessionLimit - guestSessionsInProject.Count();
+            return _maxGuestsAllowedInProject - guestSessionsInProject.Count();
         }
     }
 }

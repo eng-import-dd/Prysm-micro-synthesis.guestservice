@@ -58,6 +58,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         private readonly Mock<IObjectSerializer> _synthesisObjectSerializer = new Mock<IObjectSerializer>();
         private readonly Mock<IProjectGuestContextService> _projectGuestContextServiceMock = new Mock<IProjectGuestContextService>();
         private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
+        private const int MaxNumberOfGuests = 10;
 
         private readonly User _defaultUser = User.Example();
         private readonly Project _defaultProject;
@@ -204,7 +205,8 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                 _settingsApiMock.Object,
                 _synthesisObjectSerializer.Object,
                 _projectGuestContextServiceMock.Object,
-                headersWithSession);
+                headersWithSession,
+                MaxNumberOfGuests);
         }
 
         #region UpdateGuestSessionStateAsync
@@ -287,7 +289,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateGuestSessionStateAsync_ProjectAlreadyFull_ReturnsProjectFull()
         {
-            SetupGuests(GuestSessionController.GuestSessionLimit);
+            SetupGuests(MaxNumberOfGuests);
             _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
             _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
             _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
@@ -300,7 +302,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateGuestSessionStateAsync_ProjectAlreadyFull_SetsProjectLobbyToGuestLimitReached()
         {
-            SetupGuests(GuestSessionController.GuestSessionLimit);
+            SetupGuests(MaxNumberOfGuests);
             _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
             _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
             _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
@@ -325,7 +327,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateGuestSessionStateAsync_ProjectReachedFull_SetsProjectLobbyToGuestLimitReached()
         {
-            SetupGuests(GuestSessionController.GuestSessionLimit - 1);
+            SetupGuests(MaxNumberOfGuests - 1);
             _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
             _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
             _updateGuestSessionStateRequest.GuestSessionState = GuestState.InProject;
@@ -337,9 +339,9 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task UpdateGuestSessionStateAsync_ProjectReachedFull_SetsProjectLobbyToNormal()
+        public async Task UpdateGuestSessionStateAsync_IfGuestLimitReachedAndGuestPromotedToProjectMember_SetsProjectLobbyToNormal()
         {
-            SetupGuests(GuestSessionController.GuestSessionLimit);
+            SetupGuests(MaxNumberOfGuests);
             _defaultGuestSession.ProjectAccessCode = Guid.NewGuid().ToString();
             _defaultGuestSession.GuestSessionState = GuestState.InProject;
             _defaultProject.GuestAccessCode = _defaultGuestSession.ProjectAccessCode;
