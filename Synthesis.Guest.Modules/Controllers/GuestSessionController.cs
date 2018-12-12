@@ -389,6 +389,21 @@ namespace Synthesis.GuestService.Controllers
             return guestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
+        /// <summary>
+        /// Updates the input GuestSession in the repository and synchronizes
+        /// that state on the associated ProjectGuestContext cache item. Publishes
+        /// the GuestSessionUpdated event if all operations succeed.
+        /// </summary>
+        /// <param name="guestSessionModel"></param>
+        /// <param name="principalId"></param>
+        /// <returns>The updated <see cref="GuestSession">GuestSession</see> as Task&lt;GuestSession&gt;</returns>
+        /// <remarks>It is the caller's responsiblity to cause the ProjectLobbyState
+        /// to be calculated after the update, as appropriate, as well as for the 
+        /// ProjectStatusUpdated event to be published. That event triggers the MessageHub to 
+        /// publish the NotifyProjectStatusChanged message to subscribed SignalR connections.
+        /// That message most importantly communicates the changed ProjectLobbyState
+        /// to subscribed client applications.
+        /// </remarks>
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel, Guid principalId)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
@@ -446,11 +461,6 @@ namespace Synthesis.GuestService.Controllers
             }
 
             _eventService.Publish(EventNames.GuestSessionUpdated, result);
-
-            if (existingGuestSession.GuestSessionState != result.GuestSessionState && result.GuestSessionState > GuestState.InLobby)
-            {
-                await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(guestSessionModel.ProjectId);
-            }
 
             return result;
         }
@@ -744,14 +754,14 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSession = await UpdateGuestSessionAsync(currentGuestSession, principalId);
 
-            //if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
-            //{
-            //    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
-            //}
-            //else if (previousSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
-            //{
-            //    await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
-            //}
+            if (guestSession.GuestSessionState == GuestState.InProject && availableGuestCount == 1)
+            {
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.GuestLimitReached);
+            }
+            else if (previousSessionState == GuestState.InProject && request.GuestSessionState != GuestState.InProject && availableGuestCount == 0)
+            {
+                await UpdateProjectLobbyStateAsync(project.Id, LobbyState.Normal);
+            }
 
             result.GuestSession = guestSession;
             result.Message = "Guest session state updated.";
