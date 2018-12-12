@@ -200,7 +200,7 @@
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.GuestService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta047\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.GuestService.InternalApi.1.0.0-beta048\lib\net452\Synthesis.GuestService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.2.0.0-beta001\lib\net452\Synthesis.Http.dll</HintPath>
@@ -340,7 +340,6 @@
     <Compile Include="Email\EmailSendingServiceTests.cs" />
     <Compile Include="Events\SessionEndedEventHandlerTests.cs" />
     <Compile Include="Events\KickGuestsFromProjectHandlerTests.cs" />
-    <Compile Include="Events\RecalculateProjectLobbyStateHandlerTests.cs" />
     <Compile Include="Events\ProjectCreatedEventHandlerTests.cs" />
     <Compile Include="Events\ResetGuestAccessCodeSubscriberTests.cs" />
     <Compile Include="Extensions\IEnumerablExtensions.cs" />

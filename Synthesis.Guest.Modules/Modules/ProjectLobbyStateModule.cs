@@ -14,6 +14,7 @@ using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
+using Synthesis.ProjectService.InternalApi.Models;
 
 namespace Synthesis.GuestService.Modules
 {
@@ -33,6 +34,11 @@ namespace Synthesis.GuestService.Modules
                 .Description("Retrieves lobby state for a project.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
                 .ResponseFormat(JsonConvert.SerializeObject(new ProjectLobbyState()));
+
+            CreateRoute("RecalculateProjectLobbyState", HttpMethod.Put, $"{Routing.ProjectsRoute}/{{projectId:guid}}/{Routing.ProjectLobbyStatePath}", RecalculateProjectLobbyStateAsync)
+                .Description("Recalculates the the lobby state of a project.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError)
+                .ResponseFormat(ProjectLobbyState.Example());
         }
 
         private async Task<object> GetProjectLobbyStateAsync(dynamic input)
@@ -60,6 +66,35 @@ namespace Synthesis.GuestService.Modules
             catch (Exception ex)
             {
                 Logger.Error($"An error occurred retrieving lobby state for project: {projectId}", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetProjectLobbyState);
+            }
+        }
+
+        private async Task<object> RecalculateProjectLobbyStateAsync(dynamic input)
+        {
+            var projectId = input.projectId;
+
+            await RequiresAccess()
+                .WithProjectIdExpansion(ctx => projectId)
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                return await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(projectId);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Error($"Validation failed during recalculation of the lobby state for project: {projectId}", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException ex)
+            {
+                Logger.Error($"Could not recalculate the project lobby state because project={projectId} could not be found.", ex);
+                return Response.NotFound(ResponseReasons.NotFoundProject);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred while recalculating the lobby state for project: {projectId}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetProjectLobbyState);
             }
         }
