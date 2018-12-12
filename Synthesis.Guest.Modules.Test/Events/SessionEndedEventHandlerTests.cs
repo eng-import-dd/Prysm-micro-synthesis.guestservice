@@ -3,6 +3,7 @@ using Moq;
 using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
@@ -63,5 +64,29 @@ namespace Synthesis.GuestService.Modules.Test.Events
 
             _guestSessionControllerMock.Verify(m => m.UpdateGuestSessionAsync(It.Is<GuestSession>(s => s.GuestSessionState == GuestState.Ended), It.IsAny<Guid>()), Times.Once);
         }
+
+        [Fact]
+        public void HandleEvent_WhenSessionFoundAndStateIsNotEnded_RecalculatesProjectLobbyState()
+        {
+            _guestSessionControllerMock.Setup(m => m.GetGuestSessionBySessionIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new GuestSession { GuestSessionState = GuestState.InProject });
+
+            _target.HandleEvent(new SessionEnded());
+
+            _projectLobbyStateControllerMock.Verify(m => m.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
+        }
+
+        [Fact]
+        public void HandleEvent_WhenSessionFoundAndStateIsNotEnded_PublishesEvent()
+        {
+            _guestSessionControllerMock.Setup(m => m.GetGuestSessionBySessionIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new GuestSession { GuestSessionState = GuestState.InProject });
+
+            _target.HandleEvent(new SessionEnded());
+
+            _eventServiceMock.Verify(m => m.PublishAsync<ProjectLobbyState>(It.IsAny<ServiceBusEvent<ProjectLobbyState>>()), Times.Once);
+        }
+
+
     }
 }
