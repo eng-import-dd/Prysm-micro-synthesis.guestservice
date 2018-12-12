@@ -181,10 +181,7 @@ namespace Synthesis.GuestService.Controllers
                     return UpdateGuestSessionAsync(session, principalId);
                 });
 
-            var updateLobbyTasks = openSessions.Select(session =>  _projectLobbyStateController.RecalculateProjectLobbyStateAsync(session.ProjectId));
-
             await Task.WhenAll(endSessionTasks);
-            await Task.WhenAll(updateLobbyTasks);
         }
 
         public async Task EndGuestSessionsForProjectAsync(Guid projectId, Guid principalId, bool onlyKickGuestsInProject)
