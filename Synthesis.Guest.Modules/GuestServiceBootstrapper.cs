@@ -400,7 +400,10 @@ namespace Synthesis.GuestService
                     (p, c) => c.ResolveKeyed<ISettingApi>(ServiceToServiceSettingApiKey)))
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "serviceToServiceProjectApi",
-                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)));
+                    (p, c) => c.ResolveKeyed<IProjectApi>(ServiceToServiceProjectApiKey)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "maxGuestsAllowedInProject",
+                    (p, c) => c.Resolve<IAppSettingsReader>().SafeGetValue<int>("Guest.MaxGuestsAllowedInProject")));
 
             builder.RegisterType<ProjectLobbyStateController>()
                 .WithParameter(new ResolvedParameter(

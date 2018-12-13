@@ -48,7 +48,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IRequestHeaders _requestHeaders;
         private readonly IEmailSendingService _emailSendingService;
-        public const int GuestSessionLimit = 10;
+        private readonly int _maxGuestsAllowedInProject;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -77,7 +77,8 @@ namespace Synthesis.GuestService.Controllers
             ISettingApi serviceToServiceAccountSettingsApi,
             IObjectSerializer synthesisObjectSerializer,
             IProjectGuestContextService projectGuestContextService,
-            IRequestHeaders requestHeaders)
+            IRequestHeaders requestHeaders,
+            int maxGuestsAllowedInProject)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
             _guestInviteRepository = repositoryFactory.CreateRepository<GuestInvite>();
@@ -94,6 +95,7 @@ namespace Synthesis.GuestService.Controllers
             _synthesisObjectSerializer = synthesisObjectSerializer;
             _projectGuestContextService = projectGuestContextService;
             _requestHeaders = requestHeaders;
+            _maxGuestsAllowedInProject = maxGuestsAllowedInProject;
         }
 
         public async Task<GuestSession> CreateGuestSessionAsync(GuestSession model, Guid principalId, Guid tenantId)
@@ -386,6 +388,21 @@ namespace Synthesis.GuestService.Controllers
             return guestSessions.OrderByDescending(x => x.CreatedDateTime);
         }
 
+        /// <summary>
+        /// Updates the input GuestSession in the repository and synchronizes
+        /// that state on the associated ProjectGuestContext cache item. Publishes
+        /// the GuestSessionUpdated event if all operations succeed.
+        /// </summary>
+        /// <param name="guestSessionModel"></param>
+        /// <param name="principalId"></param>
+        /// <returns>The updated <see cref="GuestSession">GuestSession</see> as Task&lt;GuestSession&gt;</returns>
+        /// <remarks>It is the caller's responsiblity to cause the ProjectLobbyState
+        /// to be calculated after the update, as appropriate, as well as for the 
+        /// ProjectStatusUpdated event to be published. That event triggers the MessageHub to 
+        /// publish the NotifyProjectStatusChanged message to subscribed SignalR connections.
+        /// That message most importantly communicates the changed ProjectLobbyState
+        /// to subscribed client applications.
+        /// </remarks>
         public async Task<GuestSession> UpdateGuestSessionAsync(GuestSession guestSessionModel, Guid principalId)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
@@ -770,7 +787,7 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionsInProject = await _guestSessionRepository.GetItemsAsync(x => x.ProjectId == projectId && x.ProjectAccessCode == projectAccessCode && x.GuestSessionState == GuestState.InProject);
 
-            return GuestSessionLimit - guestSessionsInProject.Count();
+            return _maxGuestsAllowedInProject - guestSessionsInProject.Count();
         }
     }
 }

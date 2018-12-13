@@ -1,7 +1,9 @@
 ﻿using System;
 using Moq;
+using Synthesis.EventBus;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.EventHandlers;
+using Synthesis.GuestService.InternalApi.Constants;
 using Synthesis.GuestService.InternalApi.Enums;
 using Synthesis.GuestService.InternalApi.Models;
 using Synthesis.Logging;
@@ -12,6 +14,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
 {
     public class SessionEndedEventHandlerTests
     {
+        private readonly Mock<IProjectLobbyStateController> _projectLobbyStateControllerMock = new Mock<IProjectLobbyStateController>();
         private readonly Mock<IGuestSessionController> _guestSessionControllerMock = new Mock<IGuestSessionController>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
         private readonly SessionEndedEventHandler _target;
@@ -23,6 +26,7 @@ namespace Synthesis.GuestService.Modules.Test.Events
 
             _target = new SessionEndedEventHandler(
                 _guestSessionControllerMock.Object,
+                _projectLobbyStateControllerMock.Object,
                 _loggerFactoryMock.Object);
         }
 
@@ -57,6 +61,17 @@ namespace Synthesis.GuestService.Modules.Test.Events
             _target.HandleEvent(new SessionEnded());
 
             _guestSessionControllerMock.Verify(m => m.UpdateGuestSessionAsync(It.Is<GuestSession>(s => s.GuestSessionState == GuestState.Ended), It.IsAny<Guid>()), Times.Once);
+        }
+
+        [Fact]
+        public void HandleEvent_WhenSessionFoundAndStateIsNotEnded_RecalculatesProjectLobbyState()
+        {
+            _guestSessionControllerMock.Setup(m => m.GetGuestSessionBySessionIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new GuestSession { GuestSessionState = GuestState.InProject });
+
+            _target.HandleEvent(new SessionEnded());
+
+            _projectLobbyStateControllerMock.Verify(m => m.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
         }
     }
 }
