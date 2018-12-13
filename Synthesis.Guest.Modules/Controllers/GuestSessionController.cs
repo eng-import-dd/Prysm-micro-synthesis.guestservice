@@ -48,7 +48,6 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectGuestContextService _projectGuestContextService;
         private readonly IRequestHeaders _requestHeaders;
         private readonly IEmailSendingService _emailSendingService;
-        public const int GuestSessionLimit = 10;
         private readonly int _maxGuestsAllowedInProject;
 
         /// <summary>
