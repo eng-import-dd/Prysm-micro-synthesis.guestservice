@@ -75,18 +75,5 @@ namespace Synthesis.GuestService.Modules.Test.Events
 
             _projectLobbyStateControllerMock.Verify(m => m.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
         }
-
-        [Fact]
-        public void HandleEvent_WhenSessionFoundAndStateIsNotEnded_PublishesEvent()
-        {
-            _guestSessionControllerMock.Setup(m => m.GetGuestSessionBySessionIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new GuestSession { GuestSessionState = GuestState.InProject });
-
-            _target.HandleEvent(new SessionEnded());
-
-            _eventServiceMock.Verify(m => m.PublishAsync<ProjectLobbyState>(It.IsAny<ServiceBusEvent<ProjectLobbyState>>()), Times.Once);
-        }
-
-
     }
 }

@@ -91,7 +91,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateProjectLobbyStateThrowsValidationFailedExceptionIfInvalid()
+        public async Task CreateProjectLobbyState_IfInvalid_ThrowsValidationFailedException()
         {
             _validatorMock
                 .Setup(m => m.Validate(It.IsAny<object>()))
@@ -101,7 +101,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateProjectLobbyStateAsyncCreatesNewProjectLobbyState()
+        public async Task CreateProjectLobbyStateAsync_CreatesNewProjectLobbyState()
         {
             var projectId = Guid.NewGuid();
             await _target.CreateProjectLobbyStateAsync(projectId);
@@ -113,7 +113,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncThrowsValidationFailedExceptionIfInvalid()
+        public async Task RecalculateProjectLobbyStateAsync_IfInvalid_ThrowsValidationFailedException()
         {
             _validatorMock
                 .Setup(m => m.Validate(It.IsAny<object>()))
@@ -123,7 +123,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncRetrievesParticipant()
+        public async Task RecalculateProjectLobbyStateAsync_RetrievesParticipant()
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
@@ -131,7 +131,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncRetrievesProject()
+        public async Task RecalculateProjectLobbyStateAsync_RetrievesProject()
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
@@ -139,7 +139,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncRetrievesGuests()
+        public async Task RecalculateProjectLobbyStateAsync_RetrievesGuests()
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
@@ -149,7 +149,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [Theory]
         [InlineData(HttpStatusCode.BadRequest, false)]
         [InlineData(HttpStatusCode.OK, true)]
-        public async Task RecalculateProjectLobbyStateAsyncSetsLobbyStateToErrorIfOneOrMoreApiCallFails(HttpStatusCode projectStatusCode, bool participantRequestFails)
+        public async Task RecalculateProjectLobbyStateAsync_IfOneOrMoreApiCallFails_SetsLobbyStateToError(HttpStatusCode projectStatusCode, bool participantRequestFails)
         {
             SetupApisForRecalculate(projectStatusCode, participantRequestFails);
 
@@ -168,7 +168,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncUpdatesLobbyState()
+        public async Task RecalculateProjectLobbyStateAsync_UpdatesLobbyState()
         {
             SetupApisForRecalculate();
             await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
@@ -177,7 +177,16 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncCreatesAndReturnsLobbyStateIfNotFoundAndProjectExists()
+        public async Task RecalculateProjectLobbyStateAsync_PublishesEvent()
+        {
+            SetupApisForRecalculate();
+            await _target.RecalculateProjectLobbyStateAsync(Guid.NewGuid());
+
+            _eventServiceMock.Verify(m => m.PublishAsync<ProjectLobbyState>(It.IsAny<ServiceBusEvent<ProjectLobbyState>>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RecalculateProjectLobbyStateAsync_IfNotFoundAndProjectExists_CreatesAndReturnsLobbyState()
         {
             SetupApisForRecalculate();
 
@@ -197,7 +206,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task RecalculateProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
+        public async Task RecalculateProjectLobbyStateAsync_IfProjectDoesNotExist_ThrowsNotFound()
         {
             SetupApisForRecalculate(HttpStatusCode.NotFound);
             var stateRef = new Reference<ProjectLobbyState> { Value = default(ProjectLobbyState) };
@@ -224,7 +233,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         [InlineData(5, 11, LobbyState.GuestLimitReached)]
         [InlineData(20, 10, LobbyState.GuestLimitReached)]
         [InlineData(20, 11, LobbyState.GuestLimitReached)]
-        public async Task RecalculateProjectLobbyStateAsyncReturnsExpectedLobbyState(int fullMemberParticipantCount, int guestSessionCount, LobbyState lobbyState)
+        public async Task RecalculateProjectLobbyStateAsync_ReturnsExpectedLobbyState(int fullMemberParticipantCount, int guestSessionCount, LobbyState lobbyState)
         {
             var project = Project.Example();
             var projectId = project.Id;
@@ -289,7 +298,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetProjectLobbyStateAsyncThrowsValidationFailedExceptionIfInvalid()
+        public async Task GetProjectLobbyStateAsync_IfInvalid_ThrowsValidationFailedException()
         {
             _validatorMock
                 .Setup(m => m.Validate(It.IsAny<object>()))
@@ -299,7 +308,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetProjectLobbyStateAsyncReturnsStateIfNotFoundAndProjectExists()
+        public async Task GetProjectLobbyStateAsync_IfNotFoundAndProjectExists_ReturnsState()
         {
             var project = Project.Example();
             SetupApisForRecalculate(HttpStatusCode.OK, false, project);
@@ -333,7 +342,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetProjectLobbyStateAsyncThrowsNotFoundIfProjectDoesNotExist()
+        public async Task GetProjectLobbyStateAsync_IfProjectDoesNotExist_ThrowsNotFound()
         {
             _cacheMock
                 .Setup(m => m.TryItemGetAsync(It.IsAny<string>(), typeof(ProjectLobbyState), It.IsAny<Reference<ProjectLobbyState>>()))
@@ -347,7 +356,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetProjectLobbyStateAsyncRetrievesLobbyState()
+        public async Task GetProjectLobbyStateAsync_RetrievesLobbyState()
         {
             var state = ProjectLobbyState.Example();
             _cacheMock
@@ -360,7 +369,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task DeleteProjectLobbyStateAsyncDeletesProjectLobbyState()
+        public async Task DeleteProjectLobbyStateAsync_DeletesProjectLobbyState()
         {
             _cacheMock.Setup(m => m.KeyDeleteAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CacheCommandOptions>()))
                 .ReturnsAsync(1);

@@ -45,9 +45,8 @@ namespace Synthesis.GuestService.EventHandlers
                 guestSession.GuestSessionState = GuestState.Ended;
                 await _guestSessionController.UpdateGuestSessionAsync(guestSession, guestSession.UserId);
 
-                var newLobbyState = await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(guestSession.ProjectId);
-
-                _eventService.Publish(EventNames.ProjectStatusUpdated, newLobbyState);
+                // Recalc lobby state after guest session is ended.
+                await _projectLobbyStateController.RecalculateProjectLobbyStateAsync(guestSession.ProjectId);
             }
             catch (Exception ex)
             {
