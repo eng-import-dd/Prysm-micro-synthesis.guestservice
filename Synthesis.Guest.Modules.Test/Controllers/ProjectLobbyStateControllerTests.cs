@@ -21,6 +21,7 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.ParticipantService.InternalApi.Models;
 using Synthesis.ParticipantService.InternalApi.Services;
+using Synthesis.ParticipantService.InternalApi.Testing;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Threading.Tasks;
@@ -242,7 +243,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
             for (int i = 1; i <= fullMemberParticipantCount; i++)
             {
                 var participant = Participant.Example();
-                participant.ProjectId = projectId;
+                ParticipantExtensions.SetProjectId(participant, project.Id);
                 participant.GuestSessionId = null;
                 participant.IsGuest = false;
                 participants.Add(participant);
@@ -318,7 +319,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
 
             var participants = new List<Participant>();
             var participant = Participant.Example();
-            participant.ProjectId = project.Id;
+            ParticipantExtensions.SetProjectId(participant, project.Id);
             participant.GuestSessionId = null;
             participant.IsGuest = false;
             participants.Add(participant);
