@@ -227,7 +227,7 @@
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ParticipantService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta053\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ParticipantService.InternalApi.1.0.0-beta056\lib\net452\Synthesis.ParticipantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta006\lib\net452\Synthesis.Policy.dll</HintPath>
