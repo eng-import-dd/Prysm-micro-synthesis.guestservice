@@ -223,6 +223,7 @@ namespace Synthesis.GuestService.Controllers
             }
 
             await _projectGuestContextService.RemoveProjectGuestContextAsync(guestSession.SessionId);
+            _logger.Info("Deleted ProjectGuestContext for Session.Id '{guestSession.SessionId}'.");
 
             try
             {
@@ -443,6 +444,7 @@ namespace Synthesis.GuestService.Controllers
             if (guestSessionModel.GuestSessionState == GuestState.Ended)
             {
                 await _projectGuestContextService.RemoveProjectGuestContextAsync(guestSessionModel.SessionId);
+                _logger.Info("Deleted ProjectGuestContext for Session.Id '{guestSessionModel.SessionId}'.");
             }
             else
             {

@@ -12,6 +12,7 @@ using Synthesis.GuestService.InternalApi.Requests;
 using Synthesis.GuestService.Validators;
 using Synthesis.Http.Microservice;
 using Synthesis.Http.Microservice.Constants;
+using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Api;
@@ -32,6 +33,7 @@ namespace Synthesis.GuestService.Controllers
         private readonly IProjectLobbyStateController _projectLobbyStateController;
         private readonly IProjectAccessApi _serviceToServiceProjectAccessApi;
         private readonly IUserApi _userApi;
+        private readonly ILogger _logger;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="GuestSessionController" /> class.
@@ -43,7 +45,8 @@ namespace Synthesis.GuestService.Controllers
             IProjectGuestContextService projectGuestContextService,
             IProjectAccessApi serviceToServiceProjectAccessApi,
             IProjectApi serviceToServiceProjectApi,
-            IUserApi userApi)
+            IUserApi userApi,
+            ILoggerFactory loggerFactory)
         {
             _guestSessionRepository = repositoryFactory.CreateRepository<GuestSession>();
 
@@ -54,6 +57,7 @@ namespace Synthesis.GuestService.Controllers
             _serviceToServiceProjectAccessApi = serviceToServiceProjectAccessApi;
             _userApi = userApi;
             _projectGuestContextService = projectGuestContextService;
+            _logger = loggerFactory.GetLogger(this);
         }
 
         private async Task<GuestSession> GetGuestSessionForUser(Guid userId, Guid projectId)
@@ -98,7 +102,10 @@ namespace Synthesis.GuestService.Controllers
             {
                 //User is in project's account and was a guest who was promoted to a full
                 //member, clear guest properties. This changes the return value of ProjectGuestContextService.IsGuestAsync() to false.
+
+                _logger.Info($"User with Id '{currentUserId}' is in same account as project with Id '{projectId}' and was a guest who was promoted to a full member, setting ProjectGuestContext to default values with GuestState of PromotedToProjectMember, though should really delete the record as it is no longer a valid context for a project guest.");
                 guestContext = new ProjectGuestContext();
+                guestContext.GuestState = GuestState.PromotedToProjectMember;
                 await _projectGuestContextService.SetProjectGuestContextAsync(guestContext);
             }
 
@@ -186,8 +193,6 @@ namespace Synthesis.GuestService.Controllers
             };
 
             var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, principalId);
-
-            await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext{ GuestState = GuestState.Ended });
 
             if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Success)
             {
