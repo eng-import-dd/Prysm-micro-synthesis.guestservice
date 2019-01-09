@@ -734,7 +734,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.Ended }
                 });
 
-            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.InvitedBy, false);
+            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultPrincipalId, false);
             _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -750,7 +750,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.Ended }
                 });
 
-            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.InvitedBy, true);
+            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultPrincipalId, true);
             _guestSessionRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<GuestSession>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -765,7 +765,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.InProject }
                 });
 
-            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.InvitedBy, false);
+            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultPrincipalId, false);
 
             _projectGuestContextServiceMock.Verify(x => x.RemoveProjectGuestContextAsync(It.IsAny<string>()), Times.Exactly(2));
         }
@@ -782,7 +782,7 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
                     new GuestSession { GuestSessionState = GuestState.Ended }
                 });
 
-            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultGuestInvite.InvitedBy, true);
+            await _target.EndGuestSessionsForProjectAsync(_defaultGuestSession.ProjectId, _defaultPrincipalId, true);
             _projectLobbyStateControllerMock.Verify(x => x.RecalculateProjectLobbyStateAsync(It.IsAny<Guid>()), Times.Once);
         }
 
