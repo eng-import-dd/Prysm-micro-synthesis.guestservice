@@ -172,9 +172,9 @@ namespace Synthesis.GuestService
         {
             var builder = new ContainerBuilder();
 
-            RegisterRedisKeyed(builder, "Redis.General.Key", "Redis.General.Endpoint", CacheConnection.General, true);
-            RegisterRedisKeyed(builder, "Redis.Refresh.Key", "Redis.Refresh.Endpoint", CacheConnection.Refresh, false);
-            RegisterRedisKeyed(builder, "Redis.ExpirationNotifier.Key", "Redis.ExpirationNotifier.Endpoint", CacheConnection.ExpirationNotifier, false);
+            RegisterRedisKeyed(builder, "Redis.General.Key", "Redis.General.Endpoint", "Redis.General.Ssl", CacheConnection.General, true);
+            RegisterRedisKeyed(builder, "Redis.Refresh.Key", "Redis.Refresh.Endpoint", "Redis.Refresh.Ssl", CacheConnection.Refresh, false);
+            RegisterRedisKeyed(builder, "Redis.ExpirationNotifier.Key", "Redis.ExpirationNotifier.Endpoint", "Redis.ExpirationNotifier.Ssl", CacheConnection.ExpirationNotifier, false);
 
             builder.RegisterType<DefaultAppSettingsReader>()
                 .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
@@ -323,7 +323,7 @@ namespace Synthesis.GuestService
             return builder.Build();
         }
 
-        private static void RegisterRedisKeyed(ContainerBuilder builder, string passwordKey, string endpointKey, CacheConnection instanceKey, bool defaultInstance)
+        private static void RegisterRedisKeyed(ContainerBuilder builder, string passwordKey, string endpointKey, string sslKey, CacheConnection instanceKey, bool defaultInstance)
         {
             var builderP2 = builder.RegisterType<RedisCache>()
                 .WithParameter(new ResolvedParameter(
@@ -331,7 +331,7 @@ namespace Synthesis.GuestService
                     (p, c) =>
                     {
                         var reader = c.Resolve<IAppSettingsReader>();
-                        var sslSetting = reader.SafeGetValue("Redis.General.Ssl", "false");
+                        var sslSetting = reader.SafeGetValue(sslKey, "false");
                         var result = bool.TryParse(sslSetting, out var ssl);
                         if (!result)
                         {
@@ -339,14 +339,14 @@ namespace Synthesis.GuestService
                         }
                         var redisOptions = new ConfigurationOptions
                         {
-                            Password = reader.GetValue<string>("Redis.General.Key"),
+                            Password = reader.GetValue<string>(passwordKey),
                             AbortOnConnectFail = false,
                             SyncTimeout = RedisSyncTimeoutInMilliseconds,
                             ConnectTimeout = RedisConnectTimeoutInMilliseconds,
                             ConnectRetry = RedisConnectRetryTimes,
                             Ssl = ssl
                         };
-                        redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
+                        redisOptions.EndPoints.Add(reader.GetValue<string>(endpointKey));
                         return ConnectionMultiplexer.Connect(redisOptions);
                     }))
                 .Keyed<ICache>(instanceKey)
