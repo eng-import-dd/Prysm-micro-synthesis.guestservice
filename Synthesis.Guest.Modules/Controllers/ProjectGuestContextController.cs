@@ -187,8 +187,6 @@ namespace Synthesis.GuestService.Controllers
 
             var guestSessionStateResponse = await _guestSessionController.UpdateGuestSessionStateAsync(guestSessionRequest, principalId);
 
-            //await _projectGuestContextService.SetProjectGuestContextAsync(new ProjectGuestContext{ GuestState = GuestState.Ended });
-
             if (guestSessionStateResponse.ResultCode == UpdateGuestSessionStateResultCodes.Success)
             {
                 return new CurrentProjectState()
