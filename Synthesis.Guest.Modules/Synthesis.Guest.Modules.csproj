@@ -205,8 +205,8 @@
     <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.2\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.2\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
+    <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.3\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ExpirationNotifierService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ExpirationNotifierService.InternalApi.1.0.0-beta008\lib\net452\Synthesis.ExpirationNotifierService.InternalApi.dll</HintPath>
