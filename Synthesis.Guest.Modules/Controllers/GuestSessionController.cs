@@ -65,6 +65,7 @@ namespace Synthesis.GuestService.Controllers
         /// <param name="synthesisObjectSerializer">The Synthesis object serializer</param>
         /// <param name="projectGuestContextService"></param>
         /// <param name="requestHeaders"></param>
+        /// <param name="maxGuestsAllowedInProject"></param>
         public GuestSessionController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
