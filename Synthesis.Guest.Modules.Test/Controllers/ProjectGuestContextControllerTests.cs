@@ -128,17 +128,6 @@ namespace Synthesis.GuestService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task SetProjectGuestContext_IfProjectIdIsEmpty_ProjectGuestContextIsReset()
-        {
-            await _target.SetProjectGuestContextAsync(Guid.Empty, null, _currentUserId, _noTenantId, _defaultPrincipalId);
-
-            _projectGuestContextServiceMock
-                .Verify(y => y.SetProjectGuestContextAsync(It.Is<ProjectGuestContext>(x =>
-                    x.ProjectId == Guid.Empty &&
-                    x.GuestSessionId == Guid.Empty), It.IsAny<string>()));
-        }
-
-        [Fact]
         public async Task SetProjectGuestContext_IfGuestSessionCannotBeCleared_ThrowsInvalidOperationException()
         {
             _guestSessionControllerMock
