@@ -1,41 +1,53 @@
-using Microsoft.Owin.Cors;
-using Microsoft.Owin.Extensions;
-using Owin;
-using Synthesis.ApplicationInsights.Owin;
-using Synthesis.Owin.Security;
-using Synthesis.Nancy.MicroService.Middleware;
-using Synthesis.GuestService.Owin;
-using Synthesis.Tracking.Web;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Nancy.Owin;
+using Synthesis.GuestService.Modules;
+using Synthesis.Nancy.Autofac;
 
 namespace Synthesis.GuestService
 {
-    public static class Startup
+    public class Startup
     {
-        // This code configures Web API. The Startup class is specified as a type
-        // parameter in the WebApp.Start method.
-        public static void ConfigureApp(IAppBuilder app)
+        public IConfiguration Configuration { get; private set; }
+
+        public ILifetimeScope AutofacContainer { get; private set; }
+
+        public Startup(IConfiguration configuration)
         {
-            app.UseCors(CorsOptions.AllowAll);
+            Configuration = configuration;
+        }
 
-            // Enables IoC for OwinMiddlware implementations. This method allows us to control
-            // the order of our middleware.
-            app.UseAutofacLifetimeScopeInjector(GuestServiceBootstrapper.RootContainer);
+        // ConfigureContainer is where you can register things directly
+        // with Autofac. This runs after ConfigureServices so the things
+        // here will override registrations made in ConfigureServices.
+        // Don't build the container; that gets done for you by the factory.
+        public void ConfigureContainer(ContainerBuilder builder)
+        {
+            // Register your own things directly with Autofac, like:
+            builder.RegisterModule<GuestAutofacModule>();
+        }
+        
+        // This method gets called by the runtime. Use this method to add services to the container.
+        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
+            services.AddOptions();
+        }
 
-            app.UseMiddlewareFromContainer<GlobalExceptionHandlerMiddleware>();
-            app.UseMiddlewareFromContainer<ResourceNotFoundMiddleware>();
-            app.UseMiddlewareFromContainer<CorrelationScopeMiddleware>();
-
-            // This middleware performs our authentication and populates the user principal.
-            app.UseMiddlewareFromContainer<SynthesisAuthenticationMiddleware>();
-            app.UseApplicationInsightsTracking();
-            app.UseMiddlewareFromContainer<ImpersonateTenantMiddleware>();
-            app.UseMiddlewareFromContainer<GuestContextMiddleware>();
-            app.UseStageMarker(PipelineStage.Authenticate);
-
-            app.UseNancy(options =>
-            {
-                options.Bootstrapper = new GuestServiceBootstrapper();
-            });
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            AutofacContainer = app.ApplicationServices.GetAutofacRoot();
+            
+            app.UseOwin(x => 
+                x.UseNancy(opt => 
+                    opt.Bootstrapper = new AutofacNancyBootstrapper(AutofacContainer)));
         }
     }
 }
