@@ -23,7 +23,7 @@ namespace Synthesis.GuestService.Modules
             IPolicyEvaluator policyEvaluator,
             IGuestTenantController tenantController,
             ILoggerFactory loggerFactory)
-            : base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
+            : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             // Init DI
             _tenantController = tenantController;
