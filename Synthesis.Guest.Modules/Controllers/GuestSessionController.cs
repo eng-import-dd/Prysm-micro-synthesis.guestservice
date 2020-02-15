@@ -15,7 +15,6 @@ using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.SettingService.InternalApi.Api;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
