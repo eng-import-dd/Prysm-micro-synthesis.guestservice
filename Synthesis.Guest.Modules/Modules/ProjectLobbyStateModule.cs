@@ -26,7 +26,7 @@ namespace Synthesis.GuestService.Modules
         public ProjectLobbyStateModule(IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory, IProjectLobbyStateController projectLobbyStateController) :
-            base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
+            base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _projectLobbyStateController = projectLobbyStateController;
 

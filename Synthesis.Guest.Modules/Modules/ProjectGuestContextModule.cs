@@ -27,7 +27,7 @@ namespace Synthesis.GuestService.Modules
             IPolicyEvaluator policyEvaluator,
             IProjectGuestContextController projectGuestContextController,
             ILoggerFactory loggerFactory)
-            : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
+            : base(GuestServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _projectGuestContextController = projectGuestContextController;
 

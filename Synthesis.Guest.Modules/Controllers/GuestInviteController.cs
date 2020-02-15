@@ -20,6 +20,8 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.Serialization;
+using Synthesis.SettingService.InternalApi.Api;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.GuestService.Controllers
 {
