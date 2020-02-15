@@ -71,7 +71,7 @@ namespace Synthesis.GuestService.Modules.Test.Modules
                         };
                         var identity = new ClaimsIdentity(
                             claims,
-                            "Basic");
+                            AuthenticationTypes.Basic);
                         context.CurrentUser = new ClaimsPrincipal(identity);
                     });
                 }
