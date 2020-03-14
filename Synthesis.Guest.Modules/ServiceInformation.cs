@@ -1,4 +1,4 @@
-namespace Synthesis.GuestService.Modules
+namespace Synthesis.GuestService
 {
     public class ServiceInformation
     {

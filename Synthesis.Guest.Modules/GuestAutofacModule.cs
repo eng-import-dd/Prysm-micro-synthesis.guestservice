@@ -19,6 +19,7 @@ using Synthesis.GuestService.Utilities;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.Microservice.Health;
+using Synthesis.Nancy.Autofac.Module.DocumentDb;
 using Synthesis.Nancy.Autofac.Module.Microservice;
 using Synthesis.ParticipantService.InternalApi.Services;
 using Synthesis.PrincipalService.InternalApi.Api;
@@ -26,7 +27,7 @@ using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.SettingService.InternalApi.Api;
 using Module = Autofac.Module;
 
-namespace Synthesis.GuestService.Modules
+namespace Synthesis.GuestService
 {
     public class GuestAutofacModule : Module
     {
@@ -38,10 +39,10 @@ namespace Synthesis.GuestService.Modules
         {
             var dbConfigDictionary = new Dictionary<string, string>
             {
-                {"AuthKey", "Guest.DocumentDb.AuthKey" },
-                {"EndPoint","Guest.DocumentDb.Endpoint" },
-                {"DatabaseName", "Guest.DocumentDb.DatabaseName"},
-                {"RuThroughput", "Guest.DocumentDb.RuThroughput" }
+                {DocumentDbAutofacModule.AuthKey, "Guest.DocumentDb.AuthKey"},
+                {DocumentDbAutofacModule.Endpoint, "Guest.DocumentDb.Endpoint"},
+                {DocumentDbAutofacModule.DatabaseName, "Guest.DocumentDb.DatabaseName"},
+                {DocumentDbAutofacModule.RuThroughput, "Guest.DocumentDb.RuThroughput"}
             };
 
             builder.RegisterModule(new MicroserviceAutofacModule(dbConfigDictionary, 

@@ -6,13 +6,18 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nancy.Owin;
+using Synthesis.ApplicationInsights.AspCoreNet;
+using Synthesis.AspNetCore.Security.Middleware;
 using Synthesis.GuestService.Modules;
 using Synthesis.Nancy.Autofac;
+using Synthesis.Nancy.Autofac.Module.Middleware.AspNetCore;
+using Synthesis.Tracking.Web;
 
 namespace Synthesis.GuestService
 {
     public class Startup
     {
+        private const string AllowAllOrigins = "AllowAllOrigins";
         public IConfiguration Configuration { get; private set; }
 
         public ILifetimeScope AutofacContainer { get; private set; }
@@ -37,6 +42,11 @@ namespace Synthesis.GuestService
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
+            // we should probably restrict this to the most narrow scope possible, but
+            // it's setup this way since we are porting existing functionality to get that
+            // working.  This will be revisited after we have everything running again.
+            services.AddCors(options => options.AddPolicy(AllowAllOrigins, 
+                builder => builder.AllowAnyOrigin()));
             services.AddOptions();
         }
 
@@ -44,7 +54,13 @@ namespace Synthesis.GuestService
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             AutofacContainer = app.ApplicationServices.GetAutofacRoot();
-            
+            app.UseCors(AllowAllOrigins);
+            app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+            app.UseMiddleware<CorrelationScopeMiddleware>();
+            app.UseMiddleware<SynthesisAuthenticationMiddleware>();
+            app.UseApplicationInsightsTracking();
+            app.UseMiddleware<ImpersonateTenantMiddleware>();
+            app.UseMiddleware<GuestContextMiddleware>();
             app.UseOwin(x => 
                 x.UseNancy(opt => 
                     opt.Bootstrapper = new AutofacNancyBootstrapper(AutofacContainer)));
