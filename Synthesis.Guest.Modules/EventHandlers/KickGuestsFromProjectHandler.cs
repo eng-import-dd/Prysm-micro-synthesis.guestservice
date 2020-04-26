@@ -1,13 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
+﻿using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
 using Synthesis.EventBus;
-using Synthesis.EventBus.Events;
 using Synthesis.ExpirationNotifierService.InternalApi.Models;
+using Synthesis.ExpirationNotifierService.InternalApi.Services;
 using Synthesis.GuestService.Controllers;
 using Synthesis.GuestService.Retry;
 using Synthesis.Logging;
-using Synthesis.ExpirationNotifierService.InternalApi.Services;
+using System;
+using System.Threading.Tasks;
 
 namespace Synthesis.GuestService.EventHandlers
 {

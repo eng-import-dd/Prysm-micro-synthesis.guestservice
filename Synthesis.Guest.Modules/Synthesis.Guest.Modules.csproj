@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>Synthesis.GuestService</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="EnterpriseLibrary.TransientFaultHandling" Version="6.0.1304" />
+    <PackageReference Include="EnterpriseLibrary.TransientFaultHandling.NetCore" Version="6.0.1312" />
     <PackageReference Include="Synthesis.EventBus.Kafka.Autofac" Version="[1.0.*,1.1)" />
     <PackageReference Include="Synthesis.Nancy.Autofac" Version="[1.0.*,1.1)" />
     <PackageReference Include="Synthesis.Nancy.Autofac.Module.DocumentDb" Version="[1.0.*,1.1)" />
