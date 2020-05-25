@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Nancy.Owin;
 using Synthesis.ApplicationInsights.AspCoreNet;
 using Synthesis.AspNetCore.Security.Middleware;
-using Synthesis.GuestService.Modules;
 using Synthesis.Nancy.Autofac;
 using Synthesis.Nancy.Autofac.Module.Middleware.AspNetCore;
 using Synthesis.Tracking.Web;
@@ -24,7 +23,11 @@ namespace Synthesis.GuestService
 
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            var builder = new ConfigurationBuilder()
+                .AddConfiguration(configuration)
+                .AddJsonFile("secrets/guestsettings", optional: true)
+                .AddEnvironmentVariables();
+            Configuration = builder.Build();
         }
 
         // ConfigureContainer is where you can register things directly
@@ -33,6 +36,7 @@ namespace Synthesis.GuestService
         // Don't build the container; that gets done for you by the factory.
         public void ConfigureContainer(ContainerBuilder builder)
         {
+            builder.RegisterInstance(Configuration).As<IConfiguration>();
             // Register your own things directly with Autofac, like:
             builder.RegisterModule<GuestAutofacModule>();
         }

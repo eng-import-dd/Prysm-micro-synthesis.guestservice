@@ -19,4 +19,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.Guest.Modules\Synthesis.Guest.Modules.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="secrets\guestsettings">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
