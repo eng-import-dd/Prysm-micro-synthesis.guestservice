@@ -5,10 +5,10 @@
     <RootNamespace>Synthesis.GuestService</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Content Remove="log4net.config" />
+    <Content Remove="config/log4net.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="log4net.config">
+    <None Include="config/log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
