@@ -19,6 +19,7 @@ using Synthesis.GuestService.Utilities;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.Microservice.Health;
+using Synthesis.Nancy.Autofac.Module.Configuration;
 using Synthesis.Nancy.Autofac.Module.DocumentDb;
 using Synthesis.Nancy.Autofac.Module.Microservice;
 using Synthesis.ParticipantService.InternalApi.Services;
@@ -45,6 +46,7 @@ namespace Synthesis.GuestService
                 {DocumentDbAutofacModule.RuThroughput, "Guest.DocumentDb.RuThroughput"}
             };
 
+            builder.RegisterModule<ConfigurationAutofacModule>();
             builder.RegisterModule(new MicroserviceAutofacModule(dbConfigDictionary, 
                 ServiceInformation.ServiceName, 
                 ServiceInformation.ServiceNameShort,
