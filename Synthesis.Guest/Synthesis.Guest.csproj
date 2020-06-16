@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Synthesis.GuestService</RootNamespace>
+    <AssemblyName>Synthesis.GuestService</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="config/log4net.config" />
