@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Autofac;
 using Autofac.Core;
+using Nancy;
 using Synthesis.Cache;
 using Synthesis.Configuration;
 using Synthesis.DocumentStorage;
@@ -15,6 +16,7 @@ using Synthesis.GuestService.Enumerations;
 using Synthesis.GuestService.EventHandlers;
 using Synthesis.GuestService.InternalApi.Api;
 using Synthesis.GuestService.InternalApi.Models;
+using Synthesis.GuestService.Modules;
 using Synthesis.GuestService.Utilities;
 using Synthesis.GuestService.Utilities.Interfaces;
 using Synthesis.Http.Microservice;
@@ -156,6 +158,14 @@ namespace Synthesis.GuestService
             builder.RegisterType<ExpirationNotifierApi>().As<IExpirationNotifierApi>();
 
             // TODO: Replace IGuestApi implementation with an internal version that calls controllers.
-            builder.RegisterType<GuestApi>().As<IGuestApi>();        }
+            builder.RegisterType<GuestApi>().As<IGuestApi>();
+
+            // Nancy Modules
+            builder.RegisterType<GuestInviteModule>().As<INancyModule>();
+            builder.RegisterType<GuestSessionModule>().As<INancyModule>();
+            builder.RegisterType<GuestTenantModule>().As<INancyModule>();
+            builder.RegisterType<ProjectGuestContextModule>().As<INancyModule>();
+            builder.RegisterType<ProjectLobbyStateModule>().As<INancyModule>();
+        }
     }
 }
