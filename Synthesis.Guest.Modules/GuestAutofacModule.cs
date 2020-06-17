@@ -52,7 +52,7 @@ namespace Synthesis.GuestService
             builder.RegisterModule(new MicroserviceAutofacModule(dbConfigDictionary, 
                 ServiceInformation.ServiceName, 
                 ServiceInformation.ServiceNameShort,
-                Assembly.GetAssembly(GetType())));
+                GetType()));
             
             // Event Subscriber
             builder
